@@ -1557,7 +1557,7 @@
   <section class="block" id="developer" aria-labelledby="dev-heading">
     <p class="micro">09 / developer note</p>
     <h2 class="block-title" id="dev-heading">The tokens to drop in.</h2>
-    <p class="block-lede">Replace both token blocks in <code>pashyanti/web/src/index.css</code> with the CSS below. Every name the app already reads is present, so nothing goes undefined: <code>:root</code> is 01 Indigo Resist, <code>.dark</code> is 04 Peacock Matrix.</p>
+    <p class="block-lede">Replace <code>:root</code> and <code>.dark</code> in <code>pashyanti/web/src/index.css</code> with the two blocks below, and add the new colour aliases to the existing <code>@theme inline</code> — do not replace that block: it carries the app's font stacks and the <code>--color-*</code> aliases. <code>:root</code> is 01 Indigo Resist, <code>.dark</code> is 04 Peacock Matrix.</p>
     <pre class="code"><code>/*
  * Pixel-matrix tokens. :root = 01 Indigo Resist (light, daylight default).
  * .dark = 04 Peacock Matrix (the reference halftone).

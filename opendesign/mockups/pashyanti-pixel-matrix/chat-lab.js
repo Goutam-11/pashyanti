@@ -839,7 +839,10 @@
     drawAllMascots();
     drawBgPeacock();
     applyStairs();
-    requestAnimationFrame(applyStairs);
+    /* The first measure can land before the thread's scrollbar and the
+       webfonts settle; a second frame plus the observer below keeps the
+       polygon correct for a shared URL, not just after a click. */
+    requestAnimationFrame(() => requestAnimationFrame(applyStairs));
   }
 
   /* ---------------------------------------------------------------------
@@ -952,6 +955,9 @@
   if (document.fonts && document.fonts.ready) {
     document.fonts.ready.then(() => applyStairs());
   }
+
+  /* Every reflow re-measures the stepped bubbles. */
+  new ResizeObserver(() => applyStairs()).observe(thread);
 
   /* Tweaks host protocol, per the make-tweakable contract: register the
      listener first, then announce availability. Standalone, the panel is

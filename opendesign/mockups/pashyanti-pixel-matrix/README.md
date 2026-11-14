@@ -29,8 +29,8 @@ The panel on the right is a real Tweaks panel. Everything is live.
   (Peacock Matrix, Chuna Lime-Wash, Indigo Resist, Monsoon Slate, Madder) plus
   one lab-only take, Ultraviolet. The ratio under the swatches is computed from
   the live CSS, not typed.
-- **Dot pitch** — 4 / 6 / 8 / 10 px. The lattice, the mascot and the ghost all
-  follow it.
+- **Dot pitch** — 4 / 6 / 8 / 10 px. The lattice and the ghost follow it; the
+  mascot keeps a finer screen (~1.8 px dots) so the crest and eye ring survive.
 - **Lattice** — faint, screen, bold. The screen is the designed strength;
   faint is for daylight legibility, bold for a poster.
 - **Background** — dot peacock (stamped on the field's own grid), lattice only,
@@ -39,7 +39,7 @@ The panel on the right is a real Tweaks panel. Everything is live.
 - **Preview state** — live transcript, empty, missed segment, call summary.
 - **Frame** — 430 phone or 780 wide (responsive proof).
 
-Every knob is a URL too, so a direction can be shared:
+Most knobs are a URL too, so a direction can be shared:
 
 ```
 chat-lab.html?v=c
@@ -75,15 +75,16 @@ Two combinations the study sheets argue for:
 - Text on its own ground: **8.6:1** minimum across the six palettes; reply
   text on the accent block: **7.3:1** minimum. The palette note recomputes on
   every switch.
-- Caller text 23 px / 1.42, reply 22–23 px, metadata 9–10 px pixel caps,
-  controls 44 px. Same floor as the product.
+- Caller and reply text 23 px / 1.42, metadata 10 px pixel caps, controls
+  44 px. Same floor as the product.
 - The field is never behind a word: panels are opaque, so the lattice only
   reaches gutters. The one exception is the empty state, where the mascot is
   the art and the watermark is switched off.
 
-## Not done yet
+## Implementation
 
-This is a prototype, not a port. Picking a direction is the next decision;
-then the tokens move into `web/src/index.css`, the bubble rules into the
-semantic classes there, and `Mascot.tsx` gains the dot renderer. No React
-component has been changed in this worktree.
+The direction was picked and ported into `pashyanti/web/src` on the same
+branch: three `[data-theme]` grounds (Peacock, Lime Wash, Slate), the lattice
+and the field mark, dissolve bubbles, and the dot renderer behind `Mascot.tsx`.
+`peacock-data.js` here is the prototype's copy of the traced paths; the app
+imports `components/peacock.ts` directly.

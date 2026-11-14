@@ -400,12 +400,14 @@ h1 {
   color: var(--ink);
 }
 
+/* Listening owns --cool here, matching the app's status rule; --hot is the
+   outgoing/speaking signal and must not mean two things. */
 .status-dot {
   width: 7px;
   height: 7px;
   flex: none;
   border-radius: 50%;
-  background: var(--hot);
+  background: var(--cool);
 }
 
 /* 44 px floor: every control in this chrome is at least 44 x 44. */
