@@ -30,6 +30,9 @@ HDR = {
     "x-vad-threshold": "0.7",
     "x-min-silence-ms": "350",
     "x-max-speech-s": "15",
+    # Word boosting, same rules as REST. Non-ASCII must be
+    # JSON-escaped, which is what ensure_ascii does.
+    "keyterms": json.dumps(["पश्यन्ती", "Pashyanti"], ensure_ascii=True),
 }
 
 

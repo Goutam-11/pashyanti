@@ -18,11 +18,14 @@ environment variable always wins. Never commit `.env`.
 | `probe.py` | One 1,000-char TTS call + one 10 s STT call, to read the credit rate off the dashboard |
 | `stream_mic.py` | Live mic → `wss://api.vachana.ai/stt/v3/stream` |
 | `test_stream_file.py` | Replays a 16 kHz wav into the same socket — tests streaming where there is no microphone |
+| `clone_voice.py` | `build ref.wav` → `embedding.json`, then `say "..."` → the same words in that voice |
 
 ```bash
 python probe.py
 python stream_mic.py                    # needs a real mic
 python test_stream_file.py smoke.wav    # no mic needed
+python clone_voice.py build ref.wav     # 5-30 s of clean speech
+python clone_voice.py say "नमस्ते, मैं पश्यन्ती हूँ।"
 ```
 
 ## Two facts that will cost you an evening

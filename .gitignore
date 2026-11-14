@@ -4,6 +4,7 @@
 
 # --- media / scratch ---
 *.wav
+*.json
 *.mp3
 *.m4a
 *.mp4
