@@ -291,3 +291,33 @@ decoratively. The ? disc is green (state), while the retry notice and the
 "missed" status dot use clay (warning). Re-tracing is required if the owner
 changes the reference; the brand sheet records the current reference next to the
 vector.
+
+---
+
+## D-014 — No real phone call in the demo; the Twilio bridge waits for a number
+
+**Context.** The largest gap between this build and a product is that no
+telephone call can reach it: the Gnani API has no PSTN, no number and no SIP
+(`API-NOTES.md`). Twilio Media Streams can receive a call and hand us 8 kHz
+µ-law, and both halves of our audio path already speak that, so the bridge
+looked like a day of work. Whether it could exist *this week* was untested.
+
+**Decision.** The 60-second video does not show a ringing phone, and the
+bridge is not built. The spike (#7) closed as **no-go for this deadline; go
+only with a US number as a post-submission pilot**, recorded in
+[`TWILIO-SPIKE.md`](TWILIO-SPIKE.md).
+
+**Why.** An Indian (+91) number sits behind a Regulatory Bundle; Twilio's own
+page puts the review at "up to three business days", "several weeks" in some
+regions, and the deadline is 15 Nov 18:00. A US number is obtainable today, but
+a +1 number in an Indian clinic demo is a tell. A Trial account also accepts
+inbound calls only from verified numbers, so "anyone can call this" is
+impossible without upgrading: the demo would be showing a phone that only our
+own verified handsets can ring.
+
+**Consequence.** The README says *simulated* phone line and the UI never claims
+a real call; `AGENTS.md` lists the bridge as not built. If it is picked up
+later, start the Indian bundle on day one and measure the two WAN legs before
+quoting any latency. They are the only unknowns the spike left, and the 450 ms
+telephony VAD floor is part of the budget either way.
+
