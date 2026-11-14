@@ -136,10 +136,10 @@ half exposes a voice language.
 Hackathon build — *The Great Indian AI Internship Challenge*, November 2026.
 Working: live transcription, spoken replies, voice cloning, phone-line accuracy
 measurement, installable frontend, and an interface in English, Hindi, Bengali
-and Marathi. The web app also ships the end-of-call summary card, the repeat
-notice and the two demo switches; their backend halves (#3–#6) are still open,
-so those three are not live end to end yet. In progress: the Twilio Media
-Streams bridge.
+and Marathi. The end-of-call summary card (#4) and the repeat notice (#3) are
+live end to end. The two demo switches are wired to the protocol, but their
+backend halves (#5/#6) are still open. In progress: the Twilio Media Streams
+bridge.
 
 ## License
 
