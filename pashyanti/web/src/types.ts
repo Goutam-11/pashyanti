@@ -6,14 +6,18 @@ export type Summary = {
   duration_s: number;
 };
 
+export type VoiceMode = "default" | "cloned";
+
 export type ServerMsg =
   | {
       type: "hello";
       models: { stt: string; tts: string };
       mic: boolean;
+      /** Which voice this call starts in (#6). */
+      voice: VoiceMode;
       /** Present once #5 lands; absent means the switch is not yet wired. */
       phone_line?: boolean;
-      /** Present once #6 lands. */
+      /** The older toggle shape (#21); mirrors `voice`. */
       cloned_voice?: boolean;
     }
   | { type: "transcript"; text: string; lang: string | null; latency_ms: number }
@@ -21,6 +25,7 @@ export type ServerMsg =
   | { type: "speak"; text: string; ttfa_ms: number; cached: boolean }
   | ({ type: "summary" } & Summary)
   | { type: "retry" }
+  | { type: "voice"; mode: VoiceMode }
   | { type: "phone_line"; enabled: boolean }
   | { type: "cloned_voice"; enabled: boolean }
   | { type: "error"; message: string };
@@ -29,6 +34,7 @@ export type ClientMsg =
   | { type: "reply"; text: string }
   | { type: "new_call" }
   | { type: "end_call" }
+  | { type: "set_voice"; mode: VoiceMode }
   | { type: "set_phone_line"; enabled: boolean }
   | { type: "set_cloned_voice"; enabled: boolean };
 

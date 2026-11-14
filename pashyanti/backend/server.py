@@ -79,10 +79,24 @@ class Call:
         self.started_at = time.time()
         self.speaking = asyncio.Lock()
         self.mic: MicSession | None = None
+        self.voice_mode = tts.MODE_DEFAULT
 
     async def send(self, payload: dict):
         if not self.ws.closed:
             await self.ws.send_json(payload)
+
+    async def set_voice(self, mode: str):
+        """Switch this call's voice. Refuses the clone when none was loaded."""
+        mode = tts.MODE_CLONED if mode == tts.MODE_CLONED else tts.MODE_DEFAULT
+        if mode == tts.MODE_CLONED and not tts.has_clone():
+            await self.send({"type": "error",
+                             "message": "no cloned voice on this server"})
+            return
+        self.voice_mode = mode
+        await self.send({"type": "voice", "mode": mode})
+        # The demo toggle (#21) speaks the older shape; keep it in sync.
+        await self.send({"type": "cloned_voice",
+                         "enabled": mode == tts.MODE_CLONED})
 
     async def on_transcript(self, text, lang, latency_ms, audio_ms):
         if looks_unusable(text, audio_ms):
@@ -99,7 +113,7 @@ class Call:
             if self.mic:
                 self.mic.muted = True
             try:
-                ttfa, cached = await tts.speak(text)
+                ttfa, cached = await tts.speak(text, mode=self.voice_mode)
                 await self.send({"type": "speak", "text": text,
                                  "ttfa_ms": ttfa, "cached": cached})
             except Exception as exc:                     # noqa: BLE001
@@ -142,6 +156,8 @@ async def ws_handler(request: web.Request):
         "type": "hello",
         "models": {"stt": "prisma-v3.0", "tts": "timbre-v3.0"},
         "mic": probe.available(),
+        "voice": call.voice_mode,
+        "cloned_voice": call.voice_mode == tts.MODE_CLONED,
     })
     await call.start_mic()
 
@@ -157,6 +173,11 @@ async def ws_handler(request: web.Request):
                 asyncio.create_task(call.on_reply(data["text"].strip()))
             elif data.get("type") == "end_call":
                 await call.end_call()
+            elif data.get("type") == "set_voice":
+                await call.set_voice(str(data.get("mode") or tts.MODE_DEFAULT))
+            elif data.get("type") == "set_cloned_voice":
+                await call.set_voice(
+                    tts.MODE_CLONED if data.get("enabled") else tts.MODE_DEFAULT)
     finally:
         await call.close()
     return ws

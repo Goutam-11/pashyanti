@@ -50,7 +50,7 @@ class ServerIntegrationTest(unittest.IsolatedAsyncioTestCase):
         self.muted_during_speak: list[bool] = []
         outer = self
 
-        async def fake_speak(text):
+        async def fake_speak(text, **kwargs):
             outer.speaks.append(text)
             outer.muted_during_speak.append(FakeMic.instances[-1].muted)
             return 123, False
@@ -85,6 +85,8 @@ class ServerIntegrationTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(hello["models"],
                          {"stt": "prisma-v3.0", "tts": "timbre-v3.0"})
         self.assertTrue(hello["mic"])
+        self.assertEqual(hello["voice"], "default")
+        self.assertFalse(hello["cloned_voice"])
         await ws.close()
 
     async def test_reply_walks_the_status_cycle(self):
@@ -142,6 +144,54 @@ class ServerIntegrationTest(unittest.IsolatedAsyncioTestCase):
                 break
             await asyncio.sleep(0.01)
         self.assertTrue(FakeMic.instances[-1].stopped)
+
+    # --- voice ------------------------------------------------------------
+
+    async def test_set_voice_switches_this_calls_mode(self):
+        ws = await self.client.ws_connect("/ws")
+        await ws.receive_json()                      # hello
+
+        with patch.object(tts, "EMBEDDING", {"embedding": "stub"}):
+            await ws.send_json({"type": "set_voice", "mode": "cloned"})
+            self.assertEqual(await ws.receive_json(),
+                             {"type": "voice", "mode": "cloned"})
+            self.assertEqual(await ws.receive_json(),
+                             {"type": "cloned_voice", "enabled": True})
+
+            await ws.send_json({"type": "set_voice", "mode": "default"})
+            self.assertEqual(await ws.receive_json(),
+                             {"type": "voice", "mode": "default"})
+            self.assertEqual(await ws.receive_json(),
+                             {"type": "cloned_voice", "enabled": False})
+        await ws.close()
+
+    async def test_set_voice_without_an_embedding_is_refused(self):
+        ws = await self.client.ws_connect("/ws")
+        await ws.receive_json()
+
+        with patch.object(tts, "EMBEDDING", None):
+            await ws.send_json({"type": "set_voice", "mode": "cloned"})
+            error = await ws.receive_json()
+            self.assertEqual(error["type"], "error")
+            self.assertIn("cloned", error["message"])
+
+            # the call stays in the default voice
+            await ws.send_json({"type": "set_voice", "mode": "default"})
+            self.assertEqual(await ws.receive_json(),
+                             {"type": "voice", "mode": "default"})
+        await ws.close()
+
+    async def test_the_demo_toggle_alias_switches_the_voice(self):
+        ws = await self.client.ws_connect("/ws")
+        await ws.receive_json()
+
+        with patch.object(tts, "EMBEDDING", {"embedding": "stub"}):
+            await ws.send_json({"type": "set_cloned_voice", "enabled": True})
+            self.assertEqual(await ws.receive_json(),
+                             {"type": "voice", "mode": "cloned"})
+            self.assertEqual(await ws.receive_json(),
+                             {"type": "cloned_voice", "enabled": True})
+        await ws.close()
 
     # --- end of call ------------------------------------------------------
 
