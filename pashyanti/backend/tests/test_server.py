@@ -28,6 +28,7 @@ class FakeMic:
 
     def __init__(self, on_text, **kwargs):
         self.on_text = on_text
+        self.kwargs = kwargs
         self.muted = False
         self.started = False
         self.stopped = False
@@ -147,6 +148,24 @@ class ServerIntegrationTest(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(FakeMic.instances[-1].stopped)
 
     # --- voice ------------------------------------------------------------
+
+    async def test_set_phone_line_restarts_the_mic_and_answers(self):
+        ws = await self.client.ws_connect("/ws")
+        hello = await ws.receive_json()
+        self.assertFalse(hello["phone_line"])
+        self.assertFalse(FakeMic.instances[-1].kwargs.get("telephony", False))
+
+        await ws.send_json({"type": "set_phone_line", "enabled": True})
+        self.assertEqual(await ws.receive_json(),
+                         {"type": "phone_line", "enabled": True})
+        self.assertTrue(FakeMic.instances[-1].kwargs.get("telephony"))
+        self.assertTrue(FakeMic.instances[-2].stopped)
+
+        await ws.send_json({"type": "set_phone_line", "enabled": False})
+        self.assertEqual(await ws.receive_json(),
+                         {"type": "phone_line", "enabled": False})
+        self.assertFalse(FakeMic.instances[-1].kwargs.get("telephony"))
+        await ws.close()
 
     async def test_set_voice_switches_this_calls_mode(self):
         ws = await self.client.ws_connect("/ws")

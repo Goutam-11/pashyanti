@@ -79,6 +79,7 @@ One socket at `/ws`, JSON both ways. `web/src/types.ts` is the source of truth.
 | client | `reply` | speak this text down the line |
 | client | `set_voice` | switch this call between `default` and `cloned`; the server answers with `voice` |
 | client | `set_cloned_voice` | the demo toggle's older shape (#21); equivalent to `set_voice` |
+| client | `set_phone_line` | switch the mic's phone-line transform for this call; answers `phone_line` |
 | client | `end_call` | end the call; the server answers with `summary` |
 | client | `new_call` | reserved |
 
