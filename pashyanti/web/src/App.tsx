@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Mascot, type MascotState } from "./components/Mascot";
 import { Onboarding } from "./components/Onboarding";
+import { RetryNotice } from "./components/RetryNotice";
 import { SummaryCard } from "./components/SummaryCard";
 import { ThemeToggle } from "./components/ThemeToggle";
 import type { Line, ServerMsg, Summary } from "./types";
@@ -47,6 +48,7 @@ export default function App() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [ended, setEnded] = useState(false);
   const [summaryMissing, setSummaryMissing] = useState(false);
+  const [retry, setRetry] = useState(false);
   const [tour, setTour] = useState(
     () => new URLSearchParams(location.search).has("tour"),
   );
@@ -71,6 +73,7 @@ export default function App() {
           setState(m.state);
           break;
         case "transcript":
+          setRetry(false);
           setLines((prev) => [
             ...prev,
             {
@@ -88,7 +91,11 @@ export default function App() {
             { id: prev.length + 1, who: "me", text: m.text },
           ]);
           break;
+        case "retry":
+          setRetry(true);
+          break;
         case "summary":
+          setRetry(false);
           clearSummaryTimer();
           setSummary({
             who: m.who,
@@ -122,6 +129,7 @@ export default function App() {
     if (ended) return;
     send({ type: "end_call" });
     setEnded(true);
+    setRetry(false);
     setState("idle");
     setSummaryMissing(false);
     clearSummaryTimer();
@@ -138,6 +146,7 @@ export default function App() {
     setSummary(null);
     setEnded(false);
     setSummaryMissing(false);
+    setRetry(false);
     setDraft("");
     setState("idle");
   };
@@ -145,19 +154,26 @@ export default function App() {
   const empty = lines.length === 0 && !ended;
   const errored = state.startsWith("error");
   const noMic = mic === false;
-  const dotState = !connected || noMic || errored ? "error" : state;
+  const missed = retry && !ended;
+  const dotState = !connected || noMic || errored
+    ? "error"
+    : missed
+      ? "missed"
+      : state;
   const statusLabel = !connected
     ? "फिर जुड़ रहे हैं"
     : noMic
       ? "माइक नहीं"
       : errored
         ? "कुछ गड़बड़ है"
-        : (STATUS_LABEL[state] ?? "तैयार");
+        : missed
+          ? "समझ नहीं आया"
+          : (STATUS_LABEL[state] ?? "तैयार");
 
   return (
     <div className="mx-auto flex h-dvh w-full max-w-[430px] flex-col bg-paper text-ink">
       <header className="flex items-center gap-2.5 border-b border-line px-4 py-2">
-        <Mascot state={face(state)} size={30} />
+        <Mascot state={missed ? "unsure" : face(state)} size={30} />
         <div className="min-w-0 flex-1">
           <h1 className="wordmark" lang="hi">
             पश्यन्ती
@@ -201,19 +217,27 @@ export default function App() {
           </div>
         ) : empty ? (
           <div className="flex h-full flex-col items-center justify-center px-2 text-center">
-            <Mascot state={face(state)} size={112} />
-            <h2
-              className="mt-6 font-deva text-[26px] leading-[1.35] text-ink"
-              lang="hi"
-            >
-              सामने वाले की बात यहाँ पढ़िए
-            </h2>
-            <p
-              className="mt-3 max-w-[19rem] font-deva text-[18px] leading-relaxed text-muted"
-              lang="hi"
-            >
-              जवाब देने के लिए नीचे कोई चिप दबाइए या अपने शब्द लिखिए।
-            </p>
+            <Mascot state={missed ? "unsure" : face(state)} size={112} />
+            {missed ? (
+              <div className="mt-6 w-full">
+                <RetryNotice />
+              </div>
+            ) : (
+              <>
+                <h2
+                  className="mt-6 font-deva text-[26px] leading-[1.35] text-ink"
+                  lang="hi"
+                >
+                  सामने वाले की बात यहाँ पढ़िए
+                </h2>
+                <p
+                  className="mt-3 max-w-[19rem] font-deva text-[18px] leading-relaxed text-muted"
+                  lang="hi"
+                >
+                  जवाब देने के लिए नीचे कोई चिप दबाइए या अपने शब्द लिखिए।
+                </p>
+              </>
+            )}
           </div>
         ) : (
           <ul className="flex flex-col gap-2.5" aria-live="polite">
@@ -232,6 +256,11 @@ export default function App() {
                 )}
               </li>
             ))}
+            {missed && (
+              <li className="anim-in">
+                <RetryNotice />
+              </li>
+            )}
           </ul>
         )}
       </main>
