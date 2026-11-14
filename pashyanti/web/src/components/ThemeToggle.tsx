@@ -18,11 +18,18 @@ export function ThemeToggle() {
 
   return (
     <button
+      type="button"
       onClick={() => setDark(!dark)}
       aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}
-      className="grid h-8 w-8 place-items-center rounded-full border border-line text-muted hover:text-ink"
+      className="icon-btn"
     >
-      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" aria-hidden="true">
+      <svg
+        viewBox="0 0 24 24"
+        width="16"
+        height="16"
+        fill="none"
+        aria-hidden="true"
+      >
         {dark ? (
           <path
             d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"
@@ -32,7 +39,13 @@ export function ThemeToggle() {
           />
         ) : (
           <>
-            <circle cx="12" cy="12" r="4.2" stroke="currentColor" strokeWidth="1.8" />
+            <circle
+              cx="12"
+              cy="12"
+              r="4.2"
+              stroke="currentColor"
+              strokeWidth="1.8"
+            />
             <path
               d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"
               stroke="currentColor"

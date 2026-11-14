@@ -178,3 +178,40 @@ which matters for a product whose audience is not buying software.
 Accessibility floor is now a constraint, not a preference: body ≥ 18 px,
 contrast ≥ 7:1, tap targets ≥ 44 px, visible focus, `prefers-reduced-motion`
 respected. If a later screen fails those, the screen is wrong, not the rule.
+
+**Amended 2026-11-14 (`feat/web-identity`).** The palette and mascot below were
+replaced by D-011 after owner review; the light-default and accessibility rules
+stand unchanged. The original decision is kept as the record of why light was
+chosen.
+
+---
+
+## D-011 — Myna identity: a bird mark, one accent, state as geometry
+
+**Context.** The identity from D-010 (warm paper, teal, a line-drawn blob
+mascot) was reviewed by the owner and rejected as not looking professional. The
+blob also failed the 30 px header: its eye and inner ear collapsed into noise.
+The product's audience is Deaf and hard-of-hearing users and their families,
+not early adopters who forgive a toy aesthetic.
+
+**Decision.** Replace the identity with **Myna**: porcelain paper `#F4F6F9`,
+midnight ink `#0E1B2C`, one marigold signal `#E39A2B`; IBM Plex Sans with IBM
+Plex Sans Devanagari; a solid myna-head mark (round skull, long beak, amber
+cheek) shared by `public/icon.svg` and the mascot via `components/myna.ts`.
+State is geometry, not expression: a pulsing amber ring (listening), an open
+beak (speaking), a `?` badge (missed), stillness (idle). No body, no decorative
+bobbing. The mascot stays 30 px in the header and 96–112 px in the empty state
+and tour. The logo is the same head in an ink tile; the header lockup is the
+mascot plus the Devanagari wordmark.
+
+**Why.** A myna imitates human speech, which is the product's job in one
+animal, and its silhouette survives 30 px where a line drawing does not. A
+solid mark and a single warm accent read as an instrument rather than a toy;
+reserving the accent for audio moving (ring, beak, active state) makes colour
+carry meaning instead of decoration. Devanagari in the wordmark is the Indian
+cue; no mandala, lotus or rangoli ornament.
+
+**Consequence.** `public/icon.svg` and `components/myna.ts` must change
+together. Every colour still lives in `web/src/index.css`, so the palette moves
+by editing one block. Reintroducing a cartoon character re-opens the 30 px
+legibility problem, and the accent must stay scarce or the state signal dies.

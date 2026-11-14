@@ -4,53 +4,71 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * "Paper & Ink" — warm paper, near-black ink, one deep-teal accent.
+ * "Myna" — porcelain paper, midnight ink, one marigold signal.
  *
- * Chosen because the reader is often older and the demo is filmed vertically in
- * daylight: maximum contrast for Devanagari at display sizes, no gradients, no
- * decoration competing with the words. Every colour is a token so the whole
- * theme moves by editing this block.
+ * The product is a relay: someone else's speech becomes reading, your reply
+ * becomes speech. The palette stays quiet so the words are the loudest thing
+ * on screen, and the single warm accent is reserved for audio moving: the
+ * mascot's beak, the listening ring, the active switch. Clinical blue is the
+ * default of this category; marigold is warm without becoming decoration.
+ *
+ * Every colour is a token so the whole theme moves by editing this block.
+ * Contrast is measured, not eyeballed: ink 16:1, muted 7.2:1, accent text
+ * 7.9:1 on paper. See DECISIONS.md D-010 and D-011.
  */
 :root {
-  --paper: #faf7f2;
+  --paper: #f4f6f9;
   --surface: #ffffff;
-  --line: #e7e1d8;
-  --ink: #16130f;
-  --muted: #57504a;
-  --accent: #0f766e;
-  --accent-ink: #f0fdfa;
-  --accent-soft: #e3f0ee;
-  --warn: #b45309;
-  --warn-soft: #fdf3e3;
+  --surface-2: #ebeff5;
+  --line: #d7dee8;
+  --ink: #0e1b2c;
+  --muted: #46536a;
+  --accent: #e39a2b;
+  --accent-ink: #1a1206;
+  --accent-text: #6f4200;
+  --accent-soft: #fbf0dc;
+  --ok: #0f5f3a;
+  --warn: #8f1d15;
+  --warn-soft: #fbeae8;
+  --on-ink-muted: #c6d0e0;
 }
 
 .dark {
-  --paper: #121110;
-  --surface: #1b1917;
-  --line: #2c2925;
-  --ink: #f6f1e8;
-  --muted: #b8ad9f;
-  --accent: #2dd4bf;
-  --accent-ink: #06201d;
-  --accent-soft: #11312e;
-  --warn: #f5b544;
-  --warn-soft: #2a2113;
+  --paper: #0b1220;
+  --surface: #121c2e;
+  --surface-2: #1a2740;
+  --line: #2a3a55;
+  --ink: #f2f5f9;
+  --muted: #a9b6c9;
+  --accent: #f0b45a;
+  --accent-ink: #1a1206;
+  --accent-text: #f5c97e;
+  --accent-soft: #2a2113;
+  --ok: #68d8a8;
+  --warn: #ff9c96;
+  --warn-soft: #3a1d1b;
+  --on-ink-muted: #46536a;
 }
 
 @theme inline {
   --color-paper: var(--paper);
   --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
   --color-line: var(--line);
   --color-ink: var(--ink);
   --color-muted: var(--muted);
   --color-accent: var(--accent);
   --color-accent-ink: var(--accent-ink);
+  --color-accent-text: var(--accent-text);
   --color-accent-soft: var(--accent-soft);
+  --color-ok: var(--ok);
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
+  --color-on-ink-muted: var(--on-ink-muted);
 
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-deva: "Noto Sans Devanagari", "Inter", ui-sans-serif, sans-serif;
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-deva: "IBM Plex Sans Devanagari", "IBM Plex Sans", ui-sans-serif,
+    sans-serif;
 }
 
 @layer base {
@@ -63,7 +81,18 @@
   body {
     margin: 0;
     font-family: var(--font-sans);
+    font-size: 18px;
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: default;
+    opacity: 0.55;
   }
 
   ::selection {
@@ -72,37 +101,261 @@
 
   /* Visible focus for keyboard and switch users. */
   :focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 3px solid var(--accent-text);
     outline-offset: 2px;
     border-radius: 6px;
   }
 }
 
-/* Mascot motion. Small, slow, and switched off for reduced-motion users. */
-@keyframes bob {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-3px); }
+/*
+ * Semantic classes for shapes that appear three or more times. Layout stays in
+ * utilities on the JSX; anything that defines the look of a repeated object
+ * lives here, next to the tokens it reads.
+ */
+@layer components {
+  .wordmark {
+    font-family: var(--font-deva);
+    font-size: 19px;
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: 0.01em;
+    color: var(--ink);
+  }
+
+  .wordmark-latin {
+    font-family: var(--font-sans);
+    font-size: 9.5px;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .icon-btn {
+    display: inline-grid;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--muted);
+    transition:
+      color 120ms ease,
+      border-color 120ms ease,
+      transform 80ms ease;
+  }
+
+  .icon-btn:hover {
+    color: var(--ink);
+    border-color: var(--muted);
+  }
+
+  .icon-btn:active {
+    transform: scale(0.96);
+  }
+
+  .status-pill {
+    display: inline-flex;
+    height: 32px;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface);
+    padding: 0 10px;
+    font-size: 12.5px;
+    line-height: 1;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    flex: none;
+    border-radius: 999px;
+    background: var(--muted);
+  }
+
+  .status-dot[data-state="idle"] {
+    background: var(--ok);
+  }
+
+  .status-dot[data-state="listening"] {
+    background: var(--accent-text);
+  }
+
+  .status-dot[data-state="thinking"] {
+    background: var(--muted);
+  }
+
+  .status-dot[data-state="speaking"] {
+    background: var(--ink);
+  }
+
+  .status-dot[data-state="error"] {
+    background: var(--warn);
+  }
+
+  .bubble {
+    max-width: 92%;
+    border: 1px solid transparent;
+    border-radius: 18px;
+    padding: 12px 16px;
+    animation: fade-up 0.22s ease-out both;
+  }
+
+  .bubble-caller {
+    border-color: var(--line);
+    border-bottom-left-radius: 6px;
+    background: var(--surface);
+    color: var(--ink);
+  }
+
+  .bubble-me {
+    margin-left: auto;
+    border-bottom-right-radius: 6px;
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .bubble-text {
+    font-family: var(--font-deva);
+    font-size: 23px;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+  }
+
+  .bubble-meta {
+    display: block;
+    margin-top: 4px;
+    font-family: var(--font-sans);
+    font-size: 11.5px;
+    letter-spacing: 0.02em;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .bubble-me .bubble-meta {
+    color: var(--on-ink-muted);
+  }
+
+  .chip {
+    display: inline-flex;
+    min-height: 44px;
+    flex: none;
+    align-items: center;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface);
+    padding: 0 16px;
+    font-family: var(--font-deva);
+    font-size: 18px;
+    color: var(--ink);
+    white-space: nowrap;
+    transition:
+      border-color 120ms ease,
+      transform 80ms ease;
+  }
+
+  .chip:hover {
+    border-color: var(--muted);
+  }
+
+  .chip:active {
+    transform: scale(0.97);
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: var(--ink);
+    padding: 0 20px;
+    font-family: var(--font-deva);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--paper);
+    transition: transform 80ms ease;
+  }
+
+  .btn-primary:active {
+    transform: scale(0.97);
+  }
+
+  .composer-input {
+    min-height: 48px;
+    width: 100%;
+    min-width: 0;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    padding: 0 14px;
+    font-family: var(--font-deva);
+    font-size: 18px;
+    color: var(--ink);
+  }
+
+  .composer-input::placeholder {
+    color: var(--muted);
+  }
 }
-@keyframes ear-pulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.09); opacity: 0.85; }
+
+/* Motion is state, not decoration: nothing bobs when the app is idle. */
+@keyframes pulse-ring {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.95;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.35;
+  }
 }
-@keyframes mouth-talk {
-  from { transform: scaleY(0.35); }
-  to { transform: scaleY(1); }
+@keyframes talk {
+  from {
+    transform: scaleY(0.4);
+  }
+  to {
+    transform: scaleY(1);
+  }
 }
 @keyframes fade-up {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @layer utilities {
-  .anim-bob { animation: bob 3.4s ease-in-out infinite; }
-  .anim-ear { animation: ear-pulse 1.5s ease-in-out infinite; transform-origin: center; }
-  .anim-talk { animation: mouth-talk 0.28s ease-in-out infinite alternate; transform-origin: center; }
-  .anim-in { animation: fade-up 0.22s ease-out both; }
+  .anim-ear {
+    animation: pulse-ring 1.6s ease-in-out infinite;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  .anim-talk {
+    animation: talk 0.3s ease-in-out infinite alternate;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  .anim-in {
+    animation: fade-up 0.22s ease-out both;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .anim-bob, .anim-ear, .anim-talk, .anim-in { animation: none !important; }
+  .anim-ear,
+  .anim-talk,
+  .anim-in,
+  .bubble {
+    animation: none !important;
+  }
 }

@@ -1,16 +1,28 @@
 /**
- * Sakhi — the confidante.
+ * Sakhi — the state indicator, never decoration.
  *
- * In Indian poetics a *sakhi* is the friend who carries your words to the person
- * you cannot reach. That is this product.
+ * In Indian poetics a *sakhi* is the friend who carries your words to the
+ * person you cannot reach. Here she is a myna: the bird that imitates speech.
  *
- * Her ear doubles as an eye, because Pashyanti is the stage of speech that is
- * *seen* rather than heard.
+ * Four states, encoded by geometry:
+ *   idle      — still, closed beak
+ *   listening — an amber ring pulses around her
+ *   speaking  — the beak opens and one sound arc leaves it
+ *   unsure    — an amber ? badge, for "didn't catch that"
  *
- * Drawing notes: the ear is drawn first and its inner ends run *under* the head,
- * so the silhouette reads as one creature. Thick strokes so she survives 28 px
- * in the header. Four states, no mouth animation when silent.
+ * The mark is built from three filled shapes (skull, cheek, beak) so it still
+ * reads at 30 px in the header. Nothing bobs or blinks when idle, because the
+ * mascot is a state readout and motion is a state signal.
  */
+import {
+  MASCOT_LABEL,
+  MYNA_BEAK,
+  MYNA_BEAK_BOTTOM,
+  MYNA_BEAK_TOP,
+  MYNA_CHEEK,
+  MYNA_HEAD,
+} from "./myna";
+
 export type MascotState = "idle" | "listening" | "speaking" | "unsure";
 
 export function Mascot({
@@ -24,86 +36,65 @@ export function Mascot({
 }) {
   const listening = state === "listening";
   const speaking = state === "speaking";
-  // Below 44 px the inner-ear line and the eye read as smudges, not as detail.
-  const compact = size < 44;
-
+  const unsure = state === "unsure";
+  const detailed = size >= 44;
   return (
     <svg
-      viewBox="0 0 96 96"
+      viewBox="0 0 100 100"
       width={size}
       height={size}
       className={className}
       role="img"
-      aria-label={`Sakhi, ${state}`}
+      aria-label={`सखी, ${MASCOT_LABEL[state]}`}
     >
-      {/* ear — also the eye. Ends tucked under the head so it looks attached. */}
-      <g className={listening ? "anim-ear" : undefined}>
-        <path
-          d="M40 33C22 33 12 46 14 58c2 12 12 20 26 20 6 0 10-2 12-3V33Z"
-          fill="var(--color-accent)"
-          fillOpacity="0.22"
-          stroke="var(--color-ink)"
-          strokeWidth="3.4"
-          strokeLinejoin="round"
-        />
-        {!compact && (
-          <>
-            {/* inner ear line, so it reads as an ear and not a blob */}
-            <path
-              d="M40 44c-9 1-15 8-14 16"
-              fill="none"
-              stroke="var(--color-ink)"
-              strokeWidth="2.4"
-              strokeLinecap="round"
-              opacity="0.55"
-            />
-            {/* the eye inside the ear */}
-            <circle cx="26" cy="52" r="4" fill="var(--color-ink)" />
-          </>
-        )}
-      </g>
-
-      {/* head */}
-      <circle
-        cx="60"
-        cy="50"
-        r="24"
-        fill="var(--color-surface)"
-        stroke="var(--color-ink)"
-        strokeWidth="3.4"
-      />
-
-      {/* mouth */}
-      {speaking ? (
-        <ellipse
-          className="anim-talk"
-          cx="64"
-          cy="60"
-          rx="6"
-          ry="6.5"
-          fill="var(--color-accent)"
-        />
-      ) : (
-        <path
-          d="M56 59q8 6 16 0"
+      {listening && (
+        <circle
+          className="anim-ear"
+          cx="52"
+          cy="47"
+          r="42"
           fill="none"
-          stroke="var(--color-ink)"
-          strokeWidth="3.4"
-          strokeLinecap="round"
+          stroke="var(--color-accent-text)"
+          strokeWidth="3.2"
+          opacity="0.9"
         />
       )}
 
-      {state === "unsure" && (
-        <text
-          x="76"
-          y="28"
-          fontSize="21"
-          fontWeight="700"
-          fill="var(--color-warn)"
-          fontFamily="var(--font-sans)"
-        >
-          ?
-        </text>
+      <path d={MYNA_HEAD} fill="var(--color-ink)" />
+      <path d={MYNA_CHEEK} fill="var(--color-accent)" />
+      <circle cx="42.5" cy="38" r="4.2" fill="var(--color-paper)" />
+      {detailed && (
+        <circle cx="43.4" cy="37.1" r="1.7" fill="var(--color-ink)" />
+      )}
+
+      {speaking ? (
+        <>
+          <path d={MYNA_BEAK_TOP} fill="var(--color-accent)" />
+          <path
+            className="anim-talk"
+            d={MYNA_BEAK_BOTTOM}
+            fill="var(--color-accent)"
+          />
+        </>
+      ) : (
+        <path d={MYNA_BEAK} fill="var(--color-accent)" />
+      )}
+
+      {unsure && (
+        <g>
+          <circle cx="82" cy="22" r="12" fill="var(--color-accent)" />
+          <text
+            x="82"
+            y="28"
+            textAnchor="middle"
+            fontSize="16"
+            fontWeight="700"
+            fontFamily="var(--font-sans)"
+            fill="var(--color-accent-ink)"
+          >
+            ?
+          </text>
+        </g>
       )}
     </svg>
   );
