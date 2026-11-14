@@ -123,6 +123,9 @@ uv run python -c "import llm; print(llm.available())"   # True/False, never the 
 uv run python -m unittest tests.test_llm tests.test_chips
 ```
 
-The end-to-end runs used `.scratch/chips-ui.mjs` (a real server, one loopback
-wav, a headless Chrome) and `.scratch/talk-browser.mjs` (talk mode with a fake
-capture device); both are evidence harnesses, not product code.
+The end-to-end runs used a scratch Puppeteer harness (a real server, one wav
+through this machine's output monitor, headless Chrome) and
+[`../backend/talk_replay.py`](../backend/talk_replay.py) for the talk-mode audio
+path. The chip and card calls themselves are exercised by
+`tests.test_llm` without the network; the browser harness is not committed,
+because Puppeteer is not a project dependency.
