@@ -14,6 +14,7 @@ import time
 import numpy as np
 import requests
 
+import gnani
 from gnani import BASE, HDR
 
 # sounddevice initialises PortAudio the moment it is imported, and raises if the
@@ -21,13 +22,37 @@ from gnani import BASE, HDR
 # and report mic: false instead of dying at import time.
 
 CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache", "tts")
+EMBEDDING_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                              "embedding.json")
 VOICE = "Shivani"
 MODEL = "timbre-v3.0"
+MODEL_CLONE = "vachana-vc-v1"
 RATE = 16000
 
+MODE_DEFAULT = "default"
+MODE_CLONED = "cloned"
 
-def _key(text, voice, model, rate):
-    h = hashlib.sha1(f"{text}|{voice}|{model}|{rate}".encode()).hexdigest()[:16]
+
+def _load_embedding(path=EMBEDDING_PATH):
+    """The cloned-voice embedding, or None when the file is absent or broken."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f).get("speaker_embedding")
+    except (OSError, ValueError):
+        return None
+
+
+EMBEDDING = _load_embedding()
+
+
+def has_clone():
+    return EMBEDDING is not None
+
+
+def _key(text, voice, model, rate, mode=MODE_DEFAULT):
+    h = hashlib.sha1(
+        f"{text}|{voice}|{model}|{rate}|{mode}".encode()
+    ).hexdigest()[:16]
     return os.path.join(CACHE_DIR, f"{h}.pcm")
 
 
@@ -68,12 +93,12 @@ def _sse_stream(text, voice, model, rate):
                 break
 
 
-def _play_and_cache(text, voice, model, rate):
+def _play_and_cache(text, voice, model, rate, mode=MODE_DEFAULT):
     """Blocking: stream to the speaker and accumulate to the cache. -> ms to first audio."""
     import sounddevice as sd
 
     os.makedirs(CACHE_DIR, exist_ok=True)
-    path = _key(text, voice, model, rate)
+    path = _key(text, voice, model, rate, mode)
     t0 = time.time()
     first = None
     pcm = bytearray()
@@ -91,6 +116,32 @@ def _play_and_cache(text, voice, model, rate):
     return int(first or 0), path
 
 
+def _wav_pcm(path):
+    import wave
+
+    with wave.open(path) as w:
+        return w.readframes(w.getnframes())
+
+
+def _play_and_cache_cloned(text):
+    """Blocking: clone endpoint (non-streaming) -> pcm cache -> speaker. -> ms."""
+    import sounddevice as sd
+
+    os.makedirs(CACHE_DIR, exist_ok=True)
+    path = _key(text, MODE_CLONED, MODEL_CLONE, RATE, MODE_CLONED)
+    t0 = time.time()
+    tmp = f"{path}.wav"
+    gnani.tts_cloned(text, EMBEDDING, out=tmp, rate=RATE)
+    pcm = _wav_pcm(tmp)
+    os.remove(tmp)
+    ttfa = int((time.time() - t0) * 1000)
+    with open(path, "wb") as f:
+        f.write(pcm)
+    sd.play(np.frombuffer(pcm, dtype=np.int16), RATE)
+    sd.wait()
+    return ttfa
+
+
 def _play_cached(path, rate):
     import sounddevice as sd
 
@@ -99,9 +150,24 @@ def _play_cached(path, rate):
     sd.wait()
 
 
-async def speak(text, voice=VOICE, model=MODEL, rate=RATE):
-    """Say `text` out loud. Returns (ttfa_ms, cached)."""
-    path = _key(text, voice, model, rate)
+async def speak(text, voice=VOICE, model=MODEL, rate=RATE,
+                mode=MODE_DEFAULT):
+    """Say `text` out loud. Returns (ttfa_ms, cached).
+
+    `mode` is "cloned" only when an embedding was loaded; asking for the cloned
+    voice without one falls back to the default voice instead of failing.
+    """
+    effective = MODE_CLONED if mode == MODE_CLONED and has_clone() else MODE_DEFAULT
+
+    if effective == MODE_CLONED:
+        path = _key(text, MODE_CLONED, MODEL_CLONE, rate, MODE_CLONED)
+        if os.path.exists(path):
+            await asyncio.to_thread(_play_cached, path, rate)
+            return 0, True
+        ttfa = await asyncio.to_thread(_play_and_cache_cloned, text)
+        return ttfa, False
+
+    path = _key(text, voice, model, rate, MODE_DEFAULT)
     if os.path.exists(path):
         await asyncio.to_thread(_play_cached, path, rate)
         return 0, True

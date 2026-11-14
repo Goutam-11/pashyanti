@@ -68,14 +68,17 @@ One socket at `/ws`, JSON both ways. `web/src/types.ts` is the source of truth.
 
 | Direction | Message | Meaning |
 |---|---|---|
-| server | `hello` | model names + whether a microphone exists |
+| server | `hello` | model names, microphone availability, and the starting voice mode |
 | server | `transcript` | one final caller sentence, with language and latency |
 | server | `retry` | a segment was too short or too noisy to trust; the caller is asked to repeat |
 | server | `status` | `idle │ listening │ thinking │ speaking` |
 | server | `speak` | a reply finished, with `ttfa_ms` and `cached` |
+| server | `voice` | this call switched to `default` or `cloned` |
 | server | `summary` | end-of-call artefact: who called, what was agreed, what happens next; also written to `cache/summary.json` |
 | server | `error` | human-readable failure, shown in a pill |
 | client | `reply` | speak this text down the line |
+| client | `set_voice` | switch this call between `default` and `cloned`; the server answers with `voice` |
+| client | `set_cloned_voice` | the demo toggle's older shape (#21); equivalent to `set_voice` |
 | client | `end_call` | end the call; the server answers with `summary` |
 | client | `new_call` | reserved |
 
