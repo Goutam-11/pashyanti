@@ -58,5 +58,31 @@ class CerTest(unittest.TestCase):
         self.assertLess(wer.cer(ref, hyp), wer.wer(ref, hyp))
 
 
+class BengaliMetricTest(unittest.TestCase):
+    """D-015: Bengali is reported unfolded until a native speaker checks it.
+
+    These tests pin a decision, not a bug. If Bengali folding is added, it is a
+    language decision: change these tests and D-015 in the same PR, and re-run
+    the sweep so the published number moves with the metric.
+    """
+
+    def test_bengali_nukta_is_not_folded(self):
+        # ড় and ড are distinct letters in Bengali; D-007's nukta fold is
+        # Devanagari-only until #12 is settled.
+        self.assertNotEqual(wer.normalize("ড়"), wer.normalize("ড"))
+
+    def test_bengali_chandrabindu_is_not_folded(self):
+        self.assertNotEqual(wer.normalize("পাঁচ"), wer.normalize("পাঁচং"))
+
+    def test_devanagari_fold_is_script_specific(self):
+        # The fold still holds where it was decided...
+        self.assertEqual(wer.normalize("ज़"), wer.normalize("ज"))
+        self.assertEqual(wer.normalize("हँस"), wer.normalize("हंस"))
+
+    def test_bengali_spelling_variant_scores_as_an_error(self):
+        # The consequence, pinned: পাঁচশো / পাঁচশ costs word accuracy today.
+        self.assertGreater(wer.wer("পাঁচশো টাকা", "পাঁচশ টাকা"), 0.0)
+
+
 if __name__ == "__main__":
     unittest.main()
