@@ -216,6 +216,11 @@ together. Every colour still lives in `web/src/index.css`, so the palette moves
 by editing one block. Reintroducing a cartoon character re-opens the 30 px
 legibility problem, and the accent must stay scarce or the state signal dies.
 
+**Amended 2026-11-14 (`feat/peacock-identity`).** The owner supplied a peacock
+reference and asked for the mascot to be exact. D-013 replaces the myna and the
+navy/marigold tokens with a traced peacock and cream/pine/clay. The state
+principle — geometry, no decorative motion — still stands.
+
 ---
 
 ## D-012 — UI locales are client-side; English is the default
@@ -231,8 +236,10 @@ independently of the UI.
 `web/src/i18n/` (`en`, `hi`, `bn`, `mr`), expose them through a small React
 context, and put a 44 px globe picker in the header. English is the default;
 `?lang=` overrides the saved choice; the choice persists in `localStorage`.
-No dependency, no routing, no SSR. The font stack adds Noto Sans Bengali and
-keeps IBM Plex for Latin/Devanagari.
+No dependency, no routing, no SSR. The type is the font-curator's verified
+four-family pairing: Fraunces for display, Karla for Latin UI, Mukta for
+Devanagari and Noto Sans Bengali. Karla and Mukta x-heights are within 2%, so
+an English and a Hindi line at the same px sit level.
 
 **Why.** A Deaf or speech-impaired reader should see the controls in the
 language they think in, but the product must still be usable on first open
@@ -247,3 +254,40 @@ new script; another script adds its Noto face. The UI language is **not** the
 call language: it never changes recognition, and it does not yet change the
 voice — TTS remains Hindi; a per-call voice language is a backend follow-up,
 not something #5/#6 provide.
+
+---
+
+## D-013 — Peacock identity: trace the reference, cream/pine, serif display
+
+**Context.** The owner rejected the myna as not close enough and supplied a
+reference icon: a cream tile with a pine-green peacock head, five-feather crest,
+ringed eye, small beak and three sound arcs, soft-embossed. They asked for the
+mascot to be "more similar or exact", a similar theme, and better fonts. The
+supplied Gemini key authenticates but **image generation is quota-blocked**:
+every image model returns HTTP 429 with a per-model free-tier limit of 0, so no
+generated PNG exists or is used.
+
+**Decision.** Trace the reference's green silhouette into vector paths — head,
+neck, shoulder, crest, pupil, nostril, beak and three arcs — with a 4-unit
+margin that survives 30 px. The beak is separate; speaking cuts a transparent
+gape through it. The unsure state replaces the arcs with a green ? disc. The
+palette is cream `#F2EADB`, pine `#255035`, clay `#7A2F16` for warnings, sage
+`#8FC7A3` in dark. Type is Fraunces (display), Karla (Latin UI), Mukta
+(Devanagari), Noto Sans Bengali — the font-curator's four-family recommendation,
+with Karla/Mukta x-heights within 2%.
+
+**Why.** A trace is the only way to be exact; a generated raster cannot be a
+30 px state indicator and cannot be recoloured by tokens. The flat trace loses
+the tile's emboss but keeps every contour; the uneasy edge cases (open beak, ?
+disc) are designed because the reference has no states. Fraunces gives the
+English brand an editorial note; Karla/Mukta keep a Hindi and an English line at
+the same optical size; Mukta supplies full conjuncts at 18 px. The cream/pine
+palette matches the reference and keeps the measured contrast floor.
+
+**Consequence.** `components/peacock.ts` holds the traced paths and is the source
+of truth; `public/icon.svg` is the same mark on a cream tile. The arcs are part
+of the mark at rest; their pulse is the listening state, so do not animate them
+decoratively. The ? disc is green (state), while the retry notice and the
+"missed" status dot use clay (warning). Re-tracing is required if the owner
+changes the reference; the brand sheet records the current reference next to the
+vector.
