@@ -1,4 +1,4 @@
-import type { MascotState } from "../components/myna";
+import type { MascotState } from "../components/peacock";
 
 /**
  * Every user-facing string in the app. One file per locale must implement this
