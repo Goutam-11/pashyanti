@@ -692,6 +692,7 @@
       const colours = paletteColors(id);
       const button = el("button", "swatch");
       button.type = "button";
+      button.dataset.palette = id;
       button.setAttribute("aria-pressed", String(state.palette === id));
       button.title = label + " palette";
       button.style.setProperty("--field", colours.field);
@@ -837,9 +838,8 @@
     updateFooter();
     drawAllMascots();
     drawBgPeacock();
-    requestAnimationFrame(() => {
-      applyStairs();
-    });
+    applyStairs();
+    requestAnimationFrame(applyStairs);
   }
 
   /* ---------------------------------------------------------------------
