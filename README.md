@@ -129,8 +129,10 @@ The app icon is the same bird in an ink tile.
 
 Hackathon build — *The Great Indian AI Internship Challenge*, November 2026.
 Working: live transcription, spoken replies, voice cloning, phone-line accuracy
-measurement, installable frontend. In progress: the summary card and the Twilio
-Media Streams bridge.
+measurement, installable frontend. The web app also ships the end-of-call
+summary card, the repeat notice and the two demo switches; their backend halves
+(#3–#6) are still open, so those three are not live end to end yet. In
+progress: the Twilio Media Streams bridge.
 
 ## License
 
