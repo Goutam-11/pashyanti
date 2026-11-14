@@ -18,7 +18,10 @@ Pashyanti opens the door from both sides.
 | **Suniye** *(listen)* | People who can't hear | The other person's speech appears as large live text on screen. The user taps or types a reply, and it is spoken back down the line. |
 | **Boliye** *(speak)* | People who can't speak | The user taps or types; a natural Indian voice speaks for them — optionally in **their own cloned voice**, from 20 seconds of reference audio. |
 
-Every call ends in a **summary card**: who called, what was agreed, what happens next.
+Every call ends in a **summary card**: who called, what was agreed, what happens
+next. The card is computed from the transcript and appears instantly; a model
+then rewrites those three lines from the same text, in the interface language,
+about two seconds later — the first card is the fallback.
 
 ## Why the name
 

@@ -8,7 +8,7 @@ from copy import deepcopy
 
 os.environ.setdefault("GNANI_API_KEY", "test-key-not-used")
 
-from server import build_summary  # noqa: E402
+from server import build_summary, merge_summary  # noqa: E402
 
 
 def caller(text):
@@ -70,6 +70,37 @@ class BuildSummaryTest(unittest.TestCase):
 
     def test_duration_never_goes_negative(self):
         self.assertEqual(build_summary([], 50.0, 10.0)["duration_s"], 0)
+
+
+class MergeSummaryTest(unittest.TestCase):
+    """The model improves the card; it can never blank a field or invent one."""
+
+    BASE = {"who": "first caller line", "agreed": "last caller line",
+            "next": "last reply", "turns": 2, "duration_s": 7}
+
+    def test_non_empty_model_fields_win(self):
+        merged = merge_summary(self.BASE, {
+            "who": "Dr. Mehra's clinic",
+            "agreed": "10 a.m. tomorrow",
+            "next": "she will come",
+        })
+        self.assertEqual(merged["who"], "Dr. Mehra's clinic")
+        self.assertEqual(merged["agreed"], "10 a.m. tomorrow")
+        self.assertEqual(merged["next"], "she will come")
+        self.assertEqual((merged["turns"], merged["duration_s"]), (2, 7))
+
+    def test_blank_fields_keep_the_extractive_value(self):
+        merged = merge_summary(self.BASE, {"who": "", "agreed": "  ",
+                                           "next": None})
+        self.assertEqual(merged, self.BASE)
+
+    def test_no_model_answer_is_the_base_card(self):
+        self.assertEqual(merge_summary(self.BASE, None), self.BASE)
+
+    def test_the_merge_does_not_mutate_the_base(self):
+        base = deepcopy(self.BASE)
+        merge_summary(base, {"who": "someone else"})
+        self.assertEqual(base, self.BASE)
 
 
 if __name__ == "__main__":

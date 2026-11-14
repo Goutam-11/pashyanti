@@ -93,14 +93,19 @@ def _post(messages, max_tokens=200):
         return None
 
 
+def _unfenced(text: str) -> str:
+    body = (text or "").strip()
+    if body.startswith("```"):
+        body = re.sub(r"^```[a-zA-Z]*\s*", "", body)
+        body = re.sub(r"\s*```$", "", body)
+    return body
+
+
 def _json(text: str):
     """A JSON value from a bare or ```fenced``` answer, or None."""
     if not text:
         return None
-    body = text.strip()
-    if body.startswith("```"):
-        body = re.sub(r"^```[a-zA-Z]*\s*", "", body)
-        body = re.sub(r"\s*```$", "", body)
+    body = _unfenced(text)
     try:
         return json.loads(body)
     except json.JSONDecodeError:
@@ -112,6 +117,63 @@ def _json(text: str):
         except json.JSONDecodeError:
             return None
     return None
+
+
+def _json_object(text: str):
+    """An object from a bare or ```fenced``` answer, or None."""
+    if not text:
+        return None
+    body = _unfenced(text)
+    try:
+        value = json.loads(body)
+    except json.JSONDecodeError:
+        start, end = body.find("{"), body.rfind("}")
+        if start < 0 or end <= start:
+            return None
+        try:
+            value = json.loads(body[start:end + 1])
+        except json.JSONDecodeError:
+            return None
+    return value if isinstance(value, dict) else None
+
+
+def summary(lines, lang: str = "en") -> dict | None:
+    """{who, agreed, next} for the end-of-call card, or None.
+
+    The card is for the **user**, so `lang` is the UI locale, not the caller's
+    language. Empty strings are left to the caller: `Call.end_call` keeps the
+    extractive value instead of blanking a field the model could not fill.
+    """
+    transcript = "\n".join(
+        f"{'caller' if ln.get('who') == 'caller' else 'user'}: {ln.get('text', '')}"
+        for ln in lines
+    ).strip()
+    if not transcript:
+        return None
+    language = _LANGUAGES.get(
+        (lang or "en").split("-")[0].lower(), "English")
+    system = (
+        "You summarise a conversation between a user who is Deaf or cannot "
+        "speak and another person in the same room. Return ONLY a compact JSON "
+        "object with exactly three string fields: \"who\" (who is speaking, at "
+        "most 60 characters), \"agreed\" (what was agreed, at most 90), and "
+        "\"next\" (what happens next, at most 90). Use only facts present in the "
+        "transcript; never invent names, times, amounts or promises. If a field "
+        f"is not in the transcript, use an empty string. Write in {language}."
+    )
+    data = _json_object(_post([
+        {"role": "system", "content": system},
+        {"role": "user", "content": f"Transcript:\n{transcript}"},
+    ], max_tokens=300) or "")
+    if data is None:
+        return None
+    out = {}
+    for key, limit in (("who", 60), ("agreed", 90), ("next", 90)):
+        value = data.get(key)
+        if not isinstance(value, str):
+            return None
+        out[key] = " ".join(value.split())[:limit]
+    return out
 
 
 def direct_reply(line: str, lang: str | None, context=()) -> str | None:
