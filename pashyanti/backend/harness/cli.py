@@ -1,9 +1,13 @@
 """Measure what a phone line costs in accuracy.
 
-    uv run python -m harness.cli                 # 8 clips, 10/5/0 dB SNR sweep
+    uv run python -m harness.cli                 # 8 Hindi clips, 10/5/0 dB sweep
     uv run python -m harness.cli -n 10
-    uv run python -m harness.cli --levels 15,5
+    uv run python -m harness.cli --lang bn-IN --levels 10
     uv run python -m harness.cli --rebuild       # ignore caches
+
+`--lang` selects the reference corpus. Hindi keeps `harness_report.json` and
+`harness_report.md`; every other language writes `harness_report_<lang>.*`, so
+the two measurements never overwrite each other.
 
 For each clip: transcribe clean 16 kHz, then degrade to 8 kHz µ-law at each
 noise level and transcribe again. Everything is compared to the known reference
@@ -78,7 +82,8 @@ def phone_line(clean_path: str, snr: float | None, seed: int):
 
 def run(n: int, levels=DEFAULT_LEVELS, lang: str = "hi-IN",
         rebuild: bool = False) -> dict:
-    pairs = corpus.ensure(corpus.REFERENCE_TEXTS[:n])
+    entry = corpus.get(lang)
+    pairs = corpus.ensure(entry["texts"][:n], voice=entry["voice"], lang=lang)
     rows = []
     for i, (clean_path, text) in enumerate(pairs, 1):
         row = {"i": i, "text": text, "levels": {}}
@@ -113,13 +118,28 @@ def label(snr: float | None) -> str:
     return "clean" if snr is None else f"{snr:g}dB"
 
 
-def report(result: dict, path: str = "harness_report.md") -> str:
+def report_paths(lang: str) -> tuple[str, str]:
+    """(json, markdown) report paths. Hindi keeps the original names."""
+    suffix = "" if lang == "hi-IN" else f"_{lang}"
+    return f"harness_report{suffix}.json", f"harness_report{suffix}.md"
+
+
+def report(result: dict, path: str = "harness_report.md",
+           entry: dict | None = None) -> str:
     head = [
         "# Phone-line accuracy — Prisma v3.0",
         "",
         f"{result['clips']} clips · language `{result['lang']}` · "
         "clean studio audio degraded to 8 kHz G.711 µ-law + noise",
         "",
+    ]
+    if entry is not None and corpus.is_provisional(entry):
+        head += [
+            "The reference sentences are assistant-authored and await a "
+            "native-speaker check, so this number is provisional.",
+            "",
+        ]
+    head += [
         "| audio | WER | CER |",
         "|---|---|---|",
     ]
@@ -150,17 +170,22 @@ def main():
     args = ap.parse_args()
 
     levels = tuple(float(x) for x in args.levels.split(","))
-    print(f"harness: {args.n} clips, levels {levels} dB SNR, lang={args.lang}")
+    try:
+        entry = corpus.get(args.lang)
+    except ValueError as exc:
+        ap.error(str(exc))
+    n = min(args.n, len(entry["texts"]))
+    print(f"harness: {n} clips, levels {levels} dB SNR, lang={args.lang}")
 
-    result = run(min(args.n, len(corpus.REFERENCE_TEXTS)), levels,
-                 args.lang, args.rebuild)
+    result = run(n, levels, args.lang, args.rebuild)
     for s in result["summary"]:
         print(f"  {s['level']:>7s}  WER {s['wer']:6.1%}   CER {s['cer']:6.1%}")
 
-    with open("harness_report.json", "w") as f:
+    json_path, md_path = report_paths(args.lang)
+    with open(json_path, "w") as f:
         json.dump(result, f, ensure_ascii=False, indent=2)
-    report(result)
-    print("wrote harness_report.md and harness_report.json")
+    report(result, md_path, entry)
+    print(f"wrote {md_path} and {json_path}")
 
 
 if __name__ == "__main__":
