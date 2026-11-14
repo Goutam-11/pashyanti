@@ -215,3 +215,34 @@ cue; no mandala, lotus or rangoli ornament.
 together. Every colour still lives in `web/src/index.css`, so the palette moves
 by editing one block. Reintroducing a cartoon character re-opens the 30 px
 legibility problem, and the accent must stay scarce or the state signal dies.
+
+---
+
+## D-012 — UI locales are client-side; English is the default
+
+**Context.** The interface copy was hard-coded Hindi, including the chips, tour,
+summary labels and error states. The owner asked for English as the preferred
+language, plus other languages. Recognition was never the gap: `stt.py` asks
+Prisma v3.0 for `indic-auto` (nine Indic languages + English) and records the
+detected language per line, so the caller's language already varies
+independently of the UI.
+
+**Decision.** Keep every user-facing string in typed dictionaries under
+`web/src/i18n/` (`en`, `hi`, `bn`, `mr`), expose them through a small React
+context, and put a 44 px globe picker in the header. English is the default;
+`?lang=` overrides the saved choice; the choice persists in `localStorage`.
+No dependency, no routing, no SSR. The font stack adds Noto Sans Bengali and
+keeps IBM Plex for Latin/Devanagari.
+
+**Why.** A Deaf or speech-impaired reader should see the controls in the
+language they think in, but the product must still be usable on first open
+without a settings detour — hence English default plus a persistent picker.
+Four locales cover a large share of the audience and two scripts; Tamil,
+Telugu, Kannada, Malayalam, Gujarati, Punjabi, Odia and Urdu are one dictionary
+file, one registry line, and a font entry if the script is new — not a refactor.
+
+**Consequence.** Every new string must be added to all four dictionaries; a
+missing key is a type error. The font stack includes Noto Sans Bengali for the
+new script; another script adds its Noto face. The UI language is **not** the
+call language: it never changes recognition, and it does not yet change the
+voice — TTS remains Hindi until #5/#6 expose a language choice.

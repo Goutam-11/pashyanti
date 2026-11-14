@@ -45,7 +45,8 @@ pashyanti/
     src/ws.ts              one socket, reconnect
     src/types.ts           the five message shapes
     src/components/        Mascot (Sakhi, a myna), Onboarding, ThemeToggle
-    src/components/myna.ts shared mark paths + state labels (mascot, icon)
+    src/components/myna.ts shared mark paths (mascot, icon)
+    src/i18n/              typed copy for en, hi, bn, mr + the locale context
     src/index.css          every colour as a CSS variable, light + dark
     public/                PWA manifest and icon
   docs/                    architecture, API notes, decisions
@@ -152,6 +153,11 @@ files.
 - **Still banned:** a component library (shadcn, MUI, Radix themes) or SSR. This
   is a two-screen SPA behind one socket. Tailwind earns its place because it is
   utilities plus a build step, not a component set — see D-009.
+- **Copy is data, not JSX.** Every user-facing string lives in
+  `web/src/i18n/<locale>.ts` behind the `Messages` type; add a string to all
+  four locales or TypeScript fails. English is the default. The UI locale never
+  changes the call language: recognition is `indic-auto`, and TTS is still
+  Hindi until the backend exposes a language choice — see D-012.
 - **UI rules that are product rules.** The mascot *is* the state indicator
   (amber ring pulses = listening, beak opens = speaking, `?` = didn't catch it,
   still = idle) — never animate it decoratively. The onboarding tour opens only

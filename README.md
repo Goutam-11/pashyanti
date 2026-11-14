@@ -108,13 +108,19 @@ and it runs fullscreen like an app.
 
 | | |
 |---|---|
-| ![Light theme — the empty state, mascot and one instruction line](pashyanti/docs/screenshots/app-light.png) | ![Dark theme](pashyanti/docs/screenshots/app-dark.png) |
-| ![The three-step tour, behind the ? button](pashyanti/docs/screenshots/tour.png) | |
+| ![English is the default — empty state, mascot and controls](pashyanti/docs/screenshots/app-light.png) | ![Dark theme](pashyanti/docs/screenshots/app-dark.png) |
+| ![Language picker: English, हिंदी, বাংলা, मराठी](pashyanti/docs/screenshots/languages.png) | ![The three-step tour, behind the ? button](pashyanti/docs/screenshots/tour.png) |
 
 Myna, light by default: porcelain paper, midnight ink, one marigold signal.
 The mascot — Sakhi, a myna — is the state indicator: an amber ring pulses while
 listening, her beak opens while speaking, a `?` badge when the words were missed.
 The app icon is the same bird in an ink tile.
+
+The interface ships in **English (default), हिंदी, বাংলা and मराठी**, with a
+globe picker in the header. The recogniser is already multilingual
+(`indic-auto`: nine Indic languages + English), so the caller's language does
+not depend on the UI language. Spoken replies are still Hindi until the backend
+half exposes a voice language.
 
 ## Documentation
 
@@ -129,10 +135,11 @@ The app icon is the same bird in an ink tile.
 
 Hackathon build — *The Great Indian AI Internship Challenge*, November 2026.
 Working: live transcription, spoken replies, voice cloning, phone-line accuracy
-measurement, installable frontend. The web app also ships the end-of-call
-summary card, the repeat notice and the two demo switches; their backend halves
-(#3–#6) are still open, so those three are not live end to end yet. In
-progress: the Twilio Media Streams bridge.
+measurement, installable frontend, and an interface in English, Hindi, Bengali
+and Marathi. The web app also ships the end-of-call summary card, the repeat
+notice and the two demo switches; their backend halves (#3–#6) are still open,
+so those three are not live end to end yet. In progress: the Twilio Media
+Streams bridge.
 
 ## License
 

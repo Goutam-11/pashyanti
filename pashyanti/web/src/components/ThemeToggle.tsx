@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
+import { useI18n } from "../i18n";
 
 const KEY = "pashyanti.theme";
 
 /** Light is the default: this is a reading app for older eyes, in daylight. */
 export function ThemeToggle() {
+  const { m } = useI18n();
   const [dark, setDark] = useState(() => {
     const forced = new URLSearchParams(location.search).get("theme");
     if (forced === "dark") return true;
@@ -20,7 +22,7 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={() => setDark(!dark)}
-      aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}
+      aria-label={dark ? m.header.themeLight : m.header.themeDark}
       className="icon-btn"
     >
       <svg

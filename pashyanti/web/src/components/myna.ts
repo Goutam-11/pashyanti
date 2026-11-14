@@ -8,7 +8,8 @@
  * The mark stays a solid silhouette; state is carried by geometry, never by a
  * new facial expression. See DECISIONS.md D-011.
  */
-import type { MascotState } from "./Mascot";
+/** The four states Sakhi can show. Geometry, not expression. */
+export type MascotState = "idle" | "listening" | "speaking" | "unsure";
 
 /** Skull and closed beak in one silhouette, drawn on a 100×100 grid. */
 export const MYNA_HEAD =
@@ -24,11 +25,3 @@ export const MYNA_BEAK_BOTTOM = "M68 52 85 57 68 60Z";
 /** The myna's amber cheek patch, the one warm note in the mark. */
 export const MYNA_CHEEK =
   "M51 34C57 34 60 40 58 45 54 42 50 40 47 40 47 37 49 34 51 34Z";
-
-/** Screen-reader text for each state; the pill shows the same word. */
-export const MASCOT_LABEL: Record<MascotState, string> = {
-  idle: "शांत",
-  listening: "सुन रही है",
-  speaking: "बोल रही है",
-  unsure: "समझ नहीं आया",
-};

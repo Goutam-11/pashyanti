@@ -4,31 +4,21 @@
  * The call ends on an artefact, not a chat bubble: `end_call` asks the backend
  * for `summary` (#4), and the card replaces the transcript. `new_call` clears
  * everything and hands the screen back to the empty state.
+ *
+ * All chrome comes from the active locale (i18n/); the caller's own words are
+ * rendered in the language the recogniser reported for that line.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DemoToggles } from "./components/DemoToggles";
+import { LanguageMenu } from "./components/LanguageMenu";
 import { Mascot, type MascotState } from "./components/Mascot";
 import { Onboarding } from "./components/Onboarding";
 import { RetryNotice } from "./components/RetryNotice";
 import { SummaryCard } from "./components/SummaryCard";
 import { ThemeToggle } from "./components/ThemeToggle";
+import { useI18n } from "./i18n";
 import type { Line, ServerMsg, Summary } from "./types";
 import { useSocket } from "./ws";
-
-const CHIPS = [
-  "हाँ, बोलिए।",
-  "थोड़ा धीरे बोलिए।",
-  "मैं समझ गया।",
-  "कृपया दोहराइए।",
-  "एक मिनट रुकिए।",
-];
-
-const STATUS_LABEL: Record<string, string> = {
-  idle: "तैयार",
-  listening: "सुन रहे हैं",
-  thinking: "सोच रहे हैं",
-  speaking: "बोल रहे हैं",
-};
 
 /** Server state → mascot face. The mascot is the state indicator, not decoration. */
 function face(state: string): MascotState {
@@ -42,6 +32,7 @@ function face(state: string): MascotState {
 const SUMMARY_WAIT_MS = 3000;
 
 export default function App() {
+  const { m } = useI18n();
   const [lines, setLines] = useState<Line[]>([]);
   const [state, setState] = useState<string>("idle");
   const [mic, setMic] = useState<boolean | null>(null);
@@ -67,21 +58,22 @@ export default function App() {
   useEffect(() => clearSummaryTimer, [clearSummaryTimer]);
 
   const onMsg = useCallback(
-    (m: ServerMsg) => {
-      switch (m.type) {
+    (msg: ServerMsg) => {
+      switch (msg.type) {
         case "hello":
-          setMic(m.mic);
-          if (typeof m.phone_line === "boolean") setPhoneLine(m.phone_line);
-          if (typeof m.cloned_voice === "boolean") setClonedVoice(m.cloned_voice);
+          setMic(msg.mic);
+          if (typeof msg.phone_line === "boolean") setPhoneLine(msg.phone_line);
+          if (typeof msg.cloned_voice === "boolean")
+            setClonedVoice(msg.cloned_voice);
           break;
         case "phone_line":
-          setPhoneLine(m.enabled);
+          setPhoneLine(msg.enabled);
           break;
         case "cloned_voice":
-          setClonedVoice(m.enabled);
+          setClonedVoice(msg.enabled);
           break;
         case "status":
-          setState(m.state);
+          setState(msg.state);
           break;
         case "transcript":
           setRetry(false);
@@ -90,37 +82,37 @@ export default function App() {
             {
               id: prev.length + 1,
               who: "caller",
-              text: m.text,
-              lang: m.lang,
-              latency_ms: m.latency_ms,
+              text: msg.text,
+              lang: msg.lang,
+              latency_ms: msg.latency_ms,
             },
           ]);
           break;
         case "speak":
           setLines((prev) => [
             ...prev,
-            { id: prev.length + 1, who: "me", text: m.text },
+            { id: prev.length + 1, who: "me", text: msg.text },
           ]);
           break;
         case "retry":
           setRetry(true);
           break;
         case "summary":
-          setRetry(false);
           clearSummaryTimer();
           setSummary({
-            who: m.who,
-            agreed: m.agreed,
-            next: m.next,
-            turns: m.turns,
-            duration_s: m.duration_s,
+            who: msg.who,
+            agreed: msg.agreed,
+            next: msg.next,
+            turns: msg.turns,
+            duration_s: msg.duration_s,
           });
           setSummaryMissing(false);
+          setRetry(false);
           setEnded(true);
           setState("idle");
           break;
         case "error":
-          setState(`error: ${m.message}`);
+          setState(`error: ${msg.message}`);
           break;
       }
     },
@@ -183,15 +175,16 @@ export default function App() {
     : missed
       ? "missed"
       : state;
+  const statusKey = state as "listening" | "thinking" | "speaking";
   const statusLabel = !connected
-    ? "फिर जुड़ रहे हैं"
+    ? m.status.reconnecting
     : noMic
-      ? "माइक नहीं"
+      ? m.status.noMic
       : errored
-        ? "कुछ गड़बड़ है"
+        ? m.status.error
         : missed
-          ? "समझ नहीं आया"
-          : (STATUS_LABEL[state] ?? "तैयार");
+          ? m.status.repeat
+          : (m.status[statusKey] ?? m.status.ready);
 
   return (
     <div className="mx-auto flex h-dvh w-full max-w-[430px] flex-col bg-paper text-ink">
@@ -209,11 +202,12 @@ export default function App() {
             <span className="status-dot" data-state={dotState} aria-hidden="true" />
             {statusLabel}
           </span>
+          <LanguageMenu />
           <ThemeToggle />
           <button
             type="button"
             onClick={() => setTour(true)}
-            aria-label="यह कैसे काम करता है"
+            aria-label={m.header.help}
             className="icon-btn"
           >
             <span aria-hidden="true" className="text-[17px]">
@@ -237,14 +231,10 @@ export default function App() {
           <SummaryCard summary={summary} />
         ) : ended ? (
           <div className="summary-card anim-in" aria-live="polite">
-            <p className="summary-eyebrow">कॉल समाप्त</p>
-            <p className="summary-title" lang="hi">
-              कॉल खत्म हो गई
-            </p>
-            <p className="summary-note" lang="hi">
-              {summaryMissing
-                ? "इस कॉल का सारांश नहीं मिला।"
-                : "सारांश आते ही यहाँ दिखेगा।"}
+            <p className="summary-eyebrow">{m.summary.endedLabel}</p>
+            <p className="summary-title">{m.summary.endedTitle}</p>
+            <p className="summary-note">
+              {summaryMissing ? m.summary.missing : m.summary.waiting}
             </p>
           </div>
         ) : empty ? (
@@ -256,34 +246,31 @@ export default function App() {
               </div>
             ) : (
               <>
-                <h2
-                  className="mt-6 font-deva text-[26px] leading-[1.35] text-ink"
-                  lang="hi"
-                >
-                  सामने वाले की बात यहाँ पढ़िए
+                <h2 className="mt-6 font-indic text-[26px] leading-[1.4] text-ink">
+                  {m.empty.title}
                 </h2>
-                <p
-                  className="mt-3 max-w-[19rem] font-deva text-[18px] leading-relaxed text-muted"
-                  lang="hi"
-                >
-                  जवाब देने के लिए नीचे कोई चिप दबाइए या अपने शब्द लिखिए।
+                <p className="mt-3 max-w-[19rem] font-indic text-[18px] leading-relaxed text-muted">
+                  {m.empty.body}
                 </p>
               </>
             )}
           </div>
         ) : (
           <ul className="flex flex-col gap-2.5" aria-live="polite">
-            {lines.map((l) => (
+            {lines.map((line) => (
               <li
-                key={l.id}
-                className={`bubble ${l.who === "me" ? "bubble-me" : "bubble-caller"}`}
+                key={line.id}
+                className={`bubble ${line.who === "me" ? "bubble-me" : "bubble-caller"}`}
               >
-                <p className="bubble-text" lang="hi">
-                  {l.text}
+                <p
+                  className="bubble-text"
+                  lang={line.lang ?? undefined}
+                >
+                  {line.text}
                 </p>
-                {l.who === "caller" && l.latency_ms !== undefined && (
+                {line.who === "caller" && line.latency_ms !== undefined && (
                   <small className="bubble-meta">
-                    {l.lang} · {l.latency_ms} ms
+                    {line.lang} · {line.latency_ms} ms
                   </small>
                 )}
               </li>
@@ -299,24 +286,14 @@ export default function App() {
 
       <footer className="border-t border-line px-4 pt-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))]">
         {ended ? (
-          <button
-            type="button"
-            className="btn-primary w-full"
-            onClick={newCall}
-            lang="hi"
-          >
-            नई कॉल
+          <button type="button" className="btn-primary w-full" onClick={newCall}>
+            {m.call.new}
           </button>
         ) : (
           <>
             {lines.length > 0 && (
               <div className="mb-1.5 flex justify-end">
-                <button
-                  type="button"
-                  className="footer-end"
-                  onClick={endCall}
-                  lang="hi"
-                >
+                <button type="button" className="footer-end" onClick={endCall}>
                   <svg
                     width="13"
                     height="13"
@@ -332,24 +309,23 @@ export default function App() {
                       fill="currentColor"
                     />
                   </svg>
-                  कॉल खत्म करें
+                  {m.call.end}
                 </button>
               </div>
             )}
 
             <div
               className="-mx-1 mb-2.5 flex gap-2 overflow-x-auto px-1 pr-6 [scrollbar-width:none] [mask-image:linear-gradient(to_right,#000_86%,transparent)] [&::-webkit-scrollbar]:hidden"
-              aria-label="जल्दी जवाब"
+              aria-label={m.quickReplies}
             >
-              {CHIPS.map((c) => (
+              {m.chips.map((chip) => (
                 <button
-                  key={c}
+                  key={chip}
                   type="button"
-                  onClick={() => reply(c)}
+                  onClick={() => reply(chip)}
                   className="chip"
-                  lang="hi"
                 >
-                  {c}
+                  {chip}
                 </button>
               ))}
             </div>
@@ -364,14 +340,13 @@ export default function App() {
               <input
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
-                placeholder="अपना जवाब लिखिए…"
-                aria-label="अपना जवाब लिखिए"
-                lang="hi"
+                placeholder={m.composer.placeholder}
+                aria-label={m.composer.aria}
                 className="composer-input"
                 enterKeyHint="send"
               />
-              <button type="submit" className="btn-primary" lang="hi">
-                बोलिए
+              <button type="submit" className="btn-primary">
+                {m.composer.send}
               </button>
             </form>
           </>

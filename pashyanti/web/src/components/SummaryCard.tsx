@@ -6,6 +6,7 @@
  * reply we spoke. The card is the demo's payoff frame, so it stays inside one
  * 4:5 screen: the title clamps to three lines and the two rows to three each.
  */
+import { useI18n } from "../i18n";
 import type { Summary } from "../types";
 
 function formatDuration(seconds: number): string {
@@ -15,14 +16,16 @@ function formatDuration(seconds: number): string {
 }
 
 export function SummaryCard({ summary }: { summary: Summary }) {
+  const { m } = useI18n();
+
   return (
     <section
       className="summary-card anim-in"
       aria-labelledby="summary-title"
       aria-live="polite"
     >
-      <p className="summary-eyebrow">कॉल का सारांश</p>
-      <h2 id="summary-title" className="summary-title" lang="hi">
+      <p className="summary-eyebrow">{m.summary.eyebrow}</p>
+      <h2 id="summary-title" className="summary-title">
         {summary.who}
       </h2>
 
@@ -30,25 +33,17 @@ export function SummaryCard({ summary }: { summary: Summary }) {
 
       <dl>
         <div className="summary-row">
-          <dt className="summary-label" lang="hi">
-            सहमति
-          </dt>
-          <dd className="summary-value" lang="hi">
-            {summary.agreed}
-          </dd>
+          <dt className="summary-label">{m.summary.agreed}</dt>
+          <dd className="summary-value">{summary.agreed}</dd>
         </div>
         <div className="summary-row">
-          <dt className="summary-label" lang="hi">
-            आगे
-          </dt>
-          <dd className="summary-value" lang="hi">
-            {summary.next}
-          </dd>
+          <dt className="summary-label">{m.summary.next}</dt>
+          <dd className="summary-value">{summary.next}</dd>
         </div>
       </dl>
 
       <p className="summary-meta">
-        {summary.turns} turns · {formatDuration(summary.duration_s)}
+        {m.summary.turns(summary.turns)} · {formatDuration(summary.duration_s)}
       </p>
     </section>
   );
