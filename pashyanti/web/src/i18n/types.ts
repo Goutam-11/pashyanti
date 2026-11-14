@@ -51,8 +51,8 @@ export type Messages = {
   header: {
     help: string;
     language: string;
-    themeLight: string;
-    themeDark: string;
+    /** Menu label; theme names themselves are product nouns and stay Latin. */
+    theme: string;
   };
   mascot: {
     name: string;

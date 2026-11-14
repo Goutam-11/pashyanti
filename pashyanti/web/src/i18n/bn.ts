@@ -78,8 +78,7 @@ export const bn: Messages = {
   header: {
     help: "এটি কীভাবে কাজ করে",
     language: "ভাষা",
-    themeLight: "হালকা থিমে যান",
-    themeDark: "গাঢ় থিমে যান",
+    theme: "থিম",
   },
   mascot: {
     name: "সখী",

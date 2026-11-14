@@ -78,8 +78,7 @@ export const mr: Messages = {
   header: {
     help: "हे कसे काम करते",
     language: "भाषा",
-    themeLight: "हलक्या थीमवर जा",
-    themeDark: "गडद थीमवर जा",
+    theme: "थीम",
   },
   mascot: {
     name: "सखी",

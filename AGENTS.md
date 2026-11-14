@@ -56,10 +56,13 @@ pashyanti/
     src/ws.ts              one socket, reconnect; JSON plus talk-mode binary frames
     src/talk.ts            AudioWorklet capture (16 kHz, 1024-byte frames) + Web Audio playback
     src/types.ts           the message shapes
-    src/components/        Mascot (Sakhi, a peacock), Onboarding, ThemeToggle
+    src/components/        Mascot (Sakhi, a peacock), Onboarding, ThemeMenu
     src/components/peacock.ts traced peacock paths (mascot, icon)
+    src/components/dotPeacock.ts  halftone renderer over those paths
+    src/components/PeacockField.tsx  the ghosted field mark
+    src/theme.tsx          three grounds: Peacock, Lime Wash, Slate
     src/i18n/              typed copy for en, hi, bn, mr + the locale context
-    src/index.css          every colour as a CSS variable, light + dark
+    src/index.css          every colour as a CSS variable, three [data-theme] blocks
     public/                PWA manifest and icon
   docs/                    architecture, API notes, decisions
 ```
@@ -176,7 +179,7 @@ files.
 - **TypeScript strict, no `any`.** The five message shapes live in
   `web/src/types.ts`; extend that union instead of casting.
 - **Tailwind for layout, tokens for theme.** `web/src/index.css` holds every
-  colour as a CSS variable under `:root` / `.dark`, mapped into Tailwind with
+  colour as a CSS variable under `[data-theme]`, mapped into Tailwind with
   `@theme inline`. Use utilities for layout, spacing and responsive work; give a
   semantic class to any shape repeated three or more times (bubble, chip, pill).
   Do not let the JSX become the stylesheet.
@@ -191,11 +194,13 @@ files.
   D-012 and `LLM-NOTES.md`. The cloned voice is Hindi-only, so a non-Hindi reply
   uses the default voice.
 - **UI rules that are product rules.** The mascot *is* the state indicator
-  (the three sound arcs pulse = listening, beak opens = speaking, green `?` disc
-  = didn't catch it, still = idle) — never animate it decoratively. The
-  onboarding tour opens only from the `?` button or `?tour=1`; it never opens by
-  itself, because the first screen has to teach in place. One theme on camera:
-  Peacock, light.
+  (the three sound arcs pulse = listening, beak opens = speaking, `?` disc =
+  didn't catch it, still = idle) — never animate it decoratively, and the
+  ghosted peacock field stays static for the same reason. The onboarding tour
+  opens only from the `?` button or `?tour=1`; it never opens by itself, because
+  the first screen has to teach in place. Three grounds ship (Peacock, Lime
+  Wash, Slate); the demo video stays on Peacock. The pixel face (Silkscreen) is
+  Latin-only — it has no Devanagari, so it never carries localized copy.
 - **Accessibility floor:** body text ≥ 18 px, contrast ≥ 7:1, tap targets
   ≥ 44 px, visible focus ring, and respect `prefers-reduced-motion`.
 
