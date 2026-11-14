@@ -1,0 +1,28 @@
+{
+  "generated": "2026-11-15T00:45:00+05:30",
+  "sections": [
+    {
+      "id": "mockups",
+      "label": "Mockups",
+      "groups": [
+        {
+          "slug": "pashyanti-pixel-matrix",
+          "files": [
+            { "label": "01 · Chat lab (start here)", "path": "mockups/pashyanti-pixel-matrix/chat-lab.html" },
+            { "label": "02 · Palette directions", "path": "mockups/pashyanti-pixel-matrix/palettes.html" },
+            { "label": "03 · Bubble treatments", "path": "mockups/pashyanti-pixel-matrix/bubbles.html" },
+            { "label": "04 · Background character", "path": "mockups/pashyanti-pixel-matrix/backgrounds.html" },
+            { "label": "chat-lab.css", "path": "mockups/pashyanti-pixel-matrix/chat-lab.css" },
+            { "label": "chat-lab.js", "path": "mockups/pashyanti-pixel-matrix/chat-lab.js" },
+            { "label": "peacock-data.js", "path": "mockups/pashyanti-pixel-matrix/peacock-data.js" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "design-systems",
+      "label": "Design Systems",
+      "groups": []
+    }
+  ]
+}
