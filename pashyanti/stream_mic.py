@@ -3,20 +3,23 @@
   python stream_mic.py            # speaks Hindi/English, prints transcripts
   python stream_mic.py ta-IN      # force one language
 
-Fedora note: needs PortAudio.
-    sudo dnf install -y portaudio
-    python -m venv .venv && . .venv/bin/activate
-    pip install -r requirements.txt
+Needs a microphone and PortAudio (often already installed on Fedora; if the
+import fails, `sudo dnf install -y portaudio`).
+
+    .venv/bin/pip install sounddevice numpy
+    .venv/bin/python stream_mic.py
+
+The key comes from ./.env via api.py — no export needed.
 """
 import asyncio
 import json
-import os
 import sys
 
 import sounddevice as sd
 import websockets
 
-KEY = os.environ["GNANI_API_KEY"]
+from api import KEY
+
 URL = "wss://api.vachana.ai/stt/v3/stream"
 RATE = 16000
 BLOCK = 512          # 512 samples * 2 bytes = 1024 bytes, exactly one frame

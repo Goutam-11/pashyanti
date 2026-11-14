@@ -14,23 +14,40 @@ RETRY_STATUS = {429, 500, 502, 503, 504}   # 500 is real: TTS returns it transie
 
 
 def _load_env(path=None):
-    """Read KEY=VALUE lines from a .env sitting next to this file.
+    """Read KEY=VALUE lines from a .env next to this file (or the repo root).
 
-    Real env vars always win, so `export GNANI_API_KEY=...` still works.
+    Real env vars always win, so `set -x GNANI_API_KEY ...` still works.
     """
-    path = path or os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
-    if not os.path.exists(path):
+    if path is None:
+        here = os.path.dirname(os.path.abspath(__file__))
+        for candidate in (os.path.join(here, ".env"),
+                          os.path.join(os.path.dirname(here), ".env")):
+            if os.path.exists(candidate):
+                path = candidate
+                break
+    if path is None or not os.path.exists(path):
         return
-    with open(path, encoding="utf-8") as fh:
+    with open(path, encoding="utf-8-sig") as fh:
         for line in fh:
             line = line.strip()
             if not line or line.startswith("#") or "=" not in line:
                 continue
+            if line.startswith("export "):
+                line = line[len("export "):]
             k, v = line.split("=", 1)
             os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
 
 
 _load_env()
+
+if "GNANI_API_KEY" not in os.environ:
+    raise SystemExit(
+        "GNANI_API_KEY is not set.\n"
+        "Put it in pashyanti/.env (or the repo root .env), one line:\n"
+        "    GNANI_API_KEY=your-key-here\n"
+        "Or set it for this shell:  set -x GNANI_API_KEY your-key-here   (fish)\n"
+        "                           export GNANI_API_KEY=your-key-here  (bash)"
+    )
 
 KEY = os.environ["GNANI_API_KEY"]
 HDR = {"X-API-Key-ID": KEY}
