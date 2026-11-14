@@ -187,6 +187,46 @@ Both are required status checks on `main`. A red CI blocks the merge; do not
 disable a check to get past it — fix the test or fix the code.
 
 
+## Delivery workflow
+
+Trunk-based GitHub Flow. `main` is always buildable and protected; work arrives
+through a pull request, never a direct push.
+
+1. Branch off `main`: `<type>/<scope>`, where type is `feat/`, `fix/`, `chore/`,
+   `docs/`, `test/` or `refactor/` — e.g. `feat/summary-card`.
+2. **One logical change per PR.** A milestone is its own PR, not a long-lived
+   branch. If you find an unrelated bug mid-change, ship it separately.
+3. Commits follow Conventional Commits: imperative subject ≤ 72 characters, body
+   explains *why* (the diff already shows what).
+4. Open the PR with `.github/pull_request_template.md` — it auto-fills. Keep the
+   sections that apply, delete the rest, never pad with "n/a". The body is a
+   design record, not a changelog.
+5. Wait for both required checks. A red check blocks the merge: fix the test or
+   fix the code, never disable the check.
+6. **Squash-merge, then delete the branch.** The PR title becomes the squash
+   commit, so it has to satisfy rule 3.
+7. Link issues in the body (`Closes #N`). That only auto-closes when the PR
+   targets `main` — if you stack PRs, retarget the child to `main` after the
+   parent merges, and confirm with `git ls-tree origin/main` that the work is
+   actually on the trunk.
+
+Never force-push or delete `main`. `enforce_admins` is currently **off** on this
+repository, so an admin *can* bypass protection; GitHub prints `Bypassed rule
+violations` when it happens. Treat that as break-glass for the demo deadline,
+not a habit, and switch it back on afterwards.
+
+### Evidence, not adjectives
+
+The PR body names what was checked and quotes the result — the command, the
+count, the millisecond. State plainly what you could **not** verify and why;
+*"no microphone in this container, so capture was verified by replaying a wav"*
+is a good sentence. CI is authoritative over a claim that it "should work".
+A merged PR is not proof the code reached `main` — check the base branch.
+
+`pashyanti/docs/DECISIONS.md` is the decision record. If you reverse one of its
+entries, amend that entry in the same PR with the reason. Silent drift is not
+acceptable, and neither is loosening a threshold to make a PR pass.
+
 ## Do not add
 
 - Auth, user accounts, a database, Docker, Kubernetes. One process, one port.
