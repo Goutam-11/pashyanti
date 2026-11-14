@@ -74,10 +74,12 @@ One socket at `/ws`, JSON both ways. `web/src/types.ts` is the source of truth.
 | server | `status` | `idle │ listening │ thinking │ speaking` |
 | server | `speak` | a reply finished, with `ttfa_ms` and `cached` |
 | server | `voice` | this call switched to `default` or `cloned` |
+| server | `phone_line` | the microphone transform switched on or off |
 | server | `summary` | end-of-call artefact: who called, what was agreed, what happens next; also written to `cache/summary.json` |
 | server | `error` | human-readable failure, shown in a pill |
 | client | `reply` | speak this text down the line |
 | client | `set_voice` | switch this call between `default` and `cloned`; the server answers with `voice` |
+| client | `set_phone_line` | switch the microphone transform; the server answers with `phone_line` and replaces the microphone socket |
 | client | `set_cloned_voice` | the demo toggle's older shape (#21); equivalent to `set_voice` |
 | client | `end_call` | end the call; the server answers with `summary` |
 | client | `new_call` | reserved |
@@ -106,9 +108,9 @@ every captured frame goes through `harness/phone_line.py`, which bands to
 
 The 1024-byte rule is unchanged — only what a frame *represents* changes: two
 16 kHz frames (2 × 32 ms) make one 8 kHz frame (64 ms), so the class buffers and
-emits one frame per two received. The mode is fixed for the life of the socket;
-switching it mid-call would require a different `x-sample-rate` and thus a new
-connection.
+emits one frame per two received. `set_phone_line` switches the mode at runtime
+by replacing the microphone socket — the new `x-sample-rate` needs a new
+connection — while the page's websocket stays up.
 
 ## Latency budget (measured)
 

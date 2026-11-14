@@ -28,6 +28,7 @@ class FakeMic:
 
     def __init__(self, on_text, **kwargs):
         self.on_text = on_text
+        self.telephony = kwargs.get("telephony", False)
         self.muted = False
         self.started = False
         self.stopped = False
@@ -192,6 +193,45 @@ class ServerIntegrationTest(unittest.IsolatedAsyncioTestCase):
                              {"type": "voice", "mode": "cloned"})
             self.assertEqual(await ws.receive_json(),
                              {"type": "cloned_voice", "enabled": True})
+        await ws.close()
+
+    # --- phone-line toggle ------------------------------------------------
+
+    async def test_set_phone_line_restarts_the_mic_in_the_new_mode(self):
+        ws = await self.client.ws_connect("/ws")
+        await ws.receive_json()                      # hello
+        for _ in range(200):                         # probe + live session
+            if len(FakeMic.instances) >= 2:
+                break
+            await asyncio.sleep(0.01)
+        before = len(FakeMic.instances)
+
+        await ws.send_json({"type": "set_phone_line", "enabled": True})
+        self.assertEqual(await ws.receive_json(),
+                         {"type": "phone_line", "enabled": True})
+        self.assertGreater(len(FakeMic.instances), before)
+        self.assertTrue(FakeMic.instances[-1].telephony)
+        self.assertTrue(FakeMic.instances[before - 1].stopped)
+
+        await ws.send_json({"type": "set_phone_line", "enabled": False})
+        self.assertEqual(await ws.receive_json(),
+                         {"type": "phone_line", "enabled": False})
+        self.assertFalse(FakeMic.instances[-1].telephony)
+        await ws.close()
+
+    async def test_set_phone_line_to_the_same_state_does_not_restart(self):
+        ws = await self.client.ws_connect("/ws")
+        await ws.receive_json()
+        for _ in range(200):
+            if len(FakeMic.instances) >= 2:
+                break
+            await asyncio.sleep(0.01)
+        before = len(FakeMic.instances)
+
+        await ws.send_json({"type": "set_phone_line", "enabled": False})
+        self.assertEqual(await ws.receive_json(),
+                         {"type": "phone_line", "enabled": False})
+        self.assertEqual(len(FakeMic.instances), before)
         await ws.close()
 
     # --- end of call ------------------------------------------------------

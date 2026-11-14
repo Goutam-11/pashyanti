@@ -110,6 +110,23 @@ class Call:
         await self.send({"type": "cloned_voice",
                          "enabled": mode == tts.MODE_CLONED})
 
+    async def set_phone_line(self, enabled: bool):
+        """Switch the microphone transform; the upstream socket is restarted.
+
+        `x-sample-rate` cannot change mid-connection, so the page's websocket
+        stays up while the Prisma socket is replaced with one for the new mode.
+        """
+        enabled = bool(enabled)
+        if self.telephony == enabled:
+            await self.send({"type": "phone_line", "enabled": enabled})
+            return
+        self.telephony = enabled
+        if self.mic:
+            await self.mic.stop()
+            self.mic = None
+        await self.start_mic()
+        await self.send({"type": "phone_line", "enabled": enabled})
+
     async def on_transcript(self, text, lang, latency_ms, audio_ms):
         if looks_unusable(text, audio_ms):
             await self.send({"type": "retry"})
@@ -163,7 +180,7 @@ async def ws_handler(request: web.Request):
     await ws.prepare(request)
 
     call = Call(ws)
-    probe = MicSession(call.on_transcript, telephony=PHONE_LINE)
+    probe = MicSession(call.on_transcript, telephony=call.telephony)
     await call.send({
         "type": "hello",
         "models": {"stt": "prisma-v3.0", "tts": "timbre-v3.0"},
@@ -191,6 +208,8 @@ async def ws_handler(request: web.Request):
             elif data.get("type") == "set_cloned_voice":
                 await call.set_voice(
                     tts.MODE_CLONED if data.get("enabled") else tts.MODE_DEFAULT)
+            elif data.get("type") == "set_phone_line":
+                await call.set_phone_line(bool(data.get("enabled")))
     finally:
         await call.close()
     return ws
