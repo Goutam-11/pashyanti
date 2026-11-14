@@ -1,0 +1,24 @@
+# --- secrets ---
+.env
+*.key
+
+# --- media / scratch ---
+*.wav
+*.mp3
+*.m4a
+*.mp4
+
+# --- python ---
+.venv/
+__pycache__/
+*.pyc
+
+# --- scraped / private research ---
+pages/
+research/
+internship.html
+internship.txt
+pagetext.py
+
+# scraped vendor docs (reference only, do not republish)
+docs/
