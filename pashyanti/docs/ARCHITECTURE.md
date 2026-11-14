@@ -72,10 +72,11 @@ One socket at `/ws`, JSON both ways. `web/src/types.ts` is the source of truth.
 | server | `transcript` | one final caller sentence, with language and latency |
 | server | `status` | `idle │ listening │ thinking │ speaking` |
 | server | `speak` | a reply finished, with `ttfa_ms` and `cached` |
-| server | `summary` | end-of-call artefact (not wired yet) |
+| server | `summary` | end-of-call artefact: who called, what was agreed, what happens next; also written to `cache/summary.json` |
 | server | `error` | human-readable failure, shown in a pill |
 | client | `reply` | speak this text down the line |
-| client | `new_call` / `end_call` | reserved |
+| client | `end_call` | end the call; the server answers with `summary` |
+| client | `new_call` | reserved |
 
 Every server message is additive: the UI ignores unknown `type` values, so
 adding one does not require a coordinated deploy.

@@ -6,8 +6,11 @@ path, and half-duplex muting — without spending credits or needing audio
 hardware. It is the test that fails when someone renames a message type.
 """
 import asyncio
+import json
 import os
+import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 os.environ.setdefault("GNANI_API_KEY", "test-key-not-used")
@@ -139,6 +142,44 @@ class ServerIntegrationTest(unittest.IsolatedAsyncioTestCase):
                 break
             await asyncio.sleep(0.01)
         self.assertTrue(FakeMic.instances[-1].stopped)
+
+    # --- end of call ------------------------------------------------------
+
+    async def test_end_call_sends_summary_and_caches_it(self):
+        ws = await self.client.ws_connect("/ws")
+        await ws.receive_json()                      # hello
+        for _ in range(200):                         # probe + live session
+            if len(FakeMic.instances) >= 2:
+                break
+            await asyncio.sleep(0.01)
+        mic = FakeMic.instances[-1]
+
+        with tempfile.TemporaryDirectory() as tmp, \
+             patch.object(server, "CACHE", Path(tmp) / "cache"):
+            await mic.on_text("I need an ambulance", "hi", 40)
+            await ws.receive_json()                  # transcript
+
+            await ws.send_json({"type": "reply", "text": "Sending one now"})
+            for _ in range(3):                       # speaking, speak, listening
+                await ws.receive_json()
+
+            await ws.send_json({"type": "end_call"})
+            summary = await ws.receive_json()
+
+            self.assertEqual(summary["type"], "summary")
+            self.assertEqual(summary["turns"], 1)
+            self.assertEqual(summary["who"], "I need an ambulance")
+            self.assertEqual(summary["agreed"], "I need an ambulance")
+            self.assertEqual(summary["next"], "Sending one now")
+            self.assertIsInstance(summary["duration_s"], int)
+
+            written = json.loads(
+                (Path(tmp) / "cache" / "summary.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(written["turns"], 1)
+            self.assertEqual(written["who"], "I need an ambulance")
+            self.assertEqual(written["next"], "Sending one now")
+        await ws.close()
 
 
 class MissingMicTest(unittest.IsolatedAsyncioTestCase):

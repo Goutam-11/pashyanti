@@ -11,6 +11,7 @@ Development (hot reload) runs Vite separately:
 import asyncio
 import json
 import os
+import time
 from pathlib import Path
 
 from aiohttp import WSMsgType, web
@@ -20,7 +21,9 @@ from gnani import KEY  # noqa: F401  (import validates the key early)
 from stt import MicSession
 
 WEB = Path(__file__).resolve().parent.parent / "web" / "dist"
+CACHE = Path(__file__).resolve().parent / "cache"
 PORT = int(os.environ.get("PORT", "8080"))
+SUMMARY_CHARS = 60
 
 NO_BUILD = """<!doctype html><meta charset=utf-8><body style="font:16px system-ui;
 padding:40px;background:#0f1115;color:#eef1f6">
@@ -30,12 +33,50 @@ padding:40px;background:#0f1115;color:#eef1f6">
 """
 
 
+def _shorten(text: str, limit: int = SUMMARY_CHARS) -> str:
+    """One flat line, at most `limit` characters, ellipsis included."""
+    flat = " ".join(text.split())
+    if len(flat) <= limit:
+        return flat
+    return flat[: limit - 1].rstrip() + "…"
+
+
+def build_summary(lines: list[dict], started_at: float, ended_at: float) -> dict:
+    """The end-of-call card, computed from the transcript alone.
+
+    No model call on purpose: the same call always yields the same card, which
+    is what makes it safe to write to disk and re-read after a page reload.
+    """
+    caller = [str(ln.get("text") or "").strip()
+              for ln in lines if ln.get("who") == "caller"]
+    mine = [str(ln.get("text") or "").strip()
+            for ln in lines if ln.get("who") == "me"]
+    return {
+        "who": _shorten(caller[0]) if caller and caller[0] else "unknown caller",
+        "agreed": caller[-1] if caller and caller[-1] else "—",
+        "next": mine[-1] if mine and mine[-1] else "no reply yet",
+        "turns": len(caller),
+        "duration_s": max(0, int(round(ended_at - started_at))),
+    }
+
+
+def write_summary(summary: dict) -> Path:
+    """Persist the card so a reload still has one to show."""
+    CACHE.mkdir(parents=True, exist_ok=True)
+    path = CACHE / "summary.json"
+    tmp = path.with_name("summary.json.tmp")
+    tmp.write_text(json.dumps(summary, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(path)
+    return path
+
+
 class Call:
     """One phone call = one websocket + one microphone session."""
 
     def __init__(self, ws: web.WebSocketResponse):
         self.ws = ws
         self.lines: list[dict] = []
+        self.started_at = time.time()
         self.speaking = asyncio.Lock()
         self.mic: MicSession | None = None
 
@@ -64,6 +105,15 @@ class Call:
                 if self.mic:
                     self.mic.muted = False
                 await self.send({"type": "status", "state": "listening"})
+
+    async def end_call(self):
+        summary = build_summary(self.lines, self.started_at, time.time())
+        await self.send({"type": "summary", **summary})
+        try:
+            write_summary(summary)
+        except OSError:
+            pass          # the card still reached the page; a full disk is not fatal
+        return summary
 
     async def start_mic(self):
         self.mic = MicSession(self.on_transcript)
@@ -102,6 +152,8 @@ async def ws_handler(request: web.Request):
                 continue
             if data.get("type") == "reply" and data.get("text", "").strip():
                 asyncio.create_task(call.on_reply(data["text"].strip()))
+            elif data.get("type") == "end_call":
+                await call.end_call()
     finally:
         await call.close()
     return ws
