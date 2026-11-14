@@ -357,9 +357,11 @@ across 8 clips, after folding orthography. At 0 dB it collapses to 93.5%, so
 when the audio is unusable the app asks for a repeat instead of showing a guess.
 
 What is not solved: overlapping speech breaks it, and the reply cannot be
-interrupted because the microphone is muted while it speaks. There is also no
-phone number yet — the caller in this video is in the room, and the line is
-simulated. That bridge is the next build.
+interrupted because the microphone is muted while it speaks. There is no
+production phone number yet — the caller in this video is in the room and the
+line is simulated. We did test the relay on a real Indian trial call (the
+caller's Hindi came back as text and the reply was heard), but a trial line is not
+judge-dialable (unknown callers may hit a PIN), so it is not the demo.
 
 What would you want your own voice to say on a call you can't take?
 
@@ -415,7 +417,7 @@ a still — a frozen `?` card is exactly the kind of fake a judge notices.
 
 | Question | Answer |
 |---|---|
-| Is that a real phone call? | No. No PSTN/SIP/number exists on the API; the caller is a person in the room reading written lines. The Twilio Media Streams bridge is a spike (#7), not built. |
+| Is that a real phone call? | No — this video's call is simulated. A separate trial call was tested end to end over Exotel AgentStream (mobile → Indian trial number → our bridge → Prisma/Timbre → the reply was heard); it is not in the video because the trial line is limited, unknown callers may hit a PIN, and the page is not wired to it. Gnani's API still has no PSTN/SIP; see `EXOTEL-SPIKE.md`. |
 | Does it translate? | No. Prisma recognises Indic speech (and English) in the language spoken; the reply is spoken from the text the user typed. |
 | Who makes the summary? | `server.build_summary` — a pure function over the transcript: first caller line, last caller line, last reply, turn count, duration. No model call, so the same call always gives the same card. |
 | How accurate is it? | 3.6% WER at 10 dB SNR on 8 clips, `hi-IN`, 8 kHz µ-law, after folding orthography. At 0 dB it is 93.5%, so the app asks for a repeat when the audio is unusable. |

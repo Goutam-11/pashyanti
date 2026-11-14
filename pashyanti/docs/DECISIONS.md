@@ -321,6 +321,15 @@ later, start the Indian bundle on day one and measure the two WAN legs before
 quoting any latency. They are the only unknowns the spike left, and the 450 ms
 telephony VAD floor is part of the budget either way.
 
+**Amended 2026-11-14 (`docs/exotel-call`).** A trial Indian number over Exotel
+AgentStream was tested end to end: a real mobile call reached a throwaway bridge,
+Prisma v3.0 transcribed two Hindi/code-mixed turns, and Timbre v3.0's reply was
+heard on the handset. The video still uses the simulated line: the trial number
+is not judge-dialable (limited inbound, possibly a PIN, 7-day expiry), the page
+is not wired to the bridge, and the run's timing includes a 2.2 s Prisma
+handshake and a 400 ms jitter buffer. See [`EXOTEL-SPIKE.md`](EXOTEL-SPIKE.md).
+The Twilio decision above stands.
+
 ---
 
 ## D-015 — Bengali is reported unfolded until a speaker checks it
