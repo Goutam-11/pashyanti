@@ -13,9 +13,12 @@ import time
 
 import numpy as np
 import requests
-import sounddevice as sd
 
 from gnani import BASE, HDR
+
+# sounddevice initialises PortAudio the moment it is imported, and raises if the
+# machine has no audio server. Import it lazily so the server can boot headless
+# and report mic: false instead of dying at import time.
 
 CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache", "tts")
 VOICE = "Shivani"
@@ -67,6 +70,8 @@ def _sse_stream(text, voice, model, rate):
 
 def _play_and_cache(text, voice, model, rate):
     """Blocking: stream to the speaker and accumulate to the cache. -> ms to first audio."""
+    import sounddevice as sd
+
     os.makedirs(CACHE_DIR, exist_ok=True)
     path = _key(text, voice, model, rate)
     t0 = time.time()
@@ -87,6 +92,8 @@ def _play_and_cache(text, voice, model, rate):
 
 
 def _play_cached(path, rate):
+    import sounddevice as sd
+
     pcm = np.fromfile(path, dtype=np.int16)
     sd.play(pcm, rate)
     sd.wait()

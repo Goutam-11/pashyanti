@@ -6,7 +6,6 @@ time cadence. Everything else is bookkeeping.
 import asyncio
 import json
 
-import sounddevice as sd
 import websockets
 
 from gnani import KEY
@@ -56,7 +55,10 @@ class MicSession:
         self.muted = False
 
     def available(self):
+        """True only if PortAudio initialises *and* has an input device."""
         try:
+            import sounddevice as sd
+
             sd.query_devices(kind="input")
             return True
         except Exception:
@@ -75,6 +77,8 @@ class MicSession:
                 pass
 
     async def _run(self):
+        import sounddevice as sd
+
         loop = asyncio.get_running_loop()
         queue: asyncio.Queue[bytes] = asyncio.Queue()
 
