@@ -134,6 +134,7 @@ half exposes a voice language.
 | [`pashyanti/docs/API-NOTES.md`](pashyanti/docs/API-NOTES.md) | Verified Gnani API behaviour, including the traps |
 | [`pashyanti/docs/DECISIONS.md`](pashyanti/docs/DECISIONS.md) | Why the stack is what it is, and what each choice costs |
 | [`pashyanti/docs/DEMO.md`](pashyanti/docs/DEMO.md) | The 60-second shoot script: beat sheet, shot list, the numbers and their provenance, post copy |
+| [`pashyanti/docs/TWILIO-SPIKE.md`](pashyanti/docs/TWILIO-SPIKE.md) | The Twilio Media Streams spike: what a real phone call would take, and why it is not in the demo |
 
 ## Status
 
