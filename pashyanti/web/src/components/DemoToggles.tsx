@@ -7,6 +7,8 @@
  * 44 px target, and the visible track is driven by :checked so focus and
  * keyboard work without JavaScript.
  */
+import { useI18n } from "../i18n";
+
 export function DemoToggles({
   phoneLine,
   clonedVoice,
@@ -18,14 +20,16 @@ export function DemoToggles({
   onPhoneLine: () => void;
   onVoice: () => void;
 }) {
+  const { m } = useI18n();
+
   return (
-    <div className="toggles" role="group" aria-label="कॉल सेटिंग">
+    <div className="toggles" role="group" aria-label={m.toggles.group}>
       <label className="switch">
         <span className="switch-text">
-          <span className="switch-hi" lang="hi">
-            फ़ोन लाइन
+          <span className="switch-hi">{m.toggles.phoneLine}</span>
+          <span className="switch-en" lang="en">
+            {m.toggles.phoneLineCaption}
           </span>
-          <span className="switch-en">Phone line</span>
         </span>
         <input
           type="checkbox"
@@ -38,10 +42,10 @@ export function DemoToggles({
 
       <label className="switch">
         <span className="switch-text">
-          <span className="switch-hi" lang="hi">
-            मेरी आवाज़
+          <span className="switch-hi">{m.toggles.myVoice}</span>
+          <span className="switch-en" lang="en">
+            {m.toggles.myVoiceCaption}
           </span>
-          <span className="switch-en">My voice</span>
         </span>
         <input
           type="checkbox"

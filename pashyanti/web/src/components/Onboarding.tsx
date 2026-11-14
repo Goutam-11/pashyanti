@@ -1,26 +1,6 @@
 import { useEffect, useState } from "react";
-import { Mascot, type MascotState } from "./Mascot";
-
-const STEPS: { hi: string; en: string; body: string; state: MascotState }[] = [
-  {
-    hi: "ये ऐप आपके लिए सुनता है",
-    en: "It listens for you",
-    body: "सामने वाले की बात सीधे स्क्रीन पर बड़े अक्षरों में आती है।",
-    state: "listening",
-  },
-  {
-    hi: "और आपके लिए बोलता है",
-    en: "It speaks for you",
-    body: "आप चिप दबाइए या लिखिए — जवाब आवाज़ में सामने वाले को सुनाया जाता है।",
-    state: "speaking",
-  },
-  {
-    hi: "शुरू करने के लिए तैयार",
-    en: "Ready when you are",
-    body: "ज़ोर से बोलिए और रुकिए। जवाब देने के लिए नीचे कोई चिप दबाइए।",
-    state: "idle",
-  },
-];
+import { useI18n } from "../i18n";
+import { Mascot } from "./Mascot";
 
 export function Onboarding({
   open,
@@ -29,6 +9,7 @@ export function Onboarding({
   open: boolean;
   onClose: () => void;
 }) {
+  const { m } = useI18n();
   const [step, setStep] = useState(0);
 
   useEffect(() => {
@@ -43,8 +24,9 @@ export function Onboarding({
 
   if (!open) return null;
 
-  const s = STEPS[step];
-  const last = step === STEPS.length - 1;
+  const steps = m.tour.steps;
+  const s = steps[step];
+  const last = step === steps.length - 1;
 
   return (
     <div
@@ -60,18 +42,14 @@ export function Onboarding({
 
         <h2
           id="tour-title"
-          className="text-center font-deva text-2xl leading-snug text-ink"
-          lang="hi"
+          className="text-center font-indic text-2xl leading-snug text-ink"
         >
-          {s.hi}
+          {s.title}
         </h2>
         <p className="mt-1 text-center text-[11px] uppercase tracking-[0.18em] text-muted">
-          {s.en}
+          {s.caption}
         </p>
-        <p
-          className="mt-4 text-center font-deva text-lg leading-relaxed text-muted"
-          lang="hi"
-        >
+        <p className="mt-4 text-center font-indic text-lg leading-relaxed text-muted">
           {s.body}
         </p>
 
@@ -81,11 +59,11 @@ export function Onboarding({
             onClick={onClose}
             className="min-h-11 px-2 text-sm text-muted underline underline-offset-4 hover:text-ink"
           >
-            छोड़ दें
+            {m.tour.skip}
           </button>
 
           <div className="flex items-center gap-1.5" aria-hidden="true">
-            {STEPS.map((_, i) => (
+            {steps.map((_, i) => (
               <span
                 key={i}
                 className={`h-1.5 rounded-full transition-all ${
@@ -99,9 +77,8 @@ export function Onboarding({
             type="button"
             onClick={() => (last ? onClose() : setStep(step + 1))}
             className="btn-primary"
-            lang="hi"
           >
-            {last ? "शुरू करें" : "आगे"}
+            {last ? m.tour.start : m.tour.next}
           </button>
         </div>
       </div>

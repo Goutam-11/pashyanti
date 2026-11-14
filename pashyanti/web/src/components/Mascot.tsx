@@ -7,23 +7,24 @@
  * Four states, encoded by geometry:
  *   idle      — still, closed beak
  *   listening — an amber ring pulses around her
- *   speaking  — the beak opens and one sound arc leaves it
+ *   speaking  — the beak opens
  *   unsure    — an amber ? badge, for "didn't catch that"
  *
  * The mark is built from three filled shapes (skull, cheek, beak) so it still
  * reads at 30 px in the header. Nothing bobs or blinks when idle, because the
  * mascot is a state readout and motion is a state signal.
  */
+import { useI18n } from "../i18n";
 import {
-  MASCOT_LABEL,
   MYNA_BEAK,
   MYNA_BEAK_BOTTOM,
   MYNA_BEAK_TOP,
   MYNA_CHEEK,
   MYNA_HEAD,
+  type MascotState,
 } from "./myna";
 
-export type MascotState = "idle" | "listening" | "speaking" | "unsure";
+export type { MascotState } from "./myna";
 
 export function Mascot({
   state = "idle",
@@ -34,10 +35,11 @@ export function Mascot({
   size?: number;
   className?: string;
 }) {
+  const { m } = useI18n();
   const listening = state === "listening";
   const speaking = state === "speaking";
   const unsure = state === "unsure";
-  const detailed = size >= 44;
+
   return (
     <svg
       viewBox="0 0 100 100"
@@ -45,7 +47,7 @@ export function Mascot({
       height={size}
       className={className}
       role="img"
-      aria-label={`सखी, ${MASCOT_LABEL[state]}`}
+      aria-label={`${m.mascot.name}, ${m.mascot[state]}`}
     >
       {listening && (
         <circle
@@ -63,7 +65,7 @@ export function Mascot({
       <path d={MYNA_HEAD} fill="var(--color-ink)" />
       <path d={MYNA_CHEEK} fill="var(--color-accent)" />
       <circle cx="42.5" cy="38" r="4.2" fill="var(--color-paper)" />
-      {detailed && (
+      {size >= 44 && (
         <circle cx="43.4" cy="37.1" r="1.7" fill="var(--color-ink)" />
       )}
 

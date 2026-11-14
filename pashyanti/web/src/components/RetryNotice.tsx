@@ -6,17 +6,19 @@
  * guess is worse, so the notice sits in the transcript as a distinct card:
  * warm surface, ? badge, no speech metadata. It clears on the next transcript.
  */
+import { useI18n } from "../i18n";
+
 export function RetryNotice() {
+  const { m } = useI18n();
+
   return (
     <div className="retry-notice" role="status">
       <span className="retry-badge" aria-hidden="true">
         ?
       </span>
       <div className="min-w-0">
-        <p className="retry-hi" lang="hi">
-          समझ नहीं आया — दोहराइए
-        </p>
-        <p className="retry-en">couldn't catch that</p>
+        <p className="retry-hi">{m.retry.main}</p>
+        <p className="retry-en">{m.retry.sub}</p>
       </div>
     </div>
   );
