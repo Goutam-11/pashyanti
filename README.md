@@ -73,6 +73,25 @@ asks the caller to repeat rather than guessing. Reproduce with:
 cd pashyanti/backend && uv run python -m harness.cli
 ```
 
+**Bengali, provisional.** A second corpus (`bn-IN`, ten sentences) is measured
+the same way:
+
+| audio | WER | CER |
+|---|---|---|
+| clean 16 kHz | 3.7% | 0.7% |
+| phone line, 10 dB SNR | 8.7% | 4.5% |
+
+The Bengali reference was written in Bengali rather than translated from the
+Hindi list, but **no native speaker has checked it**, so this figure is
+provisional (#12). Do not read it as a language comparison with the Hindi row:
+`wer.normalize` folds Devanagari orthography only (`DECISIONS.md` D-015), so
+`পাঁচশো/পাঁচশ` and `এখনো/এখনও` count as errors in Bengali and would not in
+Hindi. Reproduce with:
+
+```fish
+cd pashyanti/backend && uv run python -m harness.cli --lang bn-IN -n 10 --levels 10
+```
+
 ## Run it
 
 Two parts: a Python backend that owns the audio, and a React frontend you can
