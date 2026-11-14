@@ -127,6 +127,14 @@
  * lives here, next to the tokens it reads.
  */
 @layer components {
+  /* Fraunces at SOFT 40: rounded terminals, closer to the embossed mark. */
+  .display {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-variation-settings: "SOFT" 40;
+    letter-spacing: 0;
+  }
+
   .wordmark {
     font-family: var(--font-deva);
     font-size: 21px;
