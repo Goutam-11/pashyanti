@@ -6,6 +6,7 @@
  * everything and hands the screen back to the empty state.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
+import { DemoToggles } from "./components/DemoToggles";
 import { Mascot, type MascotState } from "./components/Mascot";
 import { Onboarding } from "./components/Onboarding";
 import { RetryNotice } from "./components/RetryNotice";
@@ -49,6 +50,8 @@ export default function App() {
   const [ended, setEnded] = useState(false);
   const [summaryMissing, setSummaryMissing] = useState(false);
   const [retry, setRetry] = useState(false);
+  const [phoneLine, setPhoneLine] = useState(false);
+  const [clonedVoice, setClonedVoice] = useState(false);
   const [tour, setTour] = useState(
     () => new URLSearchParams(location.search).has("tour"),
   );
@@ -68,6 +71,14 @@ export default function App() {
       switch (m.type) {
         case "hello":
           setMic(m.mic);
+          if (typeof m.phone_line === "boolean") setPhoneLine(m.phone_line);
+          if (typeof m.cloned_voice === "boolean") setClonedVoice(m.cloned_voice);
+          break;
+        case "phone_line":
+          setPhoneLine(m.enabled);
+          break;
+        case "cloned_voice":
+          setClonedVoice(m.enabled);
           break;
         case "status":
           setState(m.state);
@@ -117,6 +128,18 @@ export default function App() {
   );
 
   const { connected, send } = useSocket(onMsg);
+
+  const togglePhoneLine = () => {
+    const enabled = !phoneLine;
+    setPhoneLine(enabled);
+    send({ type: "set_phone_line", enabled });
+  };
+
+  const toggleVoice = () => {
+    const enabled = !clonedVoice;
+    setClonedVoice(enabled);
+    send({ type: "set_cloned_voice", enabled });
+  };
 
   const reply = (text: string) => {
     const t = text.trim();
@@ -199,6 +222,15 @@ export default function App() {
           </button>
         </div>
       </header>
+
+      {!ended && (
+        <DemoToggles
+          phoneLine={phoneLine}
+          clonedVoice={clonedVoice}
+          onPhoneLine={togglePhoneLine}
+          onVoice={toggleVoice}
+        />
+      )}
 
       <main className="flex-1 overflow-y-auto px-4 py-4">
         {summary ? (
