@@ -74,10 +74,12 @@ One socket at `/ws`, JSON both ways. `web/src/types.ts` is the source of truth.
 | server | `status` | `idle │ listening │ thinking │ speaking` |
 | server | `speak` | a reply finished, with `ttfa_ms` and `cached` |
 | server | `voice` | this call switched to `default` or `cloned` |
+| server | `cloned_voice` | the same switch in the demo toggle's older shape (#21); mirrors `voice` so the switch survives a reload |
+| server | `phone_line` | the microphone transform switched on or off; the page socket stays up (#32) |
 | server | `summary` | end-of-call artefact: who called, what was agreed, what happens next; also written to `cache/summary.json` |
 | server | `error` | human-readable failure, shown in a pill |
 | client | `reply` | speak this text down the line |
-| client | `set_voice` | switch this call between `default` and `cloned`; the server answers with `voice` |
+| client | `set_voice` | switch this call between `default` and `cloned`; the server answers with `voice` and `cloned_voice` |
 | client | `set_cloned_voice` | the demo toggle's older shape (#21); equivalent to `set_voice` |
 | client | `set_phone_line` | switch the mic's phone-line transform for this call; answers `phone_line` |
 | client | `end_call` | end the call; the server answers with `summary` |
