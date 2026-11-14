@@ -47,6 +47,27 @@ just gives them a screen.
 - Overlapping speech breaks it. The system asks callers to repeat rather than
   guessing, and the limitation is shown on screen.
 
+## Measured, not asserted
+
+`pashyanti/backend/harness/` synthesises eight clips from known text, degrades
+them to what a phone line actually does — 300–3400 Hz band-limit, 8 kHz
+resample, G.711 µ-law quantisation, background noise — and measures word error
+rate against the known reference. No hand labelling, no clean-mic fiction.
+
+| audio | WER | CER |
+|---|---|---|
+| clean 16 kHz | **0.0%** | 0.0% |
+| phone line, 10 dB SNR | **3.6%** | 2.9% |
+| phone line, 5 dB SNR | 27.8% | 23.0% |
+| phone line, 0 dB SNR | 93.5% | 88.9% |
+
+10 dB is a noisy street; 0 dB is speech buried under noise, where the system
+asks the caller to repeat rather than guessing. Reproduce with:
+
+```fish
+cd pashyanti/backend && uv run python -m harness.cli
+```
+
 ## Run it
 
 Two parts: a Python backend that owns the audio, and a React frontend you can

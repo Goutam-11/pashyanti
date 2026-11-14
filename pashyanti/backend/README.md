@@ -20,6 +20,31 @@ uv run python server.py   # http://localhost:8080
 | `stream_mic.py` | standalone mic → transcript terminal test |
 | `test_stream_file.py` | replay a wav into the STT socket (no microphone needed) |
 | `clone_voice.py` | `build ref.wav` → `embedding.json`, then `say "..."` |
+| `harness/` | Phone-line accuracy: degrade clean audio (band-limit, µ-law, noise) and measure WER against known text |
+
+## Measuring phone-line accuracy
+
+```fish
+uv run python -m harness.cli            # 8 clips, 10/5/0 dB SNR sweep
+uv run python -m harness.cli --levels 15,10 -n 10
+uv run python -m harness.cli --rebuild  # ignore the transcript cache
+```
+
+Writes `harness_report.md` (the table) and `harness_report.json`. Every clip is
+synthesised from known text, so the reference is exact; transcripts and audio
+are cached by hash, so re-runs of the same level cost nothing.
+
+| module | job |
+|---|---|
+| `degrade.py` | band-limit → 8 kHz → noise → µ-law round trip (pure numpy) |
+| `wer.py` | Indic normalisation (nukta, candrabindu, digits), WER and CER |
+| `corpus.py` | reference clips via TTS, cached |
+| `cli.py` | the sweep, the table, the report |
+
+Measured on 8 clips, `hi-IN`: 0.0% clean, 3.6% at 10 dB SNR, 27.8% at 5 dB,
+93.5% at 0 dB. That last number is the point — at 0 dB the system should ask
+for a repeat, not invent words.
+
 
 ## Two facts that cost an evening
 
