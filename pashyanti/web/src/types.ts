@@ -12,6 +12,7 @@ export type ServerMsg =
   | { type: "status"; state: "idle" | "listening" | "thinking" | "speaking" }
   | { type: "speak"; text: string; ttfa_ms: number; cached: boolean }
   | ({ type: "summary" } & Summary)
+  | { type: "retry" }
   | { type: "error"; message: string };
 
 export type ClientMsg =
