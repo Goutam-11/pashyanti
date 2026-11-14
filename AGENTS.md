@@ -135,15 +135,57 @@ files.
 
 ## Verify before saying "done"
 
-1. `cd pashyanti/web && bun run build` — type-checks and builds.
-2. `cd pashyanti/backend && uv run python server.py` — page loads, `hello`
-   arrives on `/ws`.
-3. `uv run python test_stream_file.py smoke.wav` — streaming still works.
-4. If you touched audio DSP or metrics: `uv run python -m harness.cli` and
-   compare against the numbers in `harness_report.md`.
+Run the tests, in this order:
 
-There is no test suite. If you add one, keep it dependency-free
-(`unittest` for the pure functions in `harness/`).
+```fish
+cd pashyanti/backend
+uv run python -m unittest discover -s tests -t . -v   # 40 tests, no key needed
+
+cd pashyanti/web
+bun run build                                          # type-check + build
+```
+
+Then, if you touched the live path:
+
+```fish
+cd pashyanti/backend
+uv run python server.py                     # page loads, /ws sends `hello`
+uv run python test_stream_file.py smoke.wav # streaming protocol
+uv run python -m harness.cli                # only if you touched DSP or metrics
+```
+
+### Tests are split by what they need
+
+Do not merge these layers — the split is what keeps CI free and fast.
+
+| File | Tier | Needs | Answers |
+|---|---|---|---|
+| `tests/test_wer.py` | unit | nothing | does normalisation/WER still fold nukta, digits, punctuation? |
+| `tests/test_audio.py` | unit | nothing | are frames exactly 1024 bytes; does µ-law round-trip? |
+| `tests/test_degrade.py` | unit | nothing | does the phone-line simulation still band-limit and hit its SNR? |
+| `tests/test_server.py` | integration | nothing (mic + TTS stubbed) | does the app still boot, speak the protocol, and mute the mic while talking? |
+| `tests/test_live_api.py` | live | a real key, `RUN_LIVE=1` | do Timbre and Prisma actually round-trip? **Costs credits — never in CI.** |
+
+Rules:
+
+- A new pure module gets a unit test that runs without a key or a device.
+- A change to the websocket protocol, a route, or half-duplex gets an
+  integration test in `test_server.py`. If you add a message type, extend
+  `web/src/types.ts` and add a case there.
+- Live tests are opt-in only (`RUN_LIVE=1`) and must say so in the docstring.
+  They are the one place a key is allowed to matter.
+- Tests use `unittest` from the standard library. Do not add pytest.
+
+### CI
+
+`.github/workflows/ci.yml` runs both jobs on every push and pull request:
+
+- `backend (unit + integration)` — `uv sync --frozen`, then the suite above
+- `web (type-check + build)` — `bun install --frozen-lockfile`, then `bun run build`
+
+Both are required status checks on `main`. A red CI blocks the merge; do not
+disable a check to get past it — fix the test or fix the code.
+
 
 ## Do not add
 

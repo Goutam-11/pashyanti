@@ -2,6 +2,8 @@
 
 > *before the word, the vision*
 
+[![CI](https://github.com/Goutam-11/pashyanti/actions/workflows/ci.yml/badge.svg)](https://github.com/Goutam-11/pashyanti/actions/workflows/ci.yml)
+
 A phone assistant for people who **can't hear**, **can't speak**, or **both**.
 
 Roughly one in twelve Indians lives with disabling hearing loss, and millions more
