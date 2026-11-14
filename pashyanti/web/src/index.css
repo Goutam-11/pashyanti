@@ -312,6 +312,16 @@
     transform: scale(0.97);
   }
 
+  /* Talk mode: the one line above the "Start listening" gesture. */
+  .talk-note {
+    margin-bottom: 10px;
+    font-family: var(--font-indic);
+    font-size: 18px;
+    line-height: 1.45;
+    color: var(--muted);
+    text-align: center;
+  }
+
   .composer-input {
     min-height: 48px;
     width: 100%;

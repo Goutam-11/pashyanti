@@ -61,4 +61,12 @@ export type Messages = {
     speaking: string;
     unsure: string;
   };
+  talk: {
+    start: string;
+    starting: string;
+    hint: string;
+    denied: string;
+    insecure: string;
+    unsupported: string;
+  };
 };

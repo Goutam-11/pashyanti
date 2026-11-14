@@ -1,6 +1,7 @@
 # Pashyanti — backend
 
-Python 3.12+ / asyncio. Serves the built frontend, owns the microphone, relays Gnani.
+Python 3.12+ / asyncio. Serves the built frontend, owns the microphone (or relays
+the page's, in talk mode), relays Gnani.
 
 ```fish
 cd pashyanti/backend
@@ -11,9 +12,9 @@ uv run python server.py   # http://localhost:8080
 
 | File | Job |
 |---|---|
-| `server.py` | aiohttp app: static `../web/dist`, `/ws`, orchestration, half-duplex muting |
-| `stt.py` | microphone → Prisma v3.0 streaming → callback per sentence |
-| `tts.py` | text → Timbre v3.0 SSE → speaker, cached by hash |
+| `server.py` | aiohttp app: static `../web/dist`, `/ws`, orchestration, half-duplex muting, `?mode=talk` |
+| `stt.py` | microphone (or the page's 1024-byte frames) → Prisma v3.0 streaming → callback per sentence |
+| `tts.py` | text → Timbre v3.0 SSE → speaker, or to the page in talk mode; cached by hash |
 | `audio.py` | 1024-byte frame maths, G.711 µ-law (numpy; `audioop` is gone in 3.13+) |
 | `gnani.py` | low-level REST client: `stt_file`, `tts`, `clone_embedding`, `tts_cloned` |
 | `probe.py` | one 1,000-char TTS + one 10 s STT call, to read the credit rate |

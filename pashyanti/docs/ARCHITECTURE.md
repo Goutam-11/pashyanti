@@ -1,9 +1,14 @@
 # Architecture
 
-Two processes in development, one in production. The split is not stylistic: a
-browser cannot capture call audio, and the API key must not leave the server.
+Two processes in development, one in production. The split is not stylistic: the
+API key must not leave the server.
 
-## Topology
+There are two audio paths, and they differ in *where* the microphone and the
+speaker are. The demo path puts both on the server (D-004). Talk mode
+(`?mode=talk`, D-004 amendment) puts both on the phone so the user can hold it
+between themselves and another person in the same room.
+
+## Topology — the demo path (microphone on the server)
 
 ```
         caller (a person in the room, or a recorded clip)
@@ -31,12 +36,28 @@ browser cannot capture call audio, and the API key must not leave the server.
   └───────────────────────────────────────────┘
 ```
 
-The phone renders and sends replies. It captures no audio, so it needs no HTTPS,
-no microphone permission and no tunnel — plain `http://<lan-ip>:8080` works.
+In this mode the phone renders and sends replies. It captures no audio, so it
+needs no HTTPS, no microphone permission and no tunnel — plain
+`http://<lan-ip>:8080` works, and the reply comes out of the laptop's speaker.
+
+## Topology — talk mode (microphone and speaker on the phone)
+
+> ```
+>   PHONE / BROWSER                              LAPTOP or VM (no audio I/O)
+>   ┌──────────────────────────┐                ┌────────────────────────────┐
+>   │ getUserMedia (48 kHz)    │                │  BrowserMic.feed            │
+>   │ AudioWorklet → 16 kHz    │  1024-byte     │      │ FrameParser          │
+>   │ 1024-byte frames ────────┼───binary──────►│      ▼ 32 ms pump           │
+>   │                          │   over wss     │  Prisma v3.0 (wss)          │
+>   │ Web Audio plays Timbre ◄─┼──base64 PCM───┤  Call.on_reply → tts        │
+>   └──────────────────────────┘   `audio`      └────────────────────────────┘
+> ```
+>
+> The server must be reachable but is not in the room: `sounddevice` is never
+> opened, so a headless box or a remote VM works. The page needs a **secure
+> context** (`https://` or `localhost`) for `getUserMedia`.
 
 ## Request path, in order
-
-1. `sounddevice.RawInputStream` delivers 512-sample blocks from the audio thread.
 2. `stt.MicSession` pushes them to the asyncio loop and sends them at real-time
    cadence (32 ms at 16 kHz) to `wss://api.vachana.ai/stt/v3/stream`.
 3. Prisma closes a VAD segment when it hears ~350 ms of silence and returns one
@@ -44,15 +65,18 @@ no microphone permission and no tunnel — plain `http://<lan-ip>:8080` works.
 4. `server.Call.on_transcript` appends the line and pushes it to the page.
 5. The user taps a chip or types; the page sends `{"type":"reply","text":…}`.
 6. `tts.speak` streams Timbre SSE into a `RawOutputStream`, so audio starts
-   before synthesis finishes. Cached clips replay from disk in ~0 ms.
+   before synthesis finishes. Cached clips replay from disk in ~0 ms. In talk
+   mode `tts.stream_pcm` feeds the same SSE stream to the page as `audio`
+   messages and Web Audio plays it on the phone.
 7. `Call.on_reply` reports `speak` with the measured time-to-first-audio.
 
 ## Module ownership
 
 | Module | Owns | Must not |
 |---|---|---|
-| `server.py` | HTTP + `/ws`, call state, half-duplex muting | do audio DSP |
-| `stt.py` | microphone, frame cadence, Prisma socket | know about TTS |
+| `server.py` | HTTP + `/ws`, call state, half-duplex muting, the talk-mode handshake | do audio DSP |
+| `stt.py` | microphone, frame cadence, Prisma socket, `FrameParser`/`BrowserMic` for talk mode | know about TTS |
+| `web/src/talk.ts` | AudioWorklet capture (16 kHz, 1024-byte frames) and Web Audio playback | call Gnani, or hold API state |
 | `tts.py` | Timbre SSE, speaker playback, cache | know about the microphone |
 | `audio.py` | frame maths, G.711 codecs | own state |
 | `gnani.py` | HTTP calls, retries, key loading | touch audio devices |
@@ -68,7 +92,7 @@ One socket at `/ws`, JSON both ways. `web/src/types.ts` is the source of truth.
 
 | Direction | Message | Meaning |
 |---|---|---|
-| server | `hello` | model names, microphone availability, voice mode and whether the stream is phone-line degraded |
+| server | `hello` | model names, the call mode (`server` \| `talk`), microphone availability, voice mode and whether the stream is phone-line degraded |
 | server | `transcript` | one final caller sentence, with language and latency |
 | server | `retry` | a segment was too short or too noisy to trust; the caller is asked to repeat |
 | server | `status` | `idle │ listening │ thinking │ speaking` |
@@ -77,8 +101,11 @@ One socket at `/ws`, JSON both ways. `web/src/types.ts` is the source of truth.
 | server | `cloned_voice` | the same switch in the demo toggle's older shape (#21); mirrors `voice` so the switch survives a reload |
 | server | `phone_line` | the microphone transform switched on or off; the page socket stays up (#32) |
 | server | `summary` | end-of-call artefact: who called, what was agreed, what happens next; also written to `cache/summary.json` |
+| server | `audio` | talk mode: one base64 s16le chunk of the reply (16 kHz mono); `final: true` with empty data marks the end of the stream |
+| server | `capture` | talk mode: `ready` once the Prisma session is open and the page may send frames, else `error` |
 | server | `error` | human-readable failure, shown in a pill |
 | client | `reply` | speak this text down the line |
+| client | `start_capture` | talk mode's "Start listening" gesture: open the Prisma session, then answer `capture` |
 | client | `set_voice` | switch this call between `default` and `cloned`; the server answers with `voice` and `cloned_voice` |
 | client | `set_cloned_voice` | the demo toggle's older shape (#21); equivalent to `set_voice` |
 | client | `set_phone_line` | switch the mic's phone-line transform for this call; answers `phone_line` |
@@ -96,8 +123,35 @@ camera. `Call.on_reply` therefore sets `mic.muted = True` for the duration of
 playback, and `stt.MicSession.pump` sends digital silence instead of captured
 audio while muted.
 
-Consequence, accepted: the user cannot barge in. Real echo cancellation is out
-of scope for this build.
+Talk mode needs both halves of the same rule, because the speaker is now in the
+same hand as the microphone:
+
+- **Server:** `BrowserMic._pump` sends silence while `muted`, which covers the
+  window in which chunks are being sent to the page.
+- **Page:** `talk.ts` drops outgoing frames (`setMuted(true)` on
+  `status: speaking`) until the Web Audio player drains the last chunk, so the
+  phone's own speaker output is never captured or sent. The drain callback is
+  what re-opens it; a `status: listening` with an empty player is the fallback.
+
+Consequence, accepted: the user cannot barge in, in either mode. Real echo
+cancellation is out of scope for this build.
+
+## Talk mode and HTTPS
+
+`getUserMedia` and `AudioContext` need a **secure context**. `http://<lan-ip>:8080`
+is not one, and the page's websocket becomes `wss://` when the page is `https://`
+(`web/src/ws.ts` derives it from `location.protocol`). The chosen path is the
+**ngrok tunnel**, documented in [`TALK-MODE.md`](TALK-MODE.md); `server.py --tls
+cert.pem key.pem` serves HTTPS itself for a phone that already trusts a local
+certificate, and `localhost` is a secure context for a desktop check.
+
+Consequences, accepted and documented: a permission prompt the user must accept
+once per origin; the tunnel URL changes on every restart, so the origin (and the
+stored microphone permission) changes with it; iOS Safari needs the
+`AudioContext` created/resumed inside the tap that starts listening, which is why
+"Start listening" is a button and not an automatic start; and the first Prisma
+handshake is ~2 s, so frames sent during it are queued (up to
+`BROWSER_QUEUE_FRAMES` = 4 s) rather than dropped.
 
 ## Phone-line simulation
 
@@ -134,3 +188,6 @@ These are the only numbers that belong in a demo. Anything else is an adjective.
 | 429 rate limit | same retry path, then surfaces an `error` message |
 | credits exhausted (402) | surfaces `error`; nothing else can be done locally |
 | socket drops | `web/src/ws.ts` reconnects with backoff; mic session restarts |
+| talk mode, microphone refused | page shows `microphone blocked`; the server side never opened a device |
+| talk mode, no HTTPS/localhost | page refuses before prompting and says the mode needs a secure context |
+| talk mode, browser without AudioWorklet | page says the browser cannot capture; nothing is sent |

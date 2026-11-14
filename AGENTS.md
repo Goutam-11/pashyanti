@@ -17,6 +17,13 @@ demo path beats speculative breadth. Ship small, verify, move on.
 Two Gnani models do the work: **Prisma v3.0** (speech → text) and **Timbre v3.0**
 (text → speech), plus the voice-clone endpoint.
 
+There are two audio paths. The **demo path** captures with `sounddevice` on the
+machine running the server and plays the reply from its speaker; the phone only
+renders. **Talk mode** (`?mode=talk`) is an in-person conversation: the phone is
+the microphone and the speaker, and the server is only a relay (D-004 amendment,
+[`pashyanti/docs/TALK-MODE.md`](pashyanti/docs/TALK-MODE.md)). The 60-second video
+uses the demo path; talk mode is not in it.
+
 ## Read these first
 
 | Document | Why |
@@ -33,7 +40,8 @@ README.md                  public front page: what, why, measured numbers
 pashyanti/
   backend/                 Python 3.14, uv
     server.py              aiohttp app: serves web/dist, /ws, orchestration
-    stt.py                 microphone → Prisma streaming → callback per sentence
+    stt.py                 microphone → Prisma streaming → callback per sentence;
+                           FrameParser + BrowserMic for talk mode
     tts.py                 text → Timbre SSE → speaker, cached by hash
     audio.py               1024-byte frames, G.711 µ-law in numpy
     gnani.py               REST client: stt_file, tts, clone_embedding, tts_cloned
@@ -42,8 +50,9 @@ pashyanti/
     cache/                 gitignored: TTS audio, transcripts, corpus wavs
   web/                     Vite 8, React 19, TypeScript, Tailwind 4 + CSS tokens
     src/App.tsx            the one screen: transcript, chips, composer
-    src/ws.ts              one socket, reconnect
-    src/types.ts           the five message shapes
+    src/ws.ts              one socket, reconnect; JSON plus talk-mode binary frames
+    src/talk.ts            AudioWorklet capture (16 kHz, 1024-byte frames) + Web Audio playback
+    src/types.ts           the message shapes
     src/components/        Mascot (Sakhi, a peacock), Onboarding, ThemeToggle
     src/components/peacock.ts traced peacock paths (mascot, icon)
     src/i18n/              typed copy for en, hi, bn, mr + the locale context
@@ -62,7 +71,9 @@ Violating any of these produces a demo that fails in front of a judge.
 2. **Streaming frames are exactly 1024 bytes.** Raw PCM s16le mono, one frame
    every 32 ms at 16 kHz or 64 ms at 8 kHz, real-time cadence. Never burst — it
    degrades the VAD. A browser `MediaRecorder` emits WebM/Opus and cannot feed
-   this socket.
+   this socket; talk mode therefore uses an AudioWorklet that resamples to
+   16 kHz and sends whole 1024-byte frames, and `BrowserMic` re-paces them at
+   one frame per 32 ms so a network burst never reaches Prisma as a burst.
 3. **REST STT caps at 30 seconds.** Longer audio needs the Batch API
    (create → start → poll → files).
 4. **There is no PSTN, SIP or number provisioning in the Gnani API.** The API
@@ -82,6 +93,9 @@ Violating any of these produces a demo that fails in front of a judge.
 9. **The microphone is muted while we speak.** `Call.on_reply` sets
    `mic.muted = True` around TTS, because the microphone hears our own speaker.
    Removing that re-introduces an echo loop that transcribes the app's own voice.
+   In talk mode both sides must hold it: the server sends silence while it
+   streams, and `web/src/talk.ts` drops outgoing frames until its player drains
+   (D-005).
 10. **Do not invent numbers.** Every figure in README or docs comes from
     `harness_report.json` or a measurement you can reproduce. If you change the
     harness, re-run it and update both README and `backend/README.md`.
@@ -99,6 +113,11 @@ cd pashyanti/web
 bun install
 bun run dev                        # http://localhost:5173, proxies /ws to :8080
 bun run build                      # type-check + build to dist/ (backend serves it)
+
+# talk mode (phone as microphone and speaker) — needs a secure context
+ngrok http 8080                    # https://<random>.ngrok.app
+# open https://<random>.ngrok.app/?mode=talk on the phone, tap Start listening
+uv run python server.py --tls cert.pem key.pem   # or serve HTTPS yourself
 
 # measurement
 cd pashyanti/backend
@@ -174,7 +193,7 @@ Run the tests, in this order:
 
 ```fish
 cd pashyanti/backend
-uv run python -m unittest discover -s tests -t . -v   # 40 tests, no key needed
+uv run python -m unittest discover -s tests -t . -v   # no key needed
 
 cd pashyanti/web
 bun run build                                          # type-check + build
@@ -199,6 +218,8 @@ Do not merge these layers — the split is what keeps CI free and fast.
 | `tests/test_audio.py` | unit | nothing | are frames exactly 1024 bytes; does µ-law round-trip? |
 | `tests/test_degrade.py` | unit | nothing | does the phone-line simulation still band-limit and hit its SNR? |
 | `tests/test_server.py` | integration | nothing (mic + TTS stubbed) | does the app still boot, speak the protocol, and mute the mic while talking? |
+| `tests/test_browser_mic.py` | unit | nothing (Prisma stubbed) | are frames exactly 1024 bytes, is the cadence never a burst, does mute send silence? |
+| `tests/test_tts_stream.py` | unit | nothing (SSE stubbed) | does the reply stream to the page, cache a complete clip, and refuse to cache a broken one? |
 | `tests/test_live_api.py` | live | a real key, `RUN_LIVE=1` | do Timbre and Prisma actually round-trip? **Costs credits — never in CI.** |
 
 Rules:
@@ -275,7 +296,13 @@ acceptable, and neither is loosening a threshold to make a PR pass.
 
 - No confidence signal from the API, so "I didn't catch that, please repeat"
   needs a heuristic (empty or suspiciously short transcript).
-- No echo cancellation beyond half-duplex muting.
+- No echo cancellation beyond half-duplex muting. Talk mode inherits this and
+  adds the page's own mute; a phone held to the ear with the speaker loud can
+  still feed back through the device's AGC, which no browser API fixes.
+- **Talk mode has no automated browser test.** CI has no browser: the frame
+  parser, cadence and mute are unit/integration tests with a stubbed Prisma, and
+  the page is type-checked, but "it works on a phone" is a manual check over
+  HTTPS. Say so; never claim a device test that was not run.
 - The Twilio Media Streams bridge is not built. The spike (#7) closed as a no-go
   for this deadline — an Indian number needs a bundle review measured in days,
   and a trial number only accepts verified callers. See

@@ -422,7 +422,7 @@ a still — a frozen `?` card is exactly the kind of fake a judge notices.
 | Who makes the summary? | `server.build_summary` — a pure function over the transcript: first caller line, last caller line, last reply, turn count, duration. No model call, so the same call always gives the same card. |
 | How accurate is it? | 3.6% WER at 10 dB SNR on 8 clips, `hi-IN`, 8 kHz µ-law, after folding orthography. At 0 dB it is 93.5%, so the app asks for a repeat when the audio is unusable. |
 | What still breaks? | Overlapping speech; no barge-in while the mic is muted; cloned voice needs a 5–30 s reference; spoken replies are Hindi only (`DECISIONS.md` D-012). |
-| Why is the phone only a screen? | Capture is server-side (`D-004`), so the phone needs no microphone permission and no HTTPS tunnel. The browser cannot feed Prisma's 1024-byte PCM socket anyway. |
+| Why is the phone only a screen? | In this video it is: capture is server-side (`D-004`), so the phone needs no microphone permission and no HTTPS tunnel. That is also why the caller is in the room — the laptop microphone is the input. A browser *can* feed Prisma's 1024-byte PCM socket: `?mode=talk` does exactly that with an AudioWorklet, and the phone becomes microphone and speaker (`D-004` amendment, [`TALK-MODE.md`](TALK-MODE.md)). It is not in this video and changes nothing on screen. |
 
 ---
 

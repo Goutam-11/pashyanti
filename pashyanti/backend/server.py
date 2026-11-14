@@ -1,16 +1,24 @@
 """Pashyanti server: one process, one port.
 
-Serves the built React app, owns the microphone, and relays Gnani calls.
+Serves the built React app, owns the microphone (or relays the page's), and
+relays Gnani calls.
 
     cd pashyanti/backend
     uv run python server.py          # http://localhost:8080
+    uv run python server.py --tls cert.pem key.pem   # https:// (talk mode off-LAN)
+
+Talk mode (`?mode=talk`) reverses D-004: the page captures 16 kHz PCM in an
+AudioWorklet, sends 1024-byte frames over /ws, and plays Timbre's reply itself.
+That path needs a secure context (HTTPS or localhost) for `getUserMedia`.
 
 Development (hot reload) runs Vite separately:
     cd pashyanti/web && bun run dev  # http://localhost:5173, proxies /ws here
 """
 import asyncio
+import base64
 import json
 import os
+import ssl
 import sys
 import time
 from pathlib import Path
@@ -19,12 +27,14 @@ from aiohttp import WSMsgType, web
 
 import tts
 from gnani import KEY  # noqa: F401  (import validates the key early)
-from stt import MicSession, looks_unusable
+from stt import BrowserMic, MicSession, looks_unusable
 
 WEB = Path(__file__).resolve().parent.parent / "web" / "dist"
 CACHE = Path(__file__).resolve().parent / "cache"
 PORT = int(os.environ.get("PORT", "8080"))
 SUMMARY_CHARS = 60
+MODE_SERVER = "server"
+MODE_TALK = "talk"
 
 
 def _phone_line_enabled(argv=None, env=None):
@@ -82,14 +92,19 @@ def write_summary(summary: dict) -> Path:
 
 
 class Call:
-    """One phone call = one websocket + one microphone session."""
+    """One call = one websocket + one Prisma session.
 
-    def __init__(self, ws: web.WebSocketResponse):
+    `mode` is "server" (the demo path: this machine's microphone and speaker)
+    or "talk" (the page's microphone and speaker, an in-person conversation).
+    """
+
+    def __init__(self, ws: web.WebSocketResponse, mode=MODE_SERVER):
         self.ws = ws
+        self.mode = mode
         self.lines: list[dict] = []
         self.started_at = time.time()
         self.speaking = asyncio.Lock()
-        self.mic: MicSession | None = None
+        self.mic: MicSession | BrowserMic | None = None
         self.voice_mode = tts.MODE_DEFAULT
         self.telephony = PHONE_LINE
 
@@ -149,7 +164,10 @@ class Call:
             if self.mic:
                 self.mic.muted = True
             try:
-                ttfa, cached = await tts.speak(text, mode=self.voice_mode)
+                if self.mode == MODE_TALK:
+                    ttfa, cached = await self.speak_to_page(text)
+                else:
+                    ttfa, cached = await tts.speak(text, mode=self.voice_mode)
                 await self.send({"type": "speak", "text": text,
                                  "ttfa_ms": ttfa, "cached": cached})
             except Exception as exc:                     # noqa: BLE001
@@ -158,6 +176,43 @@ class Call:
                 if self.mic:
                     self.mic.muted = False
                 await self.send({"type": "status", "state": "listening"})
+
+    async def speak_to_page(self, text):
+        """Stream the reply to the phone instead of this machine's speaker.
+
+        The page schedules the chunks through Web Audio and mutes its own
+        capture until they have played, so the phone never transcribes itself.
+        The mic is muted here for the stream window; the page owns the
+        playback tail (D-005, both halves).
+        """
+        async def emit(chunk):
+            await self.send({"type": "audio",
+                             "data": base64.b64encode(chunk).decode("ascii"),
+                             "rate": tts.RATE})
+
+        ttfa, cached = await tts.stream_pcm(text, emit, mode=self.voice_mode)
+        await self.send({"type": "audio", "data": "", "rate": tts.RATE,
+                         "final": True})
+        return ttfa, cached
+
+    async def on_audio(self, data: bytes):
+        """A binary websocket frame is capture audio, in talk mode only."""
+        if self.mode == MODE_TALK and self.mic is not None:
+            await self.mic.feed(data)
+
+    async def start_capture(self):
+        """The page pressed "Start listening": open Prisma, then say ready.
+
+        The page sends frames as soon as its own capture starts; they queue
+        here while Prisma completes its handshake, so no speech is dropped.
+        """
+        if self.mode != MODE_TALK:
+            await self.send({"type": "capture", "state": "ready"})
+            return
+        if self.mic is None:
+            await self.start_mic()
+        await self.send({"type": "capture",
+                         "state": "ready" if self.mic else "error"})
 
     async def end_call(self):
         summary = build_summary(self.lines, self.started_at, time.time())
@@ -169,7 +224,8 @@ class Call:
         return summary
 
     async def start_mic(self):
-        self.mic = MicSession(self.on_transcript, telephony=self.telephony)
+        cls = BrowserMic if self.mode == MODE_TALK else MicSession
+        self.mic = cls(self.on_transcript, telephony=self.telephony)
         try:
             await self.mic.start()
         except Exception as exc:                          # noqa: BLE001
@@ -180,26 +236,40 @@ class Call:
     async def close(self):
         if self.mic:
             await self.mic.stop()
+            frames_in = getattr(self.mic, "frames_in", 0)
+            if isinstance(self.mic, BrowserMic) and frames_in:
+                print(f"talk mode: {frames_in} frames in, "
+                      f"{self.mic.frames_out} to Prisma, {self.mic.gaps} gaps")
 
 
 async def ws_handler(request: web.Request):
     ws = web.WebSocketResponse(heartbeat=30, max_msg_size=4 * 1024 * 1024)
     await ws.prepare(request)
 
-    call = Call(ws)
+    mode = MODE_TALK if request.query.get("mode") == MODE_TALK else MODE_SERVER
+    call = Call(ws, mode)
     probe = MicSession(call.on_transcript, telephony=PHONE_LINE)
     await call.send({
         "type": "hello",
         "models": {"stt": "prisma-v3.0", "tts": "timbre-v3.0"},
-        "mic": probe.available(),
+        # In talk mode the page owns the device, so the server's input probe is
+        # not the answer to "can this call hear?".
+        "mic": True if mode == MODE_TALK else probe.available(),
+        "mode": mode,
         "voice": call.voice_mode,
         "cloned_voice": call.voice_mode == tts.MODE_CLONED,
         "phone_line": call.telephony,
     })
-    await call.start_mic()
+    # Server-mic mode starts listening immediately; talk mode waits for the
+    # page's "Start listening" gesture, because getUserMedia needs one.
+    if mode == MODE_SERVER:
+        await call.start_mic()
 
     try:
         async for msg in ws:
+            if msg.type is WSMsgType.BINARY:
+                await call.on_audio(msg.data)
+                continue
             if msg.type is not WSMsgType.TEXT:
                 continue
             try:
@@ -210,6 +280,8 @@ async def ws_handler(request: web.Request):
                 asyncio.create_task(call.on_reply(data["text"].strip()))
             elif data.get("type") == "end_call":
                 await call.end_call()
+            elif data.get("type") == "start_capture":
+                await call.start_capture()
             elif data.get("type") == "set_voice":
                 await call.set_voice(str(data.get("mode") or tts.MODE_DEFAULT))
             elif data.get("type") == "set_phone_line":
@@ -239,9 +311,36 @@ def make_app() -> web.Application:
     return app
 
 
+def tls_context(argv=None):
+    """--tls cert.pem key.pem -> an SSLContext, or None for plain HTTP.
+
+    Talk mode needs a secure context for `getUserMedia`. A tunnel (ngrok) is the
+    usual answer on a LAN; this is the offline one, for a phone that already
+    trusts a local certificate.
+    """
+    argv = sys.argv[1:] if argv is None else argv
+    if "--tls" not in argv:
+        return None
+    i = argv.index("--tls")
+    try:
+        cert, key = argv[i + 1], argv[i + 2]
+    except IndexError:
+        raise SystemExit("--tls needs a certificate and a key: "
+                         "--tls cert.pem key.pem")
+    ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+    ctx.load_cert_chain(cert, key)
+    return ctx
+
+
 if __name__ == "__main__":
     mode = ("phone line (8 kHz, µ-law, 10 dB noise)" if PHONE_LINE
             else "clean (16 kHz)")
-    print(f"Pashyanti on http://0.0.0.0:{PORT}  (phone: http://<your-lan-ip>:{PORT})")
+    ctx = tls_context()
+    scheme = "https" if ctx else "http"
+    print(f"Pashyanti on {scheme}://0.0.0.0:{PORT}  "
+          f"(phone: {scheme}://<your-lan-ip>:{PORT})")
     print(f"microphone mode: {mode}")
-    web.run_app(make_app(), host="0.0.0.0", port=PORT, print=None)
+    print(f"talk mode: {scheme}://<host>:{PORT}/?mode=talk "
+          "(needs a secure context on the phone)")
+    web.run_app(make_app(), host="0.0.0.0", port=PORT, print=None,
+                ssl_context=ctx)
