@@ -45,6 +45,12 @@ Measured on 8 clips, `hi-IN`: 0.0% clean, 3.6% at 10 dB SNR, 27.8% at 5 dB,
 93.5% at 0 dB. That last number is the point — at 0 dB the system should ask
 for a repeat, not invent words.
 
+A second corpus, `bn-IN` (ten sentences), is measured with
+`uv run python -m harness.cli --lang bn-IN` and writes
+`harness_report_bn-IN.md`. Its reference is **provisional**: no native speaker
+has checked the Bengali sentences (#12), and `wer.normalize` folds Devanagari
+only (D-015), so the Bengali number is not comparable with the Hindi one.
+
 
 ## Two facts that cost an evening
 
