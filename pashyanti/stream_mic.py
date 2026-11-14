@@ -1,7 +1,8 @@
 """Live mic -> Prisma v3.0 streaming. Run this AFTER probe.py works.
 
-  python stream_mic.py            # speaks Hindi/English, prints transcripts
-  python stream_mic.py ta-IN      # force one language
+  python stream_mic.py                    # laptop mic
+  python stream_mic.py ta-IN              # force one language
+  python stream_mic.py hi-IN --telephony  # 8 kHz phone line tuned VAD
 
 Needs a microphone and PortAudio (often already installed on Fedora; if the
 import fails, `sudo dnf install -y portaudio`).
@@ -21,18 +22,28 @@ import websockets
 from api import KEY
 
 URL = "wss://api.vachana.ai/stt/v3/stream"
-RATE = 16000
 BLOCK = 512          # 512 samples * 2 bytes = 1024 bytes, exactly one frame
 
-LANG = sys.argv[1] if len(sys.argv) > 1 else "indic-auto"
+ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
+LANG = ARGS[0] if ARGS else "indic-auto"
+TELEPHONY = "--telephony" in sys.argv
+RATE = 8000 if TELEPHONY else 16000   # 64 ms per frame at 8 kHz, 32 ms at 16 kHz
+
+# Phone audio is narrower and noisier: fewer false triggers, but sentences take
+# longer to close. Values follow the docs' telephony guidance.
+VAD = ({"x-vad-threshold": "0.72", "x-min-silence-ms": "450",
+        "x-min-speech-ms": "200", "x-min-segment-ms": "200"} if TELEPHONY else
+       {"x-vad-threshold": "0.55", "x-min-silence-ms": "350",
+        "x-min-speech-ms": "100", "x-min-segment-ms": "120"})
+
 HDR = {
     "x-api-key-id": KEY,
     "model": "prisma-v3.0",
     "language_code": LANG,
+    "format": "transcribe",     # digits and symbols, not spelled-out words
     "x-sample-rate": str(RATE),
-    "x-vad-threshold": "0.7",
-    "x-min-silence-ms": "350",
     "x-max-speech-s": "15",
+    **VAD,
     # Word boosting, same rules as REST. Non-ASCII must be
     # JSON-escaped, which is what ensure_ascii does.
     "keyterms": json.dumps(["पश्यन्ती", "Pashyanti"], ensure_ascii=True),
