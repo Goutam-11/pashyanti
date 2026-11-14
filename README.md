@@ -38,11 +38,15 @@ just gives them a screen.
 ## Honest engineering notes
 
 - Gnani's API exposes speech models only — **no PSTN/SIP, no phone numbers**. The
-  audio path is therefore built in two stages: synthetic 8 kHz telephony first
-  (band-limited, µ-law round-tripped, noisy), then a real call, which needs a
-  carrier. The Twilio Media Streams spike closed as *go only with a US number*,
-  after this deadline: an Indian number cannot be approved in time, and a trial
-  number only accepts verified callers
+  demo's audio path is the synthetic 8 kHz phone line (band-limited, µ-law
+  round-tripped, noisy); the real-call bridge is a separate build. A throwaway
+  bridge on an **Exotel trial Indian number** was tested end to end on 14 Nov: a
+  real mobile call reached the server, Prisma v3.0 transcribed two
+  Hindi/code-mixed turns, and Timbre v3.0's reply was heard on the handset. It
+  is not in the video: a trial number is not judge-dialable (limited inbound,
+  unknown callers may hit a PIN) and the app page is not wired to it
+  ([`EXOTEL-SPIKE.md`](pashyanti/docs/EXOTEL-SPIKE.md)). The Twilio spike remains
+  a no-go for this deadline
   ([`TWILIO-SPIKE.md`](pashyanti/docs/TWILIO-SPIKE.md)).
 - Realtime STT takes **raw PCM s16le, mono, exactly 1024-byte frames**, at
   real-time cadence. It returns one transcript per closed VAD segment — there are
@@ -157,6 +161,7 @@ half exposes a voice language.
 | [`pashyanti/docs/DECISIONS.md`](pashyanti/docs/DECISIONS.md) | Why the stack is what it is, and what each choice costs |
 | [`pashyanti/docs/DEMO.md`](pashyanti/docs/DEMO.md) | The 60-second shoot script: beat sheet, shot list, the numbers and their provenance, post copy |
 | [`pashyanti/docs/TWILIO-SPIKE.md`](pashyanti/docs/TWILIO-SPIKE.md) | The Twilio Media Streams spike: what a real phone call would take, and why it is not in the demo |
+| [`pashyanti/docs/EXOTEL-SPIKE.md`](pashyanti/docs/EXOTEL-SPIKE.md) | The Exotel trial-call spike: one real Indian call that worked, and why it is still not the video |
 
 ## Status
 

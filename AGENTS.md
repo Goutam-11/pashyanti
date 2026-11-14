@@ -65,9 +65,10 @@ Violating any of these produces a demo that fails in front of a judge.
    this socket.
 3. **REST STT caps at 30 seconds.** Longer audio needs the Batch API
    (create → start → poll → files).
-4. **There is no PSTN, SIP or number provisioning.** The API cannot receive a
-   call. Audio comes from the local microphone, or from Twilio Media Streams if
-   someone builds that bridge.
+4. **There is no PSTN, SIP or number provisioning in the Gnani API.** The API
+   cannot receive a call. Audio comes from the local microphone; a carrier
+   bridge is a spike, not a product path (an Exotel trial call worked on 14 Nov,
+   see `pashyanti/docs/EXOTEL-SPIKE.md`; the Twilio bridge is not built).
 5. **No word-level timestamps, no live diarization, no translation.** Diarization
    exists only in the Batch API. `speaker_names` is a spelling hint, not
    diarization. Do not promise any of the three in UI or copy.
@@ -279,4 +280,8 @@ acceptable, and neither is loosening a threshold to make a PR pass.
   for this deadline — an Indian number needs a bundle review measured in days,
   and a trial number only accepts verified callers. See
   `pashyanti/docs/TWILIO-SPIKE.md` and `DECISIONS.md` D-014 before reopening it.
+- An Exotel trial bridge proved the audio path over a real Indian number on
+  14 Nov (`pashyanti/docs/EXOTEL-SPIKE.md`), but it is a throwaway: not merged,
+  not wired to the page, and a trial line is not judge-dialable. The D-014
+  amendment records the result; the Twilio no-go still stands.
 - Barge-in is impossible while muted: the user cannot interrupt the reply.
