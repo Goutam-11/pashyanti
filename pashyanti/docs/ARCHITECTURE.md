@@ -68,7 +68,7 @@ One socket at `/ws`, JSON both ways. `web/src/types.ts` is the source of truth.
 
 | Direction | Message | Meaning |
 |---|---|---|
-| server | `hello` | model names, microphone availability, and the starting voice mode |
+| server | `hello` | model names, microphone availability, voice mode and whether the stream is phone-line degraded |
 | server | `transcript` | one final caller sentence, with language and latency |
 | server | `retry` | a segment was too short or too noisy to trust; the caller is asked to repeat |
 | server | `status` | `idle │ listening │ thinking │ speaking` |
@@ -95,6 +95,20 @@ audio while muted.
 
 Consequence, accepted: the user cannot barge in. Real echo cancellation is out
 of scope for this build.
+
+## Phone-line simulation
+
+`server.py --phone-line` (or `PHONE_LINE=1`) passes `telephony=True` to
+`stt.MicSession`. Capture stays at 16 kHz; the socket header asks for 8 kHz; and
+every captured frame goes through `harness/phone_line.py`, which bands to
+300–3400 Hz, decimates to 8 kHz, adds noise at 10 dB SNR and round-trips G.711
+µ-law.
+
+The 1024-byte rule is unchanged — only what a frame *represents* changes: two
+16 kHz frames (2 × 32 ms) make one 8 kHz frame (64 ms), so the class buffers and
+emits one frame per two received. The mode is fixed for the life of the socket;
+switching it mid-call would require a different `x-sample-rate` and thus a new
+connection.
 
 ## Latency budget (measured)
 

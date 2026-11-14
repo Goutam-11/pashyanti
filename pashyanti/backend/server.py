@@ -11,6 +11,7 @@ Development (hot reload) runs Vite separately:
 import asyncio
 import json
 import os
+import sys
 import time
 from pathlib import Path
 
@@ -24,6 +25,16 @@ WEB = Path(__file__).resolve().parent.parent / "web" / "dist"
 CACHE = Path(__file__).resolve().parent / "cache"
 PORT = int(os.environ.get("PORT", "8080"))
 SUMMARY_CHARS = 60
+
+
+def _phone_line_enabled(argv=None, env=None):
+    """--phone-line on the command line, or PHONE_LINE=1 in the environment."""
+    argv = sys.argv[1:] if argv is None else argv
+    env = os.environ if env is None else env
+    return "--phone-line" in argv or env.get("PHONE_LINE") == "1"
+
+
+PHONE_LINE = _phone_line_enabled()
 
 NO_BUILD = """<!doctype html><meta charset=utf-8><body style="font:16px system-ui;
 padding:40px;background:#0f1115;color:#eef1f6">
@@ -80,6 +91,7 @@ class Call:
         self.speaking = asyncio.Lock()
         self.mic: MicSession | None = None
         self.voice_mode = tts.MODE_DEFAULT
+        self.telephony = PHONE_LINE
 
     async def send(self, payload: dict):
         if not self.ws.closed:
@@ -133,7 +145,7 @@ class Call:
         return summary
 
     async def start_mic(self):
-        self.mic = MicSession(self.on_transcript)
+        self.mic = MicSession(self.on_transcript, telephony=self.telephony)
         try:
             await self.mic.start()
         except Exception as exc:                          # noqa: BLE001
@@ -151,13 +163,14 @@ async def ws_handler(request: web.Request):
     await ws.prepare(request)
 
     call = Call(ws)
-    probe = MicSession(call.on_transcript)
+    probe = MicSession(call.on_transcript, telephony=PHONE_LINE)
     await call.send({
         "type": "hello",
         "models": {"stt": "prisma-v3.0", "tts": "timbre-v3.0"},
         "mic": probe.available(),
         "voice": call.voice_mode,
         "cloned_voice": call.voice_mode == tts.MODE_CLONED,
+        "phone_line": call.telephony,
     })
     await call.start_mic()
 
@@ -201,5 +214,8 @@ def make_app() -> web.Application:
 
 
 if __name__ == "__main__":
+    mode = ("phone line (8 kHz, µ-law, 10 dB noise)" if PHONE_LINE
+            else "clean (16 kHz)")
     print(f"Pashyanti on http://0.0.0.0:{PORT}  (phone: http://<your-lan-ip>:{PORT})")
+    print(f"microphone mode: {mode}")
     web.run_app(make_app(), host="0.0.0.0", port=PORT, print=None)
