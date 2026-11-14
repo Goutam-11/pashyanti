@@ -11,7 +11,7 @@ import json
 import sys
 import wave
 
-from api import clone_embedding, tts_cloned
+from gnani import clone_embedding, tts_cloned
 
 EMB_FILE = "embedding.json"
 

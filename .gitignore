@@ -4,7 +4,6 @@
 
 # --- media / scratch ---
 *.wav
-*.json
 *.mp3
 *.m4a
 *.mp4
@@ -23,3 +22,17 @@ pagetext.py
 
 # scraped vendor docs (reference only, do not republish)
 docs/
+
+# --- web / node ---
+node_modules/
+dist/
+.bun-cache/
+
+# --- tool caches ---
+.uv-cache/
+pashyanti/backend/cache/
+*.pcm
+pashyanti/backend/embedding.json
+
+# --- local run logs ---
+.srv.log

@@ -12,7 +12,7 @@ Writes: probe_tts.wav (1000 chars) and probe_stt_10s.wav (first 10 s of it).
 """
 import wave
 
-from api import stt_file, tts
+from gnani import stt_file, tts
 
 TEXT = ("नमस्ते। यह एक परीक्षण है, जिससे हम कीमत मापेंगे। " * 60)[:1000]
 

@@ -49,25 +49,37 @@ just gives them a screen.
 
 ## Run it
 
-```bash
-cd pashyanti
-python -m venv .venv && . .venv/bin/activate
-sudo dnf install -y portaudio     # Fedora
-pip install -r requirements.txt
-export GNANI_API_KEY="..."
+Two parts: a Python backend that owns the audio, and a React frontend you can
+install to a phone's home screen.
+
+```fish
+# backend
+cd pashyanti/backend
+cp .env.example .env          # paste your GNANI_API_KEY
+uv sync
+uv run python server.py       # http://localhost:8080
+
+# frontend, hot reload
+cd pashyanti/web
+bun install
+bun run dev                   # http://localhost:5173, proxies /ws to :8080
 ```
 
-| File | What it does |
+For production the backend serves `web/dist` itself — one `bun run build`, then
+one process on one port. Open it on a phone over the LAN, "Add to Home Screen",
+and it runs fullscreen like an app.
+
+| Piece | What it does |
 |---|---|
-| `probe.py` | Measures what a credit is worth: one 1,000-character TTS call, one 10-second STT call. Run once, read the dashboard before and after. |
-| `stream_mic.py` | Live microphone → Prisma v3.0 streaming, prints transcripts with detected language and latency. |
-| `api.py` | Minimal client — `tts()` and `stt_file()`. No abstractions. |
-
-```bash
-python probe.py
-python stream_mic.py            # speak, then pause
-python stream_mic.py ta-IN      # force one language
-```
+| `pashyanti/backend/server.py` | The app: serves the frontend, runs the microphone, relays Gnani |
+| `pashyanti/backend/stt.py` | Mic → Prisma v3.0 streaming → one callback per sentence |
+| `pashyanti/backend/tts.py` | Text → Timbre v3.0 SSE → speaker, cached by hash |
+| `pashyanti/backend/audio.py` | 1024-byte frame maths, G.711 µ-law in numpy |
+| `pashyanti/backend/probe.py` | What a credit is worth: one 1,000-char TTS + one 10 s STT call |
+| `pashyanti/backend/stream_mic.py` | Standalone mic → transcript, for testing the socket |
+| `pashyanti/backend/test_stream_file.py` | Replays a wav into the STT socket — no microphone needed |
+| `pashyanti/backend/clone_voice.py` | `build ref.wav` → embedding, then `say "..."` in that voice |
+| `pashyanti/web/` | Vite + React + TypeScript, vanilla CSS, no UI framework |
 
 ## Status
 

@@ -19,7 +19,7 @@ import sys
 import sounddevice as sd
 import websockets
 
-from api import KEY
+from gnani import KEY
 
 URL = "wss://api.vachana.ai/stt/v3/stream"
 BLOCK = 512          # 512 samples * 2 bytes = 1024 bytes, exactly one frame

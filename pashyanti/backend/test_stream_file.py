@@ -13,7 +13,7 @@ import wave
 
 import websockets
 
-from api import KEY
+from gnani import KEY
 
 URL = "wss://api.vachana.ai/stt/v3/stream"
 RATE = 16000
