@@ -1126,7 +1126,9 @@ button {
    Variant A — LATTICE / paper proof
    -------------------------------------------------------------------------- */
 
-.app[data-variant="a"] .bubble--caller {
+/* The proof rule belongs to the stepped treatment; stamp and ledger carry
+   their own edge language. */
+.app[data-variant="a"][data-bubbles="stair"] .bubble--caller {
   border-top: 2px solid var(--ink);
 }
 

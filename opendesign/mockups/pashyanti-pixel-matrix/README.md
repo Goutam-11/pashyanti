@@ -25,8 +25,10 @@ The panel on the right is a real Tweaks panel. Everything is live.
 - **Variant** — A *Lattice* (paper, stepped corners), B *Signal* (dark, acid
   matrix, dissolve edges), C *Quiet* (light, indigo, ledger + Devanagari serif).
   Switching a variant also sets its palette, bubble treatment and background.
-- **Palette** — six families, named the same way as `palettes.html`. The ratio
-  under the swatches is computed from the live CSS, not typed.
+- **Palette** — six families, named after `palettes.html` where they match
+  (Peacock Matrix, Chuna Lime-Wash, Indigo Resist, Monsoon Slate, Madder) plus
+  one lab-only take, Ultraviolet. The ratio under the swatches is computed from
+  the live CSS, not typed.
 - **Dot pitch** — 4 / 6 / 8 / 10 px. The lattice, the mascot and the ghost all
   follow it.
 - **Lattice** — faint, screen, bold. The screen is the designed strength;
@@ -44,6 +46,14 @@ chat-lab.html?v=c
 chat-lab.html?v=b&palette=violet&bubbles=stair&bg=lattice&preview=empty
 chat-lab.html?frame=wide
 ```
+
+Two combinations the study sheets argue for:
+
+- **Showpiece** (the demo frame): default `chat-lab.html` — Signal, dissolve
+  edges, the dot peacock in the empty space below the words.
+- **Product-safe**: `chat-lab.html?v=b&bubbles=stair&bg=lattice` — the same
+  dark field with the stepped corners the bubble sheet picked, and the field
+  carried by the lattice alone so no second peacock competes with Sakhi.
 
 ## Editing
 
