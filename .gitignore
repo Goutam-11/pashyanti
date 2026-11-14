@@ -36,3 +36,6 @@ pashyanti/backend/embedding.json
 
 # --- local run logs ---
 .srv.log
+
+# --- gh CLI cache (never commit) ---
+.ghcache/
