@@ -40,6 +40,21 @@ async def _connect(hdr):
     raise RuntimeError("unsupported websockets version")
 
 
+def looks_unusable(text: str, audio_ms: int) -> bool:
+    """True when a transcript is more likely a guess than a sentence.
+
+    Three tells: no text, no words (punctuation only), or more words than the
+    audio could hold. The last one catches Prisma inventing a sentence from
+    noise — showing that to a deaf user is worse than asking them to repeat.
+    """
+    flat = (text or "").strip()
+    if len(flat) <= 1:
+        return True
+    if not any(ch.isalnum() for ch in flat):
+        return True
+    return len(flat.split()) >= 4 and audio_ms < 400
+
+
 class MicSession:
     """One microphone, one socket, one callback per sentence."""
 
@@ -109,6 +124,7 @@ class MicSession:
                             d["text"],
                             d.get("detected_language_code"),
                             int(d.get("latency") or 0),
+                            int(d.get("audio_duration_ms") or 0),
                         )
             finally:
                 pump_task.cancel()
