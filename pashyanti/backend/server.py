@@ -25,6 +25,8 @@ from pathlib import Path
 
 from aiohttp import WSMsgType, web
 
+import chips
+import llm
 import tts
 from gnani import KEY  # noqa: F401  (import validates the key early)
 from stt import BrowserMic, MicSession, looks_unusable
@@ -35,6 +37,10 @@ PORT = int(os.environ.get("PORT", "8080"))
 SUMMARY_CHARS = 60
 MODE_SERVER = "server"
 MODE_TALK = "talk"
+# The chips are an extra, never a dependency: the page already has static chips,
+# so a slow model may not hold the call open.
+SUGGEST_TIMEOUT = 6.0
+CONTEXT_LINES = 3
 
 
 def _phone_line_enabled(argv=None, env=None):
@@ -107,6 +113,8 @@ class Call:
         self.mic: MicSession | BrowserMic | None = None
         self.voice_mode = tts.MODE_DEFAULT
         self.telephony = PHONE_LINE
+        self.last_lang: str | None = None
+        self.suggest_task: asyncio.Task | None = None
 
     async def send(self, payload: dict):
         if not self.ws.closed:
@@ -154,8 +162,49 @@ class Call:
             await self.send({"type": "retry"})
             return
         self.lines.append({"who": "caller", "text": text})
+        self.last_lang = lang or self.last_lang
         await self.send({"type": "transcript", "text": text,
                          "lang": lang, "latency_ms": latency_ms})
+        self.offer_suggestions(text, lang)
+
+    @property
+    def reply_lang(self) -> str:
+        """The language the reply is spoken in: the caller's, not the UI's.
+
+        Recognition reports one language per line (`indic-auto`), so the reply
+        follows the person being answered (D-012 amendment).
+        """
+        return tts.reply_language(self.last_lang)
+
+    def offer_suggestions(self, text: str, lang: str | None):
+        """Ask for reply chips in the caller's language, off the message path.
+
+        Nothing is sent when the model is unavailable or slow: the page keeps
+        its static locale chips, so a failure changes nothing on screen.
+        """
+        if not llm.available():
+            return
+        if self.suggest_task and not self.suggest_task.done():
+            self.suggest_task.cancel()          # the latest line wins
+        self.suggest_task = asyncio.create_task(self.suggest(text, lang))
+
+    async def suggest(self, text: str, lang: str | None):
+        context = [ln["text"] for ln in self.lines
+                   if ln.get("who") == "caller"][-CONTEXT_LINES:]
+        try:
+            answer = await asyncio.wait_for(
+                asyncio.to_thread(llm.direct_reply, text, lang, context),
+                timeout=SUGGEST_TIMEOUT)
+        except Exception:                    # noqa: BLE001  (timeout, network)
+            return
+        suggested = chips.for_transcript(lang, answer)
+        if not suggested:
+            return
+        try:
+            await self.send({"type": "suggest", "chips": suggested,
+                             "lang": lang})
+        except Exception:              # noqa: BLE001  (the page went away)
+            pass
 
     async def on_reply(self, text: str):
         async with self.speaking:
@@ -163,13 +212,16 @@ class Call:
             await self.send({"type": "status", "state": "speaking"})
             if self.mic:
                 self.mic.muted = True
+            lang = self.reply_lang
             try:
                 if self.mode == MODE_TALK:
-                    ttfa, cached = await self.speak_to_page(text)
+                    ttfa, cached = await self.speak_to_page(text, lang)
                 else:
-                    ttfa, cached = await tts.speak(text, mode=self.voice_mode)
+                    ttfa, cached = await tts.speak(text, mode=self.voice_mode,
+                                                  lang=lang)
                 await self.send({"type": "speak", "text": text,
-                                 "ttfa_ms": ttfa, "cached": cached})
+                                 "ttfa_ms": ttfa, "cached": cached,
+                                 "lang": lang})
             except Exception as exc:                     # noqa: BLE001
                 await self.send({"type": "error", "message": str(exc)[:200]})
             finally:
@@ -177,7 +229,7 @@ class Call:
                     self.mic.muted = False
                 await self.send({"type": "status", "state": "listening"})
 
-    async def speak_to_page(self, text):
+    async def speak_to_page(self, text, lang):
         """Stream the reply to the phone instead of this machine's speaker.
 
         The page schedules the chunks through Web Audio and mutes its own
@@ -190,7 +242,8 @@ class Call:
                              "data": base64.b64encode(chunk).decode("ascii"),
                              "rate": tts.RATE})
 
-        ttfa, cached = await tts.stream_pcm(text, emit, mode=self.voice_mode)
+        ttfa, cached = await tts.stream_pcm(text, emit, mode=self.voice_mode,
+                                           lang=lang)
         await self.send({"type": "audio", "data": "", "rate": tts.RATE,
                          "final": True})
         return ttfa, cached
@@ -234,6 +287,8 @@ class Call:
                              "message": f"microphone: {str(exc)[:160]}"})
 
     async def close(self):
+        if self.suggest_task and not self.suggest_task.done():
+            self.suggest_task.cancel()
         if self.mic:
             await self.mic.stop()
             frames_in = getattr(self.mic, "frames_in", 0)

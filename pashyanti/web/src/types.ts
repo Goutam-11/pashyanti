@@ -27,7 +27,13 @@ export type ServerMsg =
     }
   | { type: "transcript"; text: string; lang: string | null; latency_ms: number }
   | { type: "status"; state: "idle" | "listening" | "thinking" | "speaking" }
-  | { type: "speak"; text: string; ttfa_ms: number; cached: boolean }
+  | { type: "speak"; text: string; ttfa_ms: number; cached: boolean; lang?: string }
+  | {
+      type: "suggest";
+      /** Reply chips in the caller's language, direct answer first. */
+      chips: string[];
+      lang: string | null;
+    }
   | {
       type: "audio";
       /** Base64 s16le PCM; empty on the final marker. */

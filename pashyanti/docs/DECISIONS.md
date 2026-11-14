@@ -274,6 +274,25 @@ call language: it never changes recognition, and it does not yet change the
 voice — TTS remains Hindi; a per-call voice language is a backend follow-up,
 not something #5/#6 provide.
 
+**Amended 2026-11-14 (`feat/suggest-chips`).** The reply now follows the
+**caller's** language, which is the point of the product: `tts.speak` and
+`tts.stream_pcm` take a `lang`, `Call.reply_lang` passes the last
+`detected_language_code`, and the cache key includes it. The UI locale still
+changes nothing about recognition or the voice. The reply chips follow the same
+rule: `Call.offer_suggestions` asks a model for one short direct answer in the
+caller's language and `chips.py` adds "please repeat" and "a little slower"
+from a reviewed table, replacing the static UI-locale chips only when they
+arrive. The static row remains the fallback, so a slow or dead model changes
+nothing.
+
+Two limits are deliberate. The **cloned voice cannot change language**:
+`vachana-vc-v1` takes an embedding, not a language, so a cloned reply is Hindi
+by construction and a non-Hindi reply uses the default Timbre voice (which
+speaks all ten). And the chips are only as right as `msg.lang` — the same
+Bengali clip was detected `bn-IN` once and `mr-IN` once, and the chips followed
+the reported language both times. `LLM-NOTES.md` records the model's own
+limitations (gender, bluntness, three lines of context).
+
 ---
 
 ## D-013 — Peacock identity: trace the reference, cream/pine, serif display

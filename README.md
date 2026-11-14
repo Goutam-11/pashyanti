@@ -55,6 +55,14 @@ just gives them a screen.
   Batch API.
 - Overlapping speech breaks it. The system asks callers to repeat rather than
   guessing, and the limitation is shown on screen.
+- Reply chips are generated per utterance in the caller's detected language by
+  a small model (`deepseek-v4.1-flash` over OpenCode), **2.5 s after the
+  transcript** and never blocking the call: if it is slow or unavailable the
+  static chips stay. The chips are only as right as the detected language — a
+  synthetic Bengali clip was labelled `bn-IN` once and `mr-IN` once — and the
+  model can be blunt or use the wrong grammatical gender. It is a suggestion,
+  not a script; the composer is there to edit it
+  ([`LLM-NOTES.md`](pashyanti/docs/LLM-NOTES.md)).
 
 ## Measured, not asserted
 
@@ -146,7 +154,8 @@ that was **not** verified (no physical phone, no room acoustics, no iOS) are in
 |---|---|
 | `pashyanti/backend/server.py` | The app: serves the frontend, runs the microphone, relays Gnani |
 | `pashyanti/backend/stt.py` | Mic (or the page's frames) → Prisma v3.0 streaming → one callback per sentence |
-| `pashyanti/backend/tts.py` | Text → Timbre v3.0 SSE → speaker or the page, cached by hash |
+| `pashyanti/backend/tts.py` | Text → Timbre v3.0 SSE → speaker or the page, in the caller's language, cached by hash |
+| `pashyanti/backend/llm.py` | One contextual reply chip per transcript, best-effort |
 | `pashyanti/backend/audio.py` | 1024-byte frame maths, G.711 µ-law in numpy |
 | `pashyanti/backend/probe.py` | What a credit is worth: one 1,000-char TTS + one 10 s STT call |
 | `pashyanti/backend/stream_mic.py` | Standalone mic → transcript, for testing the socket |
@@ -171,10 +180,13 @@ tile; the mark, states, palette and type are in
 [`peacock-identity.png`](pashyanti/docs/screenshots/peacock-identity.png).
 
 The interface ships in **English (default), हिंदी, বাংলা and मराठी**, with a
-globe picker in the header. The recogniser is already multilingual
-(`indic-auto`: nine Indic languages + English), so the caller's language does
-not depend on the UI language. Spoken replies are still Hindi until the backend
-half exposes a voice language.
+globe picker in the header. The recogniser is multilingual (`indic-auto`: nine
+Indic languages + English), so the caller's language does not depend on the UI
+language — and the reply follows **the caller**: Timbre is asked for the
+detected language, and the reply chips are written in it, with "please repeat"
+and "a little slower" from a reviewed table in eleven languages. The cloned
+voice is Hindi-only (the clone endpoint takes an embedding, not a language), so
+a non-Hindi reply uses the default Timbre voice.
 
 ## Documentation
 
@@ -184,6 +196,7 @@ half exposes a voice language.
 | [`pashyanti/docs/ARCHITECTURE.md`](pashyanti/docs/ARCHITECTURE.md) | Topology, request path, module ownership, WebSocket protocol, latency budget |
 | [`pashyanti/docs/API-NOTES.md`](pashyanti/docs/API-NOTES.md) | Verified Gnani API behaviour, including the traps |
 | [`pashyanti/docs/DECISIONS.md`](pashyanti/docs/DECISIONS.md) | Why the stack is what it is, and what each choice costs |
+| [`pashyanti/docs/LLM-NOTES.md`](pashyanti/docs/LLM-NOTES.md) | The chip model: endpoint facts, the reasoning-model latency finding, prompts, limits |
 | [`pashyanti/docs/DEMO.md`](pashyanti/docs/DEMO.md) | The 60-second shoot script: beat sheet, shot list, the numbers and their provenance, post copy |
 | [`pashyanti/docs/TWILIO-SPIKE.md`](pashyanti/docs/TWILIO-SPIKE.md) | The Twilio Media Streams spike: what a real phone call would take, and why it is not in the demo |
 | [`pashyanti/docs/EXOTEL-SPIKE.md`](pashyanti/docs/EXOTEL-SPIKE.md) | The Exotel trial-call spike: one real Indian call that worked, and why it is still not the video |
@@ -192,10 +205,11 @@ half exposes a voice language.
 ## Status
 
 Hackathon build — *The Great Indian AI Internship Challenge*, November 2026.
-Working: live transcription, spoken replies, voice cloning, phone-line accuracy
-measurement, installable frontend, an interface in English, Hindi, Bengali and
-Marathi, and conversation mode with the phone as the microphone and speaker
-(`?mode=talk`, over HTTPS). The end-of-call summary card (#4), the repeat notice (#3) and both demo
+Working: live transcription, spoken replies in the caller's language,
+contextual reply chips, voice cloning, phone-line accuracy measurement,
+installable frontend, an interface in English, Hindi, Bengali and Marathi, and
+conversation mode with the phone as the microphone and speaker (`?mode=talk`,
+over HTTPS). The end-of-call summary card (#4), the repeat notice (#3) and both demo
 switches — *फ़ोन लाइन* / Phone line (#5) and *मेरी आवाज़* / My voice (#6) — are
 live end to end. Not built: a real phone number — the Twilio spike is a
 documented no-go for this deadline.

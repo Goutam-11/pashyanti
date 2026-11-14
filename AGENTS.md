@@ -31,6 +31,7 @@ uses the demo path; talk mode is not in it.
 | `pashyanti/docs/ARCHITECTURE.md` | Topology, module boundaries, the WebSocket protocol |
 | `pashyanti/docs/API-NOTES.md` | Gnani API behaviour that will bite you; measured facts only |
 | `pashyanti/docs/DECISIONS.md` | Why the stack is what it is. Do not re-litigate settled choices mid-build |
+| `pashyanti/docs/LLM-NOTES.md` | The non-Gnani chip model: endpoint, session header, latency, what it may and may not say |
 
 ## Repository map
 
@@ -45,6 +46,8 @@ pashyanti/
     tts.py                 text → Timbre SSE → speaker, cached by hash
     audio.py               1024-byte frames, G.711 µ-law in numpy
     gnani.py               REST client: stt_file, tts, clone_embedding, tts_cloned
+    llm.py                 the chip model (OpenCode Go): one short reply, or None
+    chips.py               caller-language "please repeat" / "a little slower" table
     harness/               phone-line accuracy measurement (degrade, wer, corpus, cli)
     probe.py stream_mic.py test_stream_file.py clone_voice.py   standalone tools
     cache/                 gitignored: TTS audio, transcripts, corpus wavs
@@ -99,6 +102,12 @@ Violating any of these produces a demo that fails in front of a judge.
 10. **Do not invent numbers.** Every figure in README or docs comes from
     `harness_report.json` or a measurement you can reproduce. If you change the
     harness, re-run it and update both README and `backend/README.md`.
+11. **The chip model is an extra, never a dependency.** `llm.py` returns `None`
+    on every failure and `Call` sends no `suggest` then, so the static locale
+    chips stay. Never let it block a call, never send its key to the browser,
+    never log the key. The two safety chips ("please repeat", "a little slower")
+    are a reviewed table in `chips.py`, never model output — see
+    `pashyanti/docs/LLM-NOTES.md`.
 
 ## Commands
 
@@ -176,8 +185,10 @@ files.
 - **Copy is data, not JSX.** Every user-facing string lives in
   `web/src/i18n/<locale>.ts` behind the `Messages` type; add a string to all
   four locales or TypeScript fails. English is the default. The UI locale never
-  changes the call language: recognition is `indic-auto`, and TTS is still
-  Hindi until the backend exposes a language choice — see D-012.
+  changes the call: recognition is `indic-auto`, the reply is spoken in the
+  caller's detected language, and the reply chips are written in it too — see
+  D-012 and `LLM-NOTES.md`. The cloned voice is Hindi-only, so a non-Hindi reply
+  uses the default voice.
 - **UI rules that are product rules.** The mascot *is* the state indicator
   (the three sound arcs pulse = listening, beak opens = speaking, green `?` disc
   = didn't catch it, still = idle) — never animate it decoratively. The
@@ -220,6 +231,8 @@ Do not merge these layers — the split is what keeps CI free and fast.
 | `tests/test_server.py` | integration | nothing (mic + TTS stubbed) | does the app still boot, speak the protocol, and mute the mic while talking? |
 | `tests/test_browser_mic.py` | unit | nothing (Prisma stubbed) | are frames exactly 1024 bytes, is the cadence never a burst, does mute send silence? |
 | `tests/test_tts_stream.py` | unit | nothing (SSE stubbed) | does the reply stream to the page, cache a complete clip, and refuse to cache a broken one? |
+| `tests/test_chips.py` | unit | nothing | do both safety options exist in every shipped language, and does the 3-chip cap hold? |
+| `tests/test_llm.py` | unit | nothing (no network) | is the prompt in the caller's language, and does every failure return None instead of raising? |
 | `tests/test_live_api.py` | live | a real key, `RUN_LIVE=1` | do Timbre and Prisma actually round-trip? **Costs credits — never in CI.** |
 
 Rules:
@@ -312,3 +325,7 @@ acceptable, and neither is loosening a threshold to make a PR pass.
   not wired to the page, and a trial line is not judge-dialable. The D-014
   amendment records the result; the Twilio no-go still stands.
 - Barge-in is impossible while muted: the user cannot interrupt the reply.
+- Reply chips are only as right as `msg.lang`: a Bengali clip was detected
+  `bn-IN` once and `mr-IN` once, and the chips followed the reported language.
+  The model can also be blunt or use the wrong grammatical gender, because the
+  app has no persona profile. See `LLM-NOTES.md`.

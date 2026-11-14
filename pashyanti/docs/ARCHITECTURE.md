@@ -62,13 +62,16 @@ needs no HTTPS, no microphone permission and no tunnel — plain
    cadence (32 ms at 16 kHz) to `wss://api.vachana.ai/stt/v3/stream`.
 3. Prisma closes a VAD segment when it hears ~350 ms of silence and returns one
    final transcript. There are no interim results.
-4. `server.Call.on_transcript` appends the line and pushes it to the page.
+4. `server.Call.on_transcript` appends the line, pushes it to the page, and
+   starts a best-effort chip request for that line (see below).
 5. The user taps a chip or types; the page sends `{"type":"reply","text":…}`.
 6. `tts.speak` streams Timbre SSE into a `RawOutputStream`, so audio starts
-   before synthesis finishes. Cached clips replay from disk in ~0 ms. In talk
+   before synthesis finishes. Cached clips replay from disk in ~0 ms. The
+   language is `Call.reply_lang` — the caller's last detected one. In talk
    mode `tts.stream_pcm` feeds the same SSE stream to the page as `audio`
    messages and Web Audio plays it on the phone.
-7. `Call.on_reply` reports `speak` with the measured time-to-first-audio.
+7. `Call.on_reply` reports `speak` with the measured time-to-first-audio and the
+   language used.
 
 ## Module ownership
 
@@ -76,6 +79,8 @@ needs no HTTPS, no microphone permission and no tunnel — plain
 |---|---|---|
 | `server.py` | HTTP + `/ws`, call state, half-duplex muting, the talk-mode handshake | do audio DSP |
 | `stt.py` | microphone, frame cadence, Prisma socket, `FrameParser`/`BrowserMic` for talk mode | know about TTS |
+| `llm.py` | the chip model call (OpenCode Go), the stable session header, JSON parsing | ever raise into `Call`, or log the key |
+| `chips.py` | the caller-language table for "please repeat" / "a little slower", the 3-chip cap | call the network |
 | `web/src/talk.ts` | AudioWorklet capture (16 kHz, 1024-byte frames) and Web Audio playback | call Gnani, or hold API state |
 | `tts.py` | Timbre SSE, speaker playback, cache | know about the microphone |
 | `audio.py` | frame maths, G.711 codecs | own state |
@@ -94,6 +99,7 @@ One socket at `/ws`, JSON both ways. `web/src/types.ts` is the source of truth.
 |---|---|---|
 | server | `hello` | model names, the call mode (`server` \| `talk`), microphone availability, voice mode and whether the stream is phone-line degraded |
 | server | `transcript` | one final caller sentence, with language and latency |
+| server | `suggest` | 3 reply chips in the caller's detected language: one direct answer, then "please repeat" and "a little slower". Absent when the model is unavailable or slow, so the page keeps its static chips |
 | server | `retry` | a segment was too short or too noisy to trust; the caller is asked to repeat |
 | server | `status` | `idle │ listening │ thinking │ speaking` |
 | server | `speak` | a reply finished, with `ttfa_ms` and `cached` |
@@ -153,6 +159,24 @@ stored microphone permission) changes with it; iOS Safari needs the
 handshake is ~2 s, so frames sent during it are queued (up to
 `BROWSER_QUEUE_FRAMES` = 4 s) rather than dropped.
 
+## Reply chips and the reply language
+
+The chips are for the **caller's** language, not the UI locale. After a
+transcript, `Call.offer_suggestions` asks the chip model (`llm.py`,
+[`LLM-NOTES.md`](LLM-NOTES.md)) for one short direct answer in
+`detected_language_code`; `chips.py` puts it first and appends the two safety
+options from a reviewed table for that language. The request runs off the
+message path, is capped at 6 s, and is cancelled when a newer line arrives. If
+it fails, **no `suggest` message is sent** and the page shows `m.chips`, the
+static locale row, exactly as before the feature.
+
+The reply is spoken in `Call.reply_lang`, the caller's last detected language,
+not the UI locale (D-012). `tts` takes `lang` through `speak`/`stream_pcm` and
+`_sse_stream`, and the cache key includes it. `vachana-vc-v1` (the clone) takes
+an embedding and no language, so a cloned reply is Hindi by construction: a
+non-Hindi reply uses the default Timbre voice, which speaks all ten languages
+(`tts.effective_mode`).
+
 ## Phone-line simulation
 
 `server.py --phone-line` (or `PHONE_LINE=1`) passes `telephony=True` to
@@ -191,3 +215,5 @@ These are the only numbers that belong in a demo. Anything else is an adjective.
 | talk mode, microphone refused | page shows `microphone blocked`; the server side never opened a device |
 | talk mode, no HTTPS/localhost | page refuses before prompting and says the mode needs a secure context |
 | talk mode, browser without AudioWorklet | page says the browser cannot capture; nothing is sent |
+| chip model slow, dead or no key | no `suggest` message; the static locale chips stay on screen and the reply still works |
+| cloned voice, non-Hindi reply | a `speak` with `lang: bn-IN` (say) uses the default Timbre voice, because the clone has no language parameter |

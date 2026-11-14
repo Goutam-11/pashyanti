@@ -18,6 +18,7 @@ os.environ.setdefault("GNANI_API_KEY", "test-key-not-used")
 
 from aiohttp.test_utils import TestClient, TestServer  # noqa: E402
 
+import llm  # noqa: E402
 import server  # noqa: E402
 import tts  # noqa: E402
 
@@ -66,18 +67,22 @@ class SocketTestBase(unittest.IsolatedAsyncioTestCase):
         FakeMic.instances = []
         FakeBrowserMic.instances = []
         self.speaks: list[str] = []
+        self.speak_kwargs: list[dict] = []
         self.streamed: list[str] = []
+        self.stream_kwargs: list[dict] = []
         self.muted_during_speak: list[bool] = []
         self.muted_during_stream: list[bool] = []
         outer = self
 
         async def fake_speak(text, **kwargs):
             outer.speaks.append(text)
+            outer.speak_kwargs.append(kwargs)
             outer.muted_during_speak.append(FakeMic.instances[-1].muted)
             return 123, False
 
         async def fake_stream_pcm(text, emit, **kwargs):
             outer.streamed.append(text)
+            outer.stream_kwargs.append(kwargs)
             outer.muted_during_stream.append(FakeBrowserMic.instances[-1].muted)
             await emit(b"\x01\x02" * 512)
             await emit(b"\x03\x04" * 512)
@@ -88,6 +93,9 @@ class SocketTestBase(unittest.IsolatedAsyncioTestCase):
             patch.object(server, "BrowserMic", FakeBrowserMic),
             patch.object(tts, "speak", fake_speak),
             patch.object(tts, "stream_pcm", fake_stream_pcm),
+            # No test may reach the LLM: the real key is in .env.
+            patch.object(llm, "available", return_value=False),
+            patch.object(llm, "direct_reply", return_value=None),
         ]
         for p in self._patches:
             p.start()
@@ -243,6 +251,82 @@ class ServerIntegrationTest(SocketTestBase):
                              {"type": "voice", "mode": "cloned"})
             self.assertEqual(await ws.receive_json(),
                              {"type": "cloned_voice", "enabled": True})
+        await ws.close()
+
+    # --- reply chips in the caller's language -----------------------------
+
+    async def _caller_line(self, text, lang, audio_ms=900):
+        ws = await self.client.ws_connect("/ws")
+        await ws.receive_json()                  # hello
+        for _ in range(200):                     # probe + live session
+            if len(FakeMic.instances) >= 2:
+                break
+            await asyncio.sleep(0.01)
+        await FakeMic.instances[-1].on_text(text, lang, 40, audio_ms)
+        self.assertEqual((await ws.receive_json())["type"], "transcript")
+        return ws
+
+    async def test_a_transcript_offers_chips_in_the_callers_language(self):
+        with patch.object(llm, "available", return_value=True), \
+             patch.object(llm, "direct_reply", return_value="ठीक है, दस बजे आऊँगी।"):
+            ws = await self._caller_line("कल दस बजे आइए।", "hi-IN")
+            suggest = await ws.receive_json()
+        self.assertEqual(suggest["type"], "suggest")
+        self.assertEqual(suggest["lang"], "hi-IN")
+        self.assertEqual(suggest["chips"], [
+            "ठीक है, दस बजे आऊँगी।",
+            "कृपया दोहराइए।",
+            "थोड़ा धीरे बोलिए।",
+        ])
+        await ws.close()
+
+    async def test_a_bengali_caller_gets_bengali_chips(self):
+        with patch.object(llm, "available", return_value=True), \
+             patch.object(llm, "direct_reply", return_value="হ্যাঁ, বলুন।"):
+            ws = await self._caller_line("আপনি কেমন আছেন?", "bn-IN")
+            suggest = await ws.receive_json()
+        self.assertEqual(suggest["lang"], "bn-IN")
+        self.assertEqual(suggest["chips"][0], "হ্যাঁ, বলুন।")
+        self.assertEqual(suggest["chips"][1:], ["অনুগ্রহ করে আবার বলুন।",
+                                                "একটু ধীরে বলুন।"])
+        await ws.close()
+
+    async def test_no_llm_key_means_no_suggest_message(self):
+        ws = await self._caller_line("कल दस बजे आइए।", "hi-IN")
+        with tempfile.TemporaryDirectory() as tmp, \
+             patch.object(server, "CACHE", Path(tmp) / "cache"):
+            await ws.send_json({"type": "end_call"})
+            frame = await ws.receive_json()
+            self.assertEqual(frame["type"], "summary")
+        await ws.close()
+
+    async def test_an_unusable_llm_answer_sends_nothing(self):
+        with patch.object(llm, "available", return_value=True), \
+             patch.object(llm, "direct_reply", return_value=None):
+            ws = await self._caller_line("कल दस बजे आइए।", "hi-IN")
+            with tempfile.TemporaryDirectory() as tmp, \
+                 patch.object(server, "CACHE", Path(tmp) / "cache"):
+                await ws.send_json({"type": "end_call"})
+                frame = await ws.receive_json()
+                self.assertEqual(frame["type"], "summary")
+        await ws.close()
+
+    async def test_the_reply_is_spoken_in_the_callers_language(self):
+        ws = await self._caller_line("আপনি কেমন আছেন?", "bn-IN")
+        await ws.send_json({"type": "reply", "text": "ভালো আছি।"})
+        self.assertEqual((await ws.receive_json())["state"], "speaking")
+        spoken = await ws.receive_json()
+        self.assertEqual(spoken["type"], "speak")
+        self.assertEqual(spoken["lang"], "bn-IN")
+        self.assertEqual(self.speak_kwargs[-1]["lang"], "bn-IN")
+        await ws.close()
+
+    async def test_a_hindi_caller_keeps_the_hindi_default(self):
+        ws = await self._caller_line("कल दस बजे आइए।", "hi-IN")
+        await ws.send_json({"type": "reply", "text": "ठीक है।"})
+        await ws.receive_json()                  # speaking
+        spoken = await ws.receive_json()
+        self.assertEqual(spoken["lang"], "hi-IN")
         await ws.close()
 
     # --- end of call ------------------------------------------------------

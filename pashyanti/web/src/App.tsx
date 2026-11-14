@@ -59,7 +59,9 @@ export default function App() {
   const [clonedVoice, setClonedVoice] = useState(false);
   const [mode, setMode] = useState<CallMode>(TALK_REQUESTED ? "talk" : "server");
   const [capture, setCapture] = useState<CaptureState>("idle");
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const talk = useRef<Talk | null>(null);
+  const callerLang = useRef<string | null>(null);
   const [tour, setTour] = useState(
     () => new URLSearchParams(location.search).has("tour"),
   );
@@ -109,6 +111,9 @@ export default function App() {
           break;
         case "transcript":
           setRetry(false);
+          // A new caller language makes the previous chips the wrong script.
+          if (msg.lang !== callerLang.current) setSuggestions([]);
+          callerLang.current = msg.lang;
           setLines((prev) => [
             ...prev,
             {
@@ -119,6 +124,12 @@ export default function App() {
               latency_ms: msg.latency_ms,
             },
           ]);
+          break;
+        case "suggest":
+          // Caller-language chips: the model's answer plus "please repeat" and
+          // "a little slower". The static locale row is the fallback until
+          // these arrive; a failed call leaves it in place.
+          setSuggestions(msg.chips);
           break;
         case "speak":
           setLines((prev) => [
@@ -214,6 +225,8 @@ export default function App() {
     clearSummaryTimer();
     send({ type: "new_call" });
     setLines([]);
+    setSuggestions([]);
+    callerLang.current = null;
     setSummary(null);
     setEnded(false);
     setSummaryMissing(false);
@@ -234,6 +247,9 @@ export default function App() {
       : state;
   // Only a failure needs a sentence next to the button; the hint lives in the
   // empty state, once.
+  // The caller's language replaces the UI locale's chips once the model
+  // answers; until then (or if it fails) the static row is exactly what it was.
+  const chipsToShow = suggestions.length > 0 ? suggestions : m.chips;
   const captureNote =
     capture === "denied"
       ? m.talk.denied
@@ -402,7 +418,7 @@ export default function App() {
               className="-mx-1 mb-2.5 flex gap-2 overflow-x-auto px-1 pr-6 [scrollbar-width:none] [mask-image:linear-gradient(to_right,#000_86%,transparent)] [&::-webkit-scrollbar]:hidden"
               aria-label={m.quickReplies}
             >
-              {m.chips.map((chip) => (
+              {chipsToShow.map((chip) => (
                 <button
                   key={chip}
                   type="button"

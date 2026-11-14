@@ -81,9 +81,10 @@ class StreamPcmTest(unittest.IsolatedAsyncioTestCase):
     async def test_chunks_are_emitted_as_the_stream_produces_them(self):
         chunks = [b"\x01\x00" * 512, b"\x02\x00" * 512, b"\x03\x00" * 512]
 
-        def fake_sse(text, voice, model, rate):
-            self.assertEqual((text, voice, model, rate),
-                             ("hello", tts.VOICE, tts.MODEL, tts.RATE))
+        def fake_sse(text, voice, model, rate, lang):
+            self.assertEqual((text, voice, model, rate, lang),
+                             ("hello", tts.VOICE, tts.MODEL, tts.RATE,
+                              tts.DEFAULT_LANG))
             yield from chunks
 
         with patch.object(tts, "_sse_stream", fake_sse):
@@ -109,7 +110,7 @@ class StreamPcmTest(unittest.IsolatedAsyncioTestCase):
         sse.assert_not_called()
 
     async def test_a_failed_stream_is_not_cached_and_raises(self):
-        def broken(text, voice, model, rate):
+        def broken(text, voice, model, rate, lang):
             yield PCM
             raise RuntimeError("TTS 500: technical difficulties")
 
@@ -123,8 +124,8 @@ class StreamPcmTest(unittest.IsolatedAsyncioTestCase):
     async def test_the_clone_endpoint_path_emits_the_whole_clip(self):
         tts.EMBEDDING = {"embedding": "stub"}
 
-        def fake_clone(text, rate):
-            self.assertEqual(text, "hello")
+        def fake_clone(text, rate, lang):
+            self.assertEqual((text, lang), ("hello", tts.DEFAULT_LANG))
             return PCM
 
         with patch.object(tts, "_clone_and_cache", fake_clone):
@@ -145,7 +146,7 @@ class StreamPcmTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(b"".join(self.emitted), PCM)
 
     async def test_a_dead_socket_mid_stream_raises_instead_of_hanging(self):
-        def slow(text, voice, model, rate):
+        def slow(text, voice, model, rate, lang):
             for _ in range(50):
                 yield PCM
 
