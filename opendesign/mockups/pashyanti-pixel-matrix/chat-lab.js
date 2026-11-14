@@ -362,7 +362,7 @@
 
     if (mascotState === "unsure") {
       stampDots(ctx, badgeCoverage(N), N, pitch, accent, 0);
-      stampDots(ctx, badgeMarkCoverage(N), N, pitch, field, 0, 0.55);
+      stampDots(ctx, badgeMarkCoverage(N), N, pitch, field, 0, 0.7);
     }
 
     canvas.setAttribute("aria-label", "Sakhi, " + mascotState);
@@ -592,7 +592,12 @@
     }
 
     state.lines.forEach((line, index) => thread.appendChild(bubbleNode(line, index)));
-    if (state.mode === "missed") thread.appendChild(missedNode());
+    if (state.mode === "missed") {
+      /* Same measure as a bubble, not the full thread width. */
+      const turn = el("div", "turn");
+      turn.appendChild(missedNode());
+      thread.appendChild(turn);
+    }
     thread.scrollTop = thread.scrollHeight;
   }
 
@@ -758,8 +763,9 @@
       state.preview = "transcript";
       state.lines = [];
       renderThread();
-      syncControls();
     }
+
+    syncControls();
 
     appendLine({ who: "me", text: value });
     draft.value = "";
@@ -995,6 +1001,8 @@
     if (bg && ["peacock", "lattice", "wash", "off"].includes(bg)) state.bg = bg;
     const frame = params.get("frame");
     if (frame === "wide" || frame === "phone") state.frame = frame;
+    const dots = params.get("dots");
+    if (dots && ["faint", "screen", "bold"].includes(dots)) state.dots = dots;
     const preview = params.get("preview");
     if (preview && ["transcript", "empty", "missed", "summary"].includes(preview)) {
       state.preview = preview;

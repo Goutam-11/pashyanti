@@ -275,7 +275,7 @@ button {
 }
 
 .app[data-dots="bold"] {
-  --lattice-dot: color-mix(in srgb, var(--signal) 68%, var(--ink));
+  --lattice-dot: color-mix(in srgb, var(--signal) 82%, var(--ink));
 }
 
 /* The lattice: every dot is a printed mark. */
@@ -440,6 +440,7 @@ button {
   gap: 10px;
   padding: 8px 12px 8px 14px;
   border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--field) 80%, transparent);
 }
 
 .mascot {
@@ -559,6 +560,7 @@ button {
   z-index: 2;
   display: flex;
   border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--field) 80%, transparent);
 }
 
 .switch {
