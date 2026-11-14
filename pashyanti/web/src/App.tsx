@@ -1,15 +1,16 @@
 /**
  * Pashyanti — one screen: the caller's words, the user's replies, and Sakhi.
  *
- * The visual identity is "Myna": porcelain paper, midnight ink, one marigold
- * signal. The header is a lockup (mascot + wordmark); the mascot is also the
- * state readout, which is why she is the only thing in the header that moves.
+ * The call ends on an artefact, not a chat bubble: `end_call` asks the backend
+ * for `summary` (#4), and the card replaces the transcript. `new_call` clears
+ * everything and hands the screen back to the empty state.
  */
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Mascot, type MascotState } from "./components/Mascot";
 import { Onboarding } from "./components/Onboarding";
+import { SummaryCard } from "./components/SummaryCard";
 import { ThemeToggle } from "./components/ThemeToggle";
-import type { Line, ServerMsg } from "./types";
+import type { Line, ServerMsg, Summary } from "./types";
 import { useSocket } from "./ws";
 
 const CHIPS = [
@@ -35,46 +36,78 @@ function face(state: string): MascotState {
   return "idle";
 }
 
+/** How long to wait for #4's summary before saying it did not arrive. */
+const SUMMARY_WAIT_MS = 3000;
+
 export default function App() {
   const [lines, setLines] = useState<Line[]>([]);
   const [state, setState] = useState<string>("idle");
   const [mic, setMic] = useState<boolean | null>(null);
   const [draft, setDraft] = useState("");
+  const [summary, setSummary] = useState<Summary | null>(null);
+  const [ended, setEnded] = useState(false);
+  const [summaryMissing, setSummaryMissing] = useState(false);
   const [tour, setTour] = useState(
     () => new URLSearchParams(location.search).has("tour"),
   );
+  const summaryTimer = useRef<number | null>(null);
 
-  const onMsg = useCallback((m: ServerMsg) => {
-    switch (m.type) {
-      case "hello":
-        setMic(m.mic);
-        break;
-      case "status":
-        setState(m.state);
-        break;
-      case "transcript":
-        setLines((prev) => [
-          ...prev,
-          {
-            id: prev.length + 1,
-            who: "caller",
-            text: m.text,
-            lang: m.lang,
-            latency_ms: m.latency_ms,
-          },
-        ]);
-        break;
-      case "speak":
-        setLines((prev) => [
-          ...prev,
-          { id: prev.length + 1, who: "me", text: m.text },
-        ]);
-        break;
-      case "error":
-        setState(`error: ${m.message}`);
-        break;
+  const clearSummaryTimer = useCallback(() => {
+    if (summaryTimer.current !== null) {
+      window.clearTimeout(summaryTimer.current);
+      summaryTimer.current = null;
     }
   }, []);
+
+  useEffect(() => clearSummaryTimer, [clearSummaryTimer]);
+
+  const onMsg = useCallback(
+    (m: ServerMsg) => {
+      switch (m.type) {
+        case "hello":
+          setMic(m.mic);
+          break;
+        case "status":
+          setState(m.state);
+          break;
+        case "transcript":
+          setLines((prev) => [
+            ...prev,
+            {
+              id: prev.length + 1,
+              who: "caller",
+              text: m.text,
+              lang: m.lang,
+              latency_ms: m.latency_ms,
+            },
+          ]);
+          break;
+        case "speak":
+          setLines((prev) => [
+            ...prev,
+            { id: prev.length + 1, who: "me", text: m.text },
+          ]);
+          break;
+        case "summary":
+          clearSummaryTimer();
+          setSummary({
+            who: m.who,
+            agreed: m.agreed,
+            next: m.next,
+            turns: m.turns,
+            duration_s: m.duration_s,
+          });
+          setSummaryMissing(false);
+          setEnded(true);
+          setState("idle");
+          break;
+        case "error":
+          setState(`error: ${m.message}`);
+          break;
+      }
+    },
+    [clearSummaryTimer],
+  );
 
   const { connected, send } = useSocket(onMsg);
 
@@ -85,7 +118,31 @@ export default function App() {
     setDraft("");
   };
 
-  const empty = lines.length === 0;
+  const endCall = () => {
+    if (ended) return;
+    send({ type: "end_call" });
+    setEnded(true);
+    setState("idle");
+    setSummaryMissing(false);
+    clearSummaryTimer();
+    summaryTimer.current = window.setTimeout(
+      () => setSummaryMissing(true),
+      SUMMARY_WAIT_MS,
+    );
+  };
+
+  const newCall = () => {
+    clearSummaryTimer();
+    send({ type: "new_call" });
+    setLines([]);
+    setSummary(null);
+    setEnded(false);
+    setSummaryMissing(false);
+    setDraft("");
+    setState("idle");
+  };
+
+  const empty = lines.length === 0 && !ended;
   const errored = state.startsWith("error");
   const noMic = mic === false;
   const dotState = !connected || noMic || errored ? "error" : state;
@@ -128,7 +185,21 @@ export default function App() {
       </header>
 
       <main className="flex-1 overflow-y-auto px-4 py-4">
-        {empty ? (
+        {summary ? (
+          <SummaryCard summary={summary} />
+        ) : ended ? (
+          <div className="summary-card anim-in" aria-live="polite">
+            <p className="summary-eyebrow">कॉल समाप्त</p>
+            <p className="summary-title" lang="hi">
+              कॉल खत्म हो गई
+            </p>
+            <p className="summary-note" lang="hi">
+              {summaryMissing
+                ? "इस कॉल का सारांश नहीं मिला।"
+                : "सारांश आते ही यहाँ दिखेगा।"}
+            </p>
+          </div>
+        ) : empty ? (
           <div className="flex h-full flex-col items-center justify-center px-2 text-center">
             <Mascot state={face(state)} size={112} />
             <h2
@@ -166,43 +237,84 @@ export default function App() {
       </main>
 
       <footer className="border-t border-line px-4 pt-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))]">
-        <div
-          className="-mx-1 mb-2.5 flex gap-2 overflow-x-auto px-1 pr-6 [scrollbar-width:none] [mask-image:linear-gradient(to_right,#000_86%,transparent)] [&::-webkit-scrollbar]:hidden"
-          aria-label="जल्दी जवाब"
-        >
-          {CHIPS.map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => reply(c)}
-              className="chip"
-              lang="hi"
-            >
-              {c}
-            </button>
-          ))}
-        </div>
-
-        <form
-          className="flex gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            reply(draft);
-          }}
-        >
-          <input
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder="अपना जवाब लिखिए…"
-            aria-label="अपना जवाब लिखिए"
+        {ended ? (
+          <button
+            type="button"
+            className="btn-primary w-full"
+            onClick={newCall}
             lang="hi"
-            className="composer-input"
-            enterKeyHint="send"
-          />
-          <button type="submit" className="btn-primary" lang="hi">
-            बोलिए
+          >
+            नई कॉल
           </button>
-        </form>
+        ) : (
+          <>
+            {lines.length > 0 && (
+              <div className="mb-1.5 flex justify-end">
+                <button
+                  type="button"
+                  className="footer-end"
+                  onClick={endCall}
+                  lang="hi"
+                >
+                  <svg
+                    width="13"
+                    height="13"
+                    viewBox="0 0 16 16"
+                    aria-hidden="true"
+                  >
+                    <rect
+                      x="2.5"
+                      y="2.5"
+                      width="11"
+                      height="11"
+                      rx="2.5"
+                      fill="currentColor"
+                    />
+                  </svg>
+                  कॉल खत्म करें
+                </button>
+              </div>
+            )}
+
+            <div
+              className="-mx-1 mb-2.5 flex gap-2 overflow-x-auto px-1 pr-6 [scrollbar-width:none] [mask-image:linear-gradient(to_right,#000_86%,transparent)] [&::-webkit-scrollbar]:hidden"
+              aria-label="जल्दी जवाब"
+            >
+              {CHIPS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => reply(c)}
+                  className="chip"
+                  lang="hi"
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+
+            <form
+              className="flex gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                reply(draft);
+              }}
+            >
+              <input
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                placeholder="अपना जवाब लिखिए…"
+                aria-label="अपना जवाब लिखिए"
+                lang="hi"
+                className="composer-input"
+                enterKeyHint="send"
+              />
+              <button type="submit" className="btn-primary" lang="hi">
+                बोलिए
+              </button>
+            </form>
+          </>
+        )}
       </footer>
 
       <Onboarding open={tour} onClose={() => setTour(false)} />
