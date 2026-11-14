@@ -4,9 +4,12 @@ const KEY = "pashyanti.theme";
 
 /** Light is the default: this is a reading app for older eyes, in daylight. */
 export function ThemeToggle() {
-  const [dark, setDark] = useState(
-    () => localStorage.getItem(KEY) === "dark",
-  );
+  const [dark, setDark] = useState(() => {
+    const forced = new URLSearchParams(location.search).get("theme");
+    if (forced === "dark") return true;
+    if (forced === "light") return false;
+    return localStorage.getItem(KEY) === "dark";
+  });
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);

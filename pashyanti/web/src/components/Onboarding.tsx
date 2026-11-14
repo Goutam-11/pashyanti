@@ -42,12 +42,12 @@ export function Onboarding({ open, onClose }: { open: boolean; onClose: () => vo
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-paper/95 p-4 backdrop-blur-sm sm:items-center"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-paper/75 p-4 backdrop-blur-md sm:items-center"
       role="dialog"
       aria-modal="true"
       aria-labelledby="tour-title"
     >
-      <div className="anim-in w-full max-w-md rounded-3xl border border-line bg-surface p-6 shadow-sm">
+      <div className="anim-in w-full max-w-md rounded-3xl border border-line bg-surface p-6 shadow-[0_18px_50px_-12px_rgba(0,0,0,0.35)]">
         <div className="mb-4 flex justify-center">
           <Mascot state={s.state} size={96} />
         </div>
