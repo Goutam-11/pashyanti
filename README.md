@@ -102,7 +102,7 @@ and it runs fullscreen like an app.
 | `pashyanti/backend/stream_mic.py` | Standalone mic → transcript, for testing the socket |
 | `pashyanti/backend/test_stream_file.py` | Replays a wav into the STT socket — no microphone needed |
 | `pashyanti/backend/clone_voice.py` | `build ref.wav` → embedding, then `say "..."` in that voice |
-| `pashyanti/web/` | Vite + React + TypeScript, vanilla CSS, no UI framework |
+| `pashyanti/web/` | Vite + React + TypeScript, Tailwind 4 + CSS tokens, no component library |
 
 ## Screens
 
@@ -111,8 +111,10 @@ and it runs fullscreen like an app.
 | ![Light theme — the empty state, mascot and one instruction line](pashyanti/docs/screenshots/app-light.png) | ![Dark theme](pashyanti/docs/screenshots/app-dark.png) |
 | ![The three-step tour, behind the ? button](pashyanti/docs/screenshots/tour.png) | |
 
-Paper & Ink, light by default. The mascot — Sakhi — is the state indicator:
-her ear pulses while listening, her mouth moves while speaking.
+Myna, light by default: porcelain paper, midnight ink, one marigold signal.
+The mascot — Sakhi, a myna — is the state indicator: an amber ring pulses while
+listening, her beak opens while speaking, a `?` badge when the words were missed.
+The app icon is the same bird in an ink tile.
 
 ## Documentation
 

@@ -44,7 +44,8 @@ pashyanti/
     src/App.tsx            the one screen: transcript, chips, composer
     src/ws.ts              one socket, reconnect
     src/types.ts           the five message shapes
-    src/components/        Mascot (Sakhi), Onboarding, ThemeToggle
+    src/components/        Mascot (Sakhi, a myna), Onboarding, ThemeToggle
+    src/components/myna.ts shared mark paths + state labels (mascot, icon)
     src/index.css          every colour as a CSS variable, light + dark
     public/                PWA manifest and icon
   docs/                    architecture, API notes, decisions
@@ -152,10 +153,10 @@ files.
   is a two-screen SPA behind one socket. Tailwind earns its place because it is
   utilities plus a build step, not a component set — see D-009.
 - **UI rules that are product rules.** The mascot *is* the state indicator
-  (ear pulses = listening, mouth = speaking, `?` = didn't catch it) — never
-  animate it decoratively. The onboarding tour opens only from the `?` button or
-  `?tour=1`; it never opens by itself, because the first screen has to teach in
-  place. One theme on camera: Paper & Ink, light.
+  (amber ring pulses = listening, beak opens = speaking, `?` = didn't catch it,
+  still = idle) — never animate it decoratively. The onboarding tour opens only
+  from the `?` button or `?tour=1`; it never opens by itself, because the first
+  screen has to teach in place. One theme on camera: Myna, light.
 - **Accessibility floor:** body text ≥ 18 px, contrast ≥ 7:1, tap targets
   ≥ 44 px, visible focus ring, and respect `prefers-reduced-motion`.
 

@@ -22,7 +22,13 @@ const STEPS: { hi: string; en: string; body: string; state: MascotState }[] = [
   },
 ];
 
-export function Onboarding({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function Onboarding({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
   const [step, setStep] = useState(0);
 
   useEffect(() => {
@@ -42,12 +48,12 @@ export function Onboarding({ open, onClose }: { open: boolean; onClose: () => vo
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-paper/75 p-4 backdrop-blur-md sm:items-center"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-paper/85 p-4 backdrop-blur-sm sm:items-center"
       role="dialog"
       aria-modal="true"
       aria-labelledby="tour-title"
     >
-      <div className="anim-in w-full max-w-md rounded-3xl border border-line bg-surface p-6 shadow-[0_18px_50px_-12px_rgba(0,0,0,0.35)]">
+      <div className="anim-in w-full max-w-md rounded-3xl border border-line bg-surface p-6 shadow-[0_24px_60px_-24px_rgba(14,27,44,0.35)]">
         <div className="mb-4 flex justify-center">
           <Mascot state={s.state} size={96} />
         </div>
@@ -62,14 +68,18 @@ export function Onboarding({ open, onClose }: { open: boolean; onClose: () => vo
         <p className="mt-1 text-center text-[11px] uppercase tracking-[0.18em] text-muted">
           {s.en}
         </p>
-        <p className="mt-4 text-center font-deva text-lg leading-relaxed text-muted" lang="hi">
+        <p
+          className="mt-4 text-center font-deva text-lg leading-relaxed text-muted"
+          lang="hi"
+        >
           {s.body}
         </p>
 
         <div className="mt-6 flex items-center justify-between">
           <button
+            type="button"
             onClick={onClose}
-            className="px-2 py-2 text-sm text-muted underline underline-offset-4 hover:text-ink"
+            className="min-h-11 px-2 text-sm text-muted underline underline-offset-4 hover:text-ink"
           >
             छोड़ दें
           </button>
@@ -79,15 +89,16 @@ export function Onboarding({ open, onClose }: { open: boolean; onClose: () => vo
               <span
                 key={i}
                 className={`h-1.5 rounded-full transition-all ${
-                  i === step ? "w-5 bg-accent" : "w-1.5 bg-line"
+                  i === step ? "w-5 bg-accent-text" : "w-1.5 bg-line"
                 }`}
               />
             ))}
           </div>
 
           <button
+            type="button"
             onClick={() => (last ? onClose() : setStep(step + 1))}
-            className="rounded-xl bg-accent px-5 py-2.5 font-deva text-base font-semibold text-accent-ink"
+            className="btn-primary"
             lang="hi"
           >
             {last ? "शुरू करें" : "आगे"}
