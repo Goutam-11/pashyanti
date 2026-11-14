@@ -88,4 +88,12 @@ export const en: Messages = {
     speaking: "speaking",
     unsure: "didn’t catch that",
   },
+  talk: {
+    start: "Start listening",
+    starting: "Starting…",
+    hint: "In talk mode this phone is the microphone and the speaker.",
+    denied: "Microphone blocked. Allow it in the browser, then try again.",
+    insecure: "Talk mode needs HTTPS. Open this page over https://.",
+    unsupported: "This browser cannot capture audio for talk mode.",
+  },
 };

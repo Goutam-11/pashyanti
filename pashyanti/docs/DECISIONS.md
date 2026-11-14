@@ -73,6 +73,25 @@ forces a tunnel for the phone demo. Server-side capture already worked at
 true remote product, swap in the AudioWorklet and a tunnel — the WebSocket
 protocol does not change.
 
+**Amended 2026-11-14 (`feat/talk-mode`).** The owner's requirement is an
+**in-person conversation**: the laptop will not be there, the user holds the
+phone, another person speaks to them in the same room, and the reply is spoken
+out of the phone. Server-side capture cannot do that, so `?mode=talk` reverses
+this decision for that mode: the page captures with `getUserMedia` + an
+AudioWorklet (16 kHz mono s16le, whole 1024-byte frames over the websocket), the
+server's `BrowserMic` forwards them to Prisma at real-time cadence with the
+normal laptop VAD preset, and Timbre's PCM is streamed back as `audio` messages
+for Web Audio to play. No `sounddevice` device is opened in that mode.
+
+The cost recorded above is now real: talk mode needs a **secure context**
+(`getUserMedia`), so the phone is opened over the ngrok tunnel (or `--tls` with a
+trusted certificate), the origin — and therefore the microphone permission —
+changes when the tunnel URL changes, and iOS needs the `AudioContext` resumed
+inside the "Start listening" tap. Half-duplex becomes two-sided (`D-005`): the
+server sends silence while it streams, and the page stops sending frames until
+its player drains. The demo path is unchanged and still server-side; the video
+does not use talk mode ([`TALK-MODE.md`](TALK-MODE.md)).
+
 ---
 
 ## D-005 — Half-duplex, not echo cancellation

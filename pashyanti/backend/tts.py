@@ -10,6 +10,7 @@ import hashlib
 import json
 import os
 import time
+from pathlib import Path
 
 import numpy as np
 import requests
@@ -123,20 +124,26 @@ def _wav_pcm(path):
         return w.readframes(w.getnframes())
 
 
-def _play_and_cache_cloned(text):
-    """Blocking: clone endpoint (non-streaming) -> pcm cache -> speaker. -> ms."""
-    import sounddevice as sd
-
+def _clone_and_cache(text, rate=RATE):
+    """Blocking: clone endpoint (non-streaming) -> pcm cache. -> pcm."""
     os.makedirs(CACHE_DIR, exist_ok=True)
-    path = _key(text, MODE_CLONED, MODEL_CLONE, RATE, MODE_CLONED)
-    t0 = time.time()
+    path = _key(text, MODE_CLONED, MODEL_CLONE, rate, MODE_CLONED)
     tmp = f"{path}.wav"
-    gnani.tts_cloned(text, EMBEDDING, out=tmp, rate=RATE)
+    gnani.tts_cloned(text, EMBEDDING, out=tmp, rate=rate)
     pcm = _wav_pcm(tmp)
     os.remove(tmp)
-    ttfa = int((time.time() - t0) * 1000)
     with open(path, "wb") as f:
         f.write(pcm)
+    return pcm
+
+
+def _play_and_cache_cloned(text):
+    """Blocking: cloned pcm -> speaker. -> ms to first audio."""
+    import sounddevice as sd
+
+    t0 = time.time()
+    pcm = _clone_and_cache(text)
+    ttfa = int((time.time() - t0) * 1000)
     sd.play(np.frombuffer(pcm, dtype=np.int16), RATE)
     sd.wait()
     return ttfa
@@ -173,6 +180,93 @@ async def speak(text, voice=VOICE, model=MODEL, rate=RATE,
         return 0, True
     ttfa, _ = await asyncio.to_thread(_play_and_cache, text, voice, model, rate)
     return ttfa, False
+
+
+def _chunks(pcm, size=32 * 1024):
+    for i in range(0, len(pcm), size):
+        yield pcm[i:i + size]
+
+
+async def stream_pcm(text, emit, voice=VOICE, model=MODEL, rate=RATE,
+                     mode=MODE_DEFAULT):
+    """Say `text` into an async sink instead of the speaker. -> (ttfa_ms, cached).
+
+    Talk mode (`?mode=talk`) plays the reply on the phone, so the same Timbre
+    stream goes out over the page's websocket as it arrives instead of into a
+    `RawOutputStream`. Cached clips replay from disk and report 0 ms, exactly
+    like `speak`. `emit` is awaited on the event loop with raw s16le chunks.
+    """
+    effective = MODE_CLONED if mode == MODE_CLONED and has_clone() else MODE_DEFAULT
+
+    if effective == MODE_CLONED:
+        path = _key(text, MODE_CLONED, MODEL_CLONE, rate, MODE_CLONED)
+        if os.path.exists(path):
+            for chunk in _chunks(await asyncio.to_thread(Path(path).read_bytes)):
+                await emit(chunk)
+            return 0, True
+        t0 = time.time()
+        pcm = await asyncio.to_thread(_clone_and_cache, text, rate)
+        ttfa = int((time.time() - t0) * 1000)
+        for chunk in _chunks(pcm):
+            await emit(chunk)
+        return ttfa, False
+
+    path = _key(text, voice, model, rate, MODE_DEFAULT)
+    if os.path.exists(path):
+        for chunk in _chunks(await asyncio.to_thread(Path(path).read_bytes)):
+            await emit(chunk)
+        return 0, True
+    return await _stream_sse_to(text, emit, voice, model, rate, path)
+
+
+async def _stream_sse_to(text, emit, voice, model, rate, path):
+    """Bridge the blocking SSE loop to the event loop without buffering it all."""
+    loop = asyncio.get_running_loop()
+    queue: asyncio.Queue = asyncio.Queue()
+    done = object()
+    t0 = time.time()
+    first: list[int] = []
+    pcm = bytearray()
+
+    def worker():
+        ok = False
+        try:
+            for chunk in _sse_stream(text, voice, model, rate):
+                if not first:
+                    first.append(int((time.time() - t0) * 1000))
+                pcm.extend(chunk)
+                loop.call_soon_threadsafe(queue.put_nowait, chunk)
+            ok = True
+        except Exception as exc:                     # noqa: BLE001
+            loop.call_soon_threadsafe(queue.put_nowait, exc)
+        finally:
+            # Only a complete stream is cached: a truncated clip would replay
+            # as a half sentence and report 0 ms.
+            if ok and pcm:
+                try:
+                    os.makedirs(CACHE_DIR, exist_ok=True)
+                    with open(path, "wb") as f:
+                        f.write(bytes(pcm))
+                except OSError:
+                    pass          # playback already happened; a cache miss is cheap
+            loop.call_soon_threadsafe(queue.put_nowait, done)
+
+    task = asyncio.create_task(asyncio.to_thread(worker))
+    try:
+        while True:
+            item = await queue.get()
+            if item is done:
+                break
+            if isinstance(item, Exception):
+                raise item
+            await emit(item)
+    finally:
+        if not task.done():
+            # The socket went away mid-sentence. Do not hold the call open for
+            # the rest of the stream; the worker finishes and caches on its own.
+            task.cancel()
+    return int(first[0]) if first else 0, False
+
 
 
 def cache_stats():

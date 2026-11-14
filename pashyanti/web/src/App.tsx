@@ -17,7 +17,8 @@ import { RetryNotice } from "./components/RetryNotice";
 import { SummaryCard } from "./components/SummaryCard";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { useI18n } from "./i18n";
-import type { Line, ServerMsg, Summary } from "./types";
+import { Talk, TalkError } from "./talk";
+import type { CallMode, Line, ServerMsg, Summary } from "./types";
 import { useSocket } from "./ws";
 
 /** Server state → mascot face. The mascot is the state indicator, not decoration. */
@@ -31,6 +32,19 @@ function face(state: string): MascotState {
 /** How long to wait for #4's summary before saying it did not arrive. */
 const SUMMARY_WAIT_MS = 3000;
 
+/** `?mode=talk`: the phone is the microphone and the speaker (D-004). */
+const TALK_REQUESTED =
+  new URLSearchParams(location.search).get("mode") === "talk";
+
+type CaptureState =
+  | "idle"
+  | "starting"
+  | "ready"
+  | "denied"
+  | "insecure"
+  | "unsupported"
+  | "error";
+
 export default function App() {
   const { m } = useI18n();
   const [lines, setLines] = useState<Line[]>([]);
@@ -43,6 +57,9 @@ export default function App() {
   const [retry, setRetry] = useState(false);
   const [phoneLine, setPhoneLine] = useState(false);
   const [clonedVoice, setClonedVoice] = useState(false);
+  const [mode, setMode] = useState<CallMode>(TALK_REQUESTED ? "talk" : "server");
+  const [capture, setCapture] = useState<CaptureState>("idle");
+  const talk = useRef<Talk | null>(null);
   const [tour, setTour] = useState(
     () => new URLSearchParams(location.search).has("tour"),
   );
@@ -57,11 +74,15 @@ export default function App() {
 
   useEffect(() => clearSummaryTimer, [clearSummaryTimer]);
 
+  // Leaving the page must release the microphone, not just the socket.
+  useEffect(() => () => talk.current?.stop(), []);
+
   const onMsg = useCallback(
     (msg: ServerMsg) => {
       switch (msg.type) {
         case "hello":
           setMic(msg.mic);
+          if (msg.mode) setMode(msg.mode);
           if (typeof msg.phone_line === "boolean") setPhoneLine(msg.phone_line);
           if (typeof msg.cloned_voice === "boolean")
             setClonedVoice(msg.cloned_voice);
@@ -74,6 +95,17 @@ export default function App() {
           break;
         case "status":
           setState(msg.state);
+          // Half-duplex, page side: our own reply must not be captured. The
+          // player's drain re-opens the microphone when the audio has played.
+          if (msg.state === "speaking") talk.current?.setMuted(true);
+          if (msg.state === "listening" && !talk.current?.playing)
+            talk.current?.setMuted(false);
+          break;
+        case "audio":
+          if (!msg.final) talk.current?.play(msg.data, msg.rate);
+          break;
+        case "capture":
+          setCapture(msg.state);
           break;
         case "transcript":
           setRetry(false);
@@ -119,7 +151,7 @@ export default function App() {
     [clearSummaryTimer],
   );
 
-  const { connected, send } = useSocket(onMsg);
+  const { connected, send, sendBytes } = useSocket(onMsg, TALK_REQUESTED ? "?mode=talk" : "");
 
   const togglePhoneLine = () => {
     const enabled = !phoneLine;
@@ -131,6 +163,30 @@ export default function App() {
     const enabled = !clonedVoice;
     setClonedVoice(enabled);
     send({ type: "set_cloned_voice", enabled });
+  };
+
+  const startListening = async () => {
+    if (capture === "starting" || capture === "ready") return;
+    if (!window.isSecureContext) {
+      setCapture("insecure");
+      return;
+    }
+    setCapture("starting");
+    try {
+      const engine = await Talk.start({
+        onFrame: (frame) => sendBytes(frame),
+        onPlaybackDrained: () => talk.current?.setMuted(false),
+      });
+      talk.current = engine;
+      send({ type: "start_capture" });
+    } catch (err) {
+      if (err instanceof TalkError) {
+        setCapture(err.kind);
+      } else {
+        setState(`error: ${err instanceof Error ? err.message : String(err)}`);
+        setCapture("idle");
+      }
+    }
   };
 
   const reply = (text: string) => {
@@ -168,13 +224,24 @@ export default function App() {
 
   const empty = lines.length === 0 && !ended;
   const errored = state.startsWith("error");
-  const noMic = mic === false;
+  const isTalk = mode === "talk";
+  const noMic = !isTalk && mic === false;
   const missed = retry && !ended;
   const dotState = !connected || noMic || errored
     ? "error"
     : missed
       ? "missed"
       : state;
+  // Only a failure needs a sentence next to the button; the hint lives in the
+  // empty state, once.
+  const captureNote =
+    capture === "denied"
+      ? m.talk.denied
+      : capture === "insecure"
+        ? m.talk.insecure
+        : capture === "unsupported"
+          ? m.talk.unsupported
+          : "";
   const statusKey = state as "listening" | "thinking" | "speaking";
   const statusLabel = !connected
     ? m.status.reconnecting
@@ -252,6 +319,11 @@ export default function App() {
                 <p className="mt-3 max-w-[19rem] font-indic text-[18px] leading-relaxed text-muted">
                   {m.empty.body}
                 </p>
+                {isTalk && (
+                  <p className="mt-2 max-w-[19rem] font-indic text-[18px] leading-relaxed text-muted">
+                    {m.talk.hint}
+                  </p>
+                )}
               </>
             )}
           </div>
@@ -289,6 +361,18 @@ export default function App() {
           <button type="button" className="btn-primary w-full" onClick={newCall}>
             {m.call.new}
           </button>
+        ) : isTalk && capture !== "ready" ? (
+          <div>
+            {captureNote && <p className="talk-note">{captureNote}</p>}
+            <button
+              type="button"
+              className="btn-primary w-full"
+              onClick={startListening}
+              disabled={capture === "starting"}
+            >
+              {capture === "starting" ? m.talk.starting : m.talk.start}
+            </button>
+          </div>
         ) : (
           <>
             {lines.length > 0 && (

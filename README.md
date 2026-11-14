@@ -118,16 +118,41 @@ For production the backend serves `web/dist` itself — one `bun run build`, the
 one process on one port. Open it on a phone over the LAN, "Add to Home Screen",
 and it runs fullscreen like an app.
 
+### Conversation mode — the phone is the microphone
+
+The path above hears the caller through the **server's** microphone, which is
+what the demo video uses. **Talk mode** (`?mode=talk`) is for when the laptop is
+not there: the user holds the phone between themselves and another person in the
+same room, the page captures 16 kHz PCM in an AudioWorklet and sends it as whole
+1024-byte frames, and Timbre's reply is streamed back for the phone's speaker.
+The server is only a relay and opens no audio device.
+
+```fish
+ngrok http 8080          # getUserMedia needs a secure context
+# on the phone: https://<random>.ngrok-free.dev/?mode=talk
+```
+
+`getUserMedia` needs `https://` (or `localhost`), so a tunnel or
+`server.py --tls cert.pem key.pem` is required. Half-duplex is preserved on both
+sides: the server sends silence while it streams and the page stops sending
+frames until the reply has played. Measured in a real Chrome over the HTTPS
+tunnel with a fake microphone device: **585 frames, every one exactly 1024
+bytes, median cadence 32 ms**, a `hi-IN` transcript on screen, and the reply
+back as 17 chunks / 1.36 s of PCM. The runbook, the full numbers and everything
+that was **not** verified (no physical phone, no room acoustics, no iOS) are in
+[`pashyanti/docs/TALK-MODE.md`](pashyanti/docs/TALK-MODE.md).
+
 | Piece | What it does |
 |---|---|
 | `pashyanti/backend/server.py` | The app: serves the frontend, runs the microphone, relays Gnani |
-| `pashyanti/backend/stt.py` | Mic → Prisma v3.0 streaming → one callback per sentence |
-| `pashyanti/backend/tts.py` | Text → Timbre v3.0 SSE → speaker, cached by hash |
+| `pashyanti/backend/stt.py` | Mic (or the page's frames) → Prisma v3.0 streaming → one callback per sentence |
+| `pashyanti/backend/tts.py` | Text → Timbre v3.0 SSE → speaker or the page, cached by hash |
 | `pashyanti/backend/audio.py` | 1024-byte frame maths, G.711 µ-law in numpy |
 | `pashyanti/backend/probe.py` | What a credit is worth: one 1,000-char TTS + one 10 s STT call |
 | `pashyanti/backend/stream_mic.py` | Standalone mic → transcript, for testing the socket |
 | `pashyanti/backend/test_stream_file.py` | Replays a wav into the STT socket — no microphone needed |
 | `pashyanti/backend/clone_voice.py` | `build ref.wav` → embedding, then `say "..."` in that voice |
+| `pashyanti/web/talk.ts` | AudioWorklet capture (16 kHz, 1024-byte frames) + Web Audio reply playback |
 | `pashyanti/web/` | Vite + React + TypeScript, Tailwind 4 + CSS tokens, no component library |
 
 ## Screens
@@ -162,13 +187,15 @@ half exposes a voice language.
 | [`pashyanti/docs/DEMO.md`](pashyanti/docs/DEMO.md) | The 60-second shoot script: beat sheet, shot list, the numbers and their provenance, post copy |
 | [`pashyanti/docs/TWILIO-SPIKE.md`](pashyanti/docs/TWILIO-SPIKE.md) | The Twilio Media Streams spike: what a real phone call would take, and why it is not in the demo |
 | [`pashyanti/docs/EXOTEL-SPIKE.md`](pashyanti/docs/EXOTEL-SPIKE.md) | The Exotel trial-call spike: one real Indian call that worked, and why it is still not the video |
+| [`pashyanti/docs/TALK-MODE.md`](pashyanti/docs/TALK-MODE.md) | Conversation mode: the phone as microphone and speaker, the HTTPS requirement, the measured evidence and its limits |
 
 ## Status
 
 Hackathon build — *The Great Indian AI Internship Challenge*, November 2026.
 Working: live transcription, spoken replies, voice cloning, phone-line accuracy
-measurement, installable frontend, and an interface in English, Hindi, Bengali
-and Marathi. The end-of-call summary card (#4), the repeat notice (#3) and both demo
+measurement, installable frontend, an interface in English, Hindi, Bengali and
+Marathi, and conversation mode with the phone as the microphone and speaker
+(`?mode=talk`, over HTTPS). The end-of-call summary card (#4), the repeat notice (#3) and both demo
 switches — *फ़ोन लाइन* / Phone line (#5) and *मेरी आवाज़* / My voice (#6) — are
 live end to end. Not built: a real phone number — the Twilio spike is a
 documented no-go for this deadline.

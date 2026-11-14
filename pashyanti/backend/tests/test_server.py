@@ -6,6 +6,7 @@ path, and half-duplex muting — without spending credits or needing audio
 hardware. It is the test that fails when someone renames a message type.
 """
 import asyncio
+import base64
 import json
 import os
 import tempfile
@@ -44,11 +45,30 @@ class FakeMic:
         self.stopped = True
 
 
-class ServerIntegrationTest(unittest.IsolatedAsyncioTestCase):
+class FakeBrowserMic(FakeMic):
+    """Stands in for stt.BrowserMic: frames from the page, not a device."""
+
+    instances: list["FakeBrowserMic"] = []
+
+    def __init__(self, on_text, **kwargs):
+        super().__init__(on_text, **kwargs)
+        self.fed: list[bytes] = []
+        FakeBrowserMic.instances.append(self)
+
+    async def feed(self, data: bytes):
+        self.fed.append(bytes(data))
+
+
+class SocketTestBase(unittest.IsolatedAsyncioTestCase):
+    """One app, one socket, no device and no Gnani call."""
+
     async def asyncSetUp(self):
         FakeMic.instances = []
+        FakeBrowserMic.instances = []
         self.speaks: list[str] = []
+        self.streamed: list[str] = []
         self.muted_during_speak: list[bool] = []
+        self.muted_during_stream: list[bool] = []
         outer = self
 
         async def fake_speak(text, **kwargs):
@@ -56,9 +76,18 @@ class ServerIntegrationTest(unittest.IsolatedAsyncioTestCase):
             outer.muted_during_speak.append(FakeMic.instances[-1].muted)
             return 123, False
 
+        async def fake_stream_pcm(text, emit, **kwargs):
+            outer.streamed.append(text)
+            outer.muted_during_stream.append(FakeBrowserMic.instances[-1].muted)
+            await emit(b"\x01\x02" * 512)
+            await emit(b"\x03\x04" * 512)
+            return 77, False
+
         self._patches = [
             patch.object(server, "MicSession", FakeMic),
+            patch.object(server, "BrowserMic", FakeBrowserMic),
             patch.object(tts, "speak", fake_speak),
+            patch.object(tts, "stream_pcm", fake_stream_pcm),
         ]
         for p in self._patches:
             p.start()
@@ -70,6 +99,8 @@ class ServerIntegrationTest(unittest.IsolatedAsyncioTestCase):
         for p in reversed(self._patches):
             p.stop()
 
+
+class ServerIntegrationTest(SocketTestBase):
     # --- routing ---------------------------------------------------------
 
     async def test_index_is_served(self):
@@ -89,6 +120,7 @@ class ServerIntegrationTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(hello["voice"], "default")
         self.assertFalse(hello["cloned_voice"])
         self.assertFalse(hello["phone_line"])
+        self.assertEqual(hello["mode"], "server")
         await ws.close()
 
     async def test_reply_walks_the_status_cycle(self):
@@ -277,6 +309,123 @@ class ServerIntegrationTest(unittest.IsolatedAsyncioTestCase):
             self.assertNotIn("transcript", [f["type"] for f in frames])
             self.assertEqual(frames[-1]["turns"], 0)
             self.assertEqual(frames[-1]["who"], "unknown caller")
+        await ws.close()
+
+
+class TalkModeTest(SocketTestBase):
+    """`?mode=talk`: the page is the microphone and the speaker (D-004)."""
+
+    async def _talk(self):
+        ws = await self.client.ws_connect("/ws?mode=talk")
+        hello = await ws.receive_json()
+        return ws, hello
+
+    async def _ready(self, ws):
+        await ws.send_json({"type": "start_capture"})
+        frame = await ws.receive_json()
+        self.assertEqual(frame, {"type": "capture", "state": "ready"})
+        return FakeBrowserMic.instances[-1]
+
+    async def test_hello_says_talk_mode_and_starts_no_server_mic(self):
+        ws, hello = await self._talk()
+        self.assertEqual(hello["mode"], "talk")
+        self.assertTrue(hello["mic"])
+        await asyncio.sleep(0.05)
+        # `hello` constructs a probe to report availability; nothing is started.
+        self.assertEqual([m for m in FakeMic.instances if m.started], [],
+                         "talk mode must not open a device")
+        self.assertEqual(FakeBrowserMic.instances, [],
+                         "the page's mic opens only on its gesture")
+        await ws.close()
+
+    async def test_prisma_opens_on_the_start_listening_gesture(self):
+        ws, _ = await self._talk()
+        await asyncio.sleep(0.05)
+        self.assertEqual(FakeBrowserMic.instances, [])
+        mic = await self._ready(ws)
+        self.assertIsInstance(mic, FakeBrowserMic)
+        self.assertTrue(mic.started)
+        self.assertFalse(mic.kwargs.get("telephony", False))
+        await ws.close()
+
+    async def test_binary_frames_reach_the_browser_mic(self):
+        ws, _ = await self._talk()
+        mic = await self._ready(ws)
+        await ws.send_bytes(b"\x01" * 1024)
+        await ws.send_bytes(b"\x02" * 1024)
+        for _ in range(50):
+            if len(mic.fed) >= 2:
+                break
+            await asyncio.sleep(0.01)
+        self.assertEqual(mic.fed, [b"\x01" * 1024, b"\x02" * 1024])
+        await ws.close()
+
+    async def test_a_frame_before_the_gesture_is_dropped_quietly(self):
+        ws, _ = await self._talk()
+        await ws.send_bytes(b"\x01" * 1024)      # no capture session yet
+        await asyncio.sleep(0.05)
+        mic = await self._ready(ws)
+        self.assertEqual(mic.fed, [])
+        await ws.close()
+
+    async def test_a_binary_frame_in_server_mode_does_not_kill_the_socket(self):
+        ws = await self.client.ws_connect("/ws")
+        await ws.receive_json()
+        await ws.send_bytes(b"\x01" * 1024)
+        await ws.send_json({"type": "reply", "text": "ठीक है।"})
+        self.assertEqual((await ws.receive_json())["state"], "speaking")
+        self.assertEqual(FakeBrowserMic.instances, [])
+        await ws.close()
+
+    async def test_the_reply_is_streamed_to_the_page(self):
+        ws, _ = await self._talk()
+        await self._ready(ws)
+        await ws.send_json({"type": "reply", "text": "हाँ, बोलिए।"})
+
+        self.assertEqual(await ws.receive_json(),
+                         {"type": "status", "state": "speaking"})
+
+        first = await ws.receive_json()
+        self.assertEqual(first["type"], "audio")
+        self.assertEqual(first["rate"], tts.RATE)
+        self.assertEqual(base64.b64decode(first["data"]), b"\x01\x02" * 512)
+
+        second = await ws.receive_json()
+        self.assertEqual(base64.b64decode(second["data"]), b"\x03\x04" * 512)
+
+        final = await ws.receive_json()
+        self.assertEqual(final, {"type": "audio", "data": "",
+                                 "rate": tts.RATE, "final": True})
+
+        spoken = await ws.receive_json()
+        self.assertEqual(spoken["type"], "speak")
+        self.assertEqual(spoken["ttfa_ms"], 77)
+
+        self.assertEqual(await ws.receive_json(),
+                         {"type": "status", "state": "listening"})
+        self.assertEqual(self.streamed, ["हाँ, बोलिए।"])
+        self.assertEqual(self.speaks, [], "the server must not play it too")
+        await ws.close()
+
+    async def test_the_page_mic_is_muted_while_the_reply_streams(self):
+        ws, _ = await self._talk()
+        mic = await self._ready(ws)
+        await ws.send_json({"type": "reply", "text": "ठीक है।"})
+        for _ in range(5):                       # speaking, 2 audio, final, speak… 
+            if (await ws.receive_json()).get("type") == "speak":
+                break
+        self.assertEqual(self.muted_during_stream, [True])
+        self.assertFalse(mic.muted, "the mic must be unmuted after the reply")
+        await ws.close()
+
+    async def test_a_reply_can_be_ended_by_the_phone(self):
+        ws, _ = await self._talk()
+        await self._ready(ws)
+        with tempfile.TemporaryDirectory() as tmp, \
+             patch.object(server, "CACHE", Path(tmp) / "cache"):
+            await ws.send_json({"type": "end_call"})
+            summary = await ws.receive_json()
+            self.assertEqual(summary["type"], "summary")
         await ws.close()
 
 
