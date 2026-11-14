@@ -245,4 +245,5 @@ file, one registry line, and a font entry if the script is new — not a refacto
 missing key is a type error. The font stack includes Noto Sans Bengali for the
 new script; another script adds its Noto face. The UI language is **not** the
 call language: it never changes recognition, and it does not yet change the
-voice — TTS remains Hindi until #5/#6 expose a language choice.
+voice — TTS remains Hindi; a per-call voice language is a backend follow-up,
+not something #5/#6 provide.
