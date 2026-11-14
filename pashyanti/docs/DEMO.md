@@ -145,6 +145,12 @@ and the retakes are instant.
 - [ ] `मेरी आवाज़` off at the start of the take.
 - [ ] `embedding.json` exists and `tts.has_clone()` is `True`.
 - [ ] One throwaway sentence transcribes and one throwaway reply speaks.
+- [ ] After that sentence, the chip row may replace itself with **caller-language
+      chips** (one direct answer, then "please repeat" and "a little slower")
+      about 2.5 s later. For a Hindi caller the row always contains
+      **थोड़ा धीरे बोलिए।**, so beat 4's tap exists either way. If the chip model
+      is slow or offline, the static हिंदी row stays and the take is still valid —
+      this is an enhancement, not a beat, and nothing on screen depends on it.
 
 ---
 
@@ -210,7 +216,7 @@ from the voiceover, never a frame from the transcript.
 | 1 | 0:00–0:05 | Camera: a phone face-down in two hands. **Hook burned in at frame 1.** | Room tone only | Burned-in + voiceover: "The clinic called at 9:04. Meera watched the phone ring, and could not answer it." |
 | 2 | 0:05–0:11 | The phone turns over onto the empty state: Sakhi idle, "सामने वाले की बात यहाँ पढ़िए". | UI, quiet | "This morning, she answered it herself." |
 | 3 | 0:11–0:19 | The caller's bubble grows in the transcript, `hi-IN · <latency> ms` under it. The mascot is **still** and the pill reads `तैयार` on this first turn — the arcs only start after the first reply; the bubble is the cue. | Caller speaking, live | "Their voice becomes text — in about half a second." |
-| 4 | 0:19–0:25 | She taps **थोड़ा धीरे बोलिए।**; the reply bubble appears after the audio; the beak opens while it speaks. | Her voice through the speaker | "Her tap becomes a voice." |
+| 4 | 0:19–0:25 | She taps **थोड़ा धीरे बोलिए।** — the static chip, or the same option in the caller-language row if the chips have replaced themselves; the reply bubble appears after the audio; the beak opens while it speaks. | Her voice through the speaker | "Her tap becomes a voice." |
 | 5 | 0:25–0:34 | Thumb flips **फ़ोन लाइन**; the caller repeats A1, a little slower; a second, near-identical bubble lands. Lower third: `8 clips · 3.6% WER · 10 dB · 8 kHz µ-law`. | Caller, live; the degradation is server-side and is **not** audible in the room | "Same sentence, on a bad line. Eight clips: 3.6% word error at 10 dB." |
 | 6 | 0:34–0:39 | A short noise burst at the mic. The `?` disc, then "समझ नहीं आया — दोहराइए". Hold ≥ 2 s. | Room | "When it isn't sure, it asks — it does not guess." |
 | 7 | 0:39–0:47 | Caller: **"कल सुबह दस बजे का अपॉइंटमेंट खाली है।"** — the bubble clears the retry card. She flips **मेरी आवाज़**, taps **बोलिए** on the pre-filled U2; the reply is spoken in her cloned voice. | Caller, then her cloned voice | "The appointment is free. She says yes — in her own voice." |
@@ -393,6 +399,9 @@ not in the script above.
 - **"instant"**, "zero latency", "perfect" — 764 ms and 3.6% are the numbers.
 - **"the AI understands your call"** — the summary is `build_summary`, a pure
   function over the transcript lines, not a model call.
+- **"the chips translate"** — they are written **in** the caller's language, not
+  translated from the user's; nothing in this app translates. A chip is a
+  suggestion, not a transcript of what the user said.
 
 ---
 
@@ -421,7 +430,7 @@ a still — a frozen `?` card is exactly the kind of fake a judge notices.
 | Does it translate? | No. Prisma recognises Indic speech (and English) in the language spoken; the reply is spoken from the text the user typed. |
 | Who makes the summary? | `server.build_summary` — a pure function over the transcript: first caller line, last caller line, last reply, turn count, duration. No model call, so the same call always gives the same card. |
 | How accurate is it? | 3.6% WER at 10 dB SNR on 8 clips, `hi-IN`, 8 kHz µ-law, after folding orthography. At 0 dB it is 93.5%, so the app asks for a repeat when the audio is unusable. |
-| What still breaks? | Overlapping speech; no barge-in while the mic is muted; cloned voice needs a 5–30 s reference; spoken replies are Hindi only (`DECISIONS.md` D-012). |
+| What still breaks? | Overlapping speech; no barge-in while the mic is muted; the cloned voice needs a 5–30 s reference and is **Hindi-only**, so a non-Hindi reply uses the default Timbre voice; the reply chips can be blunt or use the wrong grammatical gender, and they follow the *detected* language, which is occasionally wrong (`D-012` amendment, `LLM-NOTES.md`). |
 | Why is the phone only a screen? | In this video it is: capture is server-side (`D-004`), so the phone needs no microphone permission and no HTTPS tunnel. That is also why the caller is in the room — the laptop microphone is the input. A browser *can* feed Prisma's 1024-byte PCM socket: `?mode=talk` does exactly that with an AudioWorklet, and the phone becomes microphone and speaker (`D-004` amendment, [`TALK-MODE.md`](TALK-MODE.md)). It is not in this video and changes nothing on screen. |
 
 ---

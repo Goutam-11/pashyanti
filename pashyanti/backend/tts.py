@@ -32,6 +32,32 @@ RATE = 16000
 
 MODE_DEFAULT = "default"
 MODE_CLONED = "cloned"
+DEFAULT_LANG = "hi-IN"
+
+
+def reply_language(lang: str | None) -> str:
+    """The language Timbre should speak: the caller's, or Hindi by default.
+
+    Prisma reports region-tagged codes (`hi-IN`); a bare code is completed with
+    `-IN` because every language this app meets is Indian or English-in-India.
+    """
+    text = (lang or "").strip()
+    if not text:
+        return DEFAULT_LANG
+    return text if "-" in text else f"{text}-IN"
+
+
+def effective_mode(mode: str, lang: str | None) -> str:
+    """Cloned only when a clone exists *and* the reply is Hindi.
+
+    `vachana-vc-v1` takes an embedding, not a language, so a cloned reply is
+    Hindi-shaped by construction. Timbre v3.0's default voices each speak all
+    ten languages, so a non-Hindi reply uses the default voice instead of
+    speaking Bengali with a Hindi clone (D-012 amendment).
+    """
+    if mode != MODE_CLONED or not has_clone():
+        return MODE_DEFAULT
+    return MODE_CLONED if reply_language(lang).lower().startswith("hi") else MODE_DEFAULT
 
 
 def _load_embedding(path=EMBEDDING_PATH):
@@ -50,20 +76,20 @@ def has_clone():
     return EMBEDDING is not None
 
 
-def _key(text, voice, model, rate, mode=MODE_DEFAULT):
+def _key(text, voice, model, rate, mode=MODE_DEFAULT, lang=DEFAULT_LANG):
     h = hashlib.sha1(
-        f"{text}|{voice}|{model}|{rate}|{mode}".encode()
+        f"{text}|{voice}|{model}|{rate}|{mode}|{reply_language(lang)}".encode()
     ).hexdigest()[:16]
     return os.path.join(CACHE_DIR, f"{h}.pcm")
 
 
-def _sse_stream(text, voice, model, rate):
+def _sse_stream(text, voice, model, rate, lang=DEFAULT_LANG):
     """Yield raw s16le chunks as the server produces them."""
     payload = {
         "text": text,
         "voice": voice,
         "model": model,
-        "language": "hi-IN",
+        "language": reply_language(lang),
         "speed": 1.0,
         "audio_config": {
             "sample_rate": rate,
@@ -94,18 +120,19 @@ def _sse_stream(text, voice, model, rate):
                 break
 
 
-def _play_and_cache(text, voice, model, rate, mode=MODE_DEFAULT):
-    """Blocking: stream to the speaker and accumulate to the cache. -> ms to first audio."""
+def _play_and_cache(text, voice, model, rate, mode=MODE_DEFAULT,
+                    lang=DEFAULT_LANG):
+    """Blocking: stream to the speaker and accumulate to the cache. -> ms."""
     import sounddevice as sd
 
     os.makedirs(CACHE_DIR, exist_ok=True)
-    path = _key(text, voice, model, rate, mode)
+    path = _key(text, voice, model, rate, mode, lang)
     t0 = time.time()
     first = None
     pcm = bytearray()
 
     with sd.RawOutputStream(samplerate=rate, channels=1, dtype="int16") as out:
-        for chunk in _sse_stream(text, voice, model, rate):
+        for chunk in _sse_stream(text, voice, model, rate, lang):
             if first is None:
                 first = (time.time() - t0) * 1000
             pcm.extend(chunk)
@@ -124,10 +151,10 @@ def _wav_pcm(path):
         return w.readframes(w.getnframes())
 
 
-def _clone_and_cache(text, rate=RATE):
+def _clone_and_cache(text, rate=RATE, lang=DEFAULT_LANG):
     """Blocking: clone endpoint (non-streaming) -> pcm cache. -> pcm."""
     os.makedirs(CACHE_DIR, exist_ok=True)
-    path = _key(text, MODE_CLONED, MODEL_CLONE, rate, MODE_CLONED)
+    path = _key(text, MODE_CLONED, MODEL_CLONE, rate, MODE_CLONED, lang)
     tmp = f"{path}.wav"
     gnani.tts_cloned(text, EMBEDDING, out=tmp, rate=rate)
     pcm = _wav_pcm(tmp)
@@ -137,12 +164,12 @@ def _clone_and_cache(text, rate=RATE):
     return pcm
 
 
-def _play_and_cache_cloned(text):
+def _play_and_cache_cloned(text, lang=DEFAULT_LANG):
     """Blocking: cloned pcm -> speaker. -> ms to first audio."""
     import sounddevice as sd
 
     t0 = time.time()
-    pcm = _clone_and_cache(text)
+    pcm = _clone_and_cache(text, RATE, lang)
     ttfa = int((time.time() - t0) * 1000)
     sd.play(np.frombuffer(pcm, dtype=np.int16), RATE)
     sd.wait()
@@ -158,27 +185,29 @@ def _play_cached(path, rate):
 
 
 async def speak(text, voice=VOICE, model=MODEL, rate=RATE,
-                mode=MODE_DEFAULT):
+                mode=MODE_DEFAULT, lang=DEFAULT_LANG):
     """Say `text` out loud. Returns (ttfa_ms, cached).
 
     `mode` is "cloned" only when an embedding was loaded; asking for the cloned
     voice without one falls back to the default voice instead of failing.
+    `lang` is the language of the words, normally the caller's (`Call.reply_lang`).
     """
-    effective = MODE_CLONED if mode == MODE_CLONED and has_clone() else MODE_DEFAULT
+    effective = effective_mode(mode, lang)
 
     if effective == MODE_CLONED:
-        path = _key(text, MODE_CLONED, MODEL_CLONE, rate, MODE_CLONED)
+        path = _key(text, MODE_CLONED, MODEL_CLONE, rate, MODE_CLONED, lang)
         if os.path.exists(path):
             await asyncio.to_thread(_play_cached, path, rate)
             return 0, True
-        ttfa = await asyncio.to_thread(_play_and_cache_cloned, text)
+        ttfa = await asyncio.to_thread(_play_and_cache_cloned, text, lang)
         return ttfa, False
 
-    path = _key(text, voice, model, rate, MODE_DEFAULT)
+    path = _key(text, voice, model, rate, MODE_DEFAULT, lang)
     if os.path.exists(path):
         await asyncio.to_thread(_play_cached, path, rate)
         return 0, True
-    ttfa, _ = await asyncio.to_thread(_play_and_cache, text, voice, model, rate)
+    ttfa, _ = await asyncio.to_thread(_play_and_cache, text, voice, model, rate,
+                                      MODE_DEFAULT, lang)
     return ttfa, False
 
 
@@ -188,7 +217,7 @@ def _chunks(pcm, size=32 * 1024):
 
 
 async def stream_pcm(text, emit, voice=VOICE, model=MODEL, rate=RATE,
-                     mode=MODE_DEFAULT):
+                     mode=MODE_DEFAULT, lang=DEFAULT_LANG):
     """Say `text` into an async sink instead of the speaker. -> (ttfa_ms, cached).
 
     Talk mode (`?mode=talk`) plays the reply on the phone, so the same Timbre
@@ -196,30 +225,31 @@ async def stream_pcm(text, emit, voice=VOICE, model=MODEL, rate=RATE,
     `RawOutputStream`. Cached clips replay from disk and report 0 ms, exactly
     like `speak`. `emit` is awaited on the event loop with raw s16le chunks.
     """
-    effective = MODE_CLONED if mode == MODE_CLONED and has_clone() else MODE_DEFAULT
+    effective = effective_mode(mode, lang)
 
     if effective == MODE_CLONED:
-        path = _key(text, MODE_CLONED, MODEL_CLONE, rate, MODE_CLONED)
+        path = _key(text, MODE_CLONED, MODEL_CLONE, rate, MODE_CLONED, lang)
         if os.path.exists(path):
             for chunk in _chunks(await asyncio.to_thread(Path(path).read_bytes)):
                 await emit(chunk)
             return 0, True
         t0 = time.time()
-        pcm = await asyncio.to_thread(_clone_and_cache, text, rate)
+        pcm = await asyncio.to_thread(_clone_and_cache, text, rate, lang)
         ttfa = int((time.time() - t0) * 1000)
         for chunk in _chunks(pcm):
             await emit(chunk)
         return ttfa, False
 
-    path = _key(text, voice, model, rate, MODE_DEFAULT)
+    path = _key(text, voice, model, rate, MODE_DEFAULT, lang)
     if os.path.exists(path):
         for chunk in _chunks(await asyncio.to_thread(Path(path).read_bytes)):
             await emit(chunk)
         return 0, True
-    return await _stream_sse_to(text, emit, voice, model, rate, path)
+    return await _stream_sse_to(text, emit, voice, model, rate, path, lang)
 
 
-async def _stream_sse_to(text, emit, voice, model, rate, path):
+async def _stream_sse_to(text, emit, voice, model, rate, path,
+                         lang=DEFAULT_LANG):
     """Bridge the blocking SSE loop to the event loop without buffering it all."""
     loop = asyncio.get_running_loop()
     queue: asyncio.Queue = asyncio.Queue()
@@ -231,7 +261,7 @@ async def _stream_sse_to(text, emit, voice, model, rate, path):
     def worker():
         ok = False
         try:
-            for chunk in _sse_stream(text, voice, model, rate):
+            for chunk in _sse_stream(text, voice, model, rate, lang):
                 if not first:
                     first.append(int((time.time() - t0) * 1000))
                 pcm.extend(chunk)

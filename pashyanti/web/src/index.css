@@ -77,12 +77,21 @@
   --color-warn-soft: var(--warn-soft);
   --color-on-ink-muted: var(--on-ink-muted);
 
-  --font-sans: "Karla", "Mukta", "Noto Sans Bengali", ui-sans-serif,
-    system-ui, sans-serif;
-  --font-display: "Fraunces", "Mukta", "Noto Sans Bengali", Georgia, serif;
+  --font-sans: "Karla", "Mukta", "Noto Sans Bengali", "Noto Sans Tamil",
+    "Noto Sans Telugu", "Noto Sans Kannada", "Noto Sans Malayalam",
+    "Noto Sans Gujarati", "Noto Sans Gurmukhi", "Noto Sans Oriya",
+    ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces", "Mukta", "Noto Sans Bengali", "Noto Sans Tamil",
+    "Noto Sans Telugu", "Noto Sans Kannada", "Noto Sans Malayalam",
+    "Noto Sans Gujarati", "Noto Sans Gurmukhi", "Noto Sans Oriya", Georgia,
+    serif;
   --font-deva: "Mukta", "Noto Sans Bengali", ui-sans-serif, sans-serif;
-  --font-indic: "Karla", "Mukta", "Noto Sans Bengali", ui-sans-serif,
-    sans-serif;
+  /* Caller-language chips and the transcript: one face per script the
+     recogniser can return, so no text disappears into tofu (D-012). */
+  --font-indic: "Karla", "Mukta", "Noto Sans Bengali", "Noto Sans Tamil",
+    "Noto Sans Telugu", "Noto Sans Kannada", "Noto Sans Malayalam",
+    "Noto Sans Gujarati", "Noto Sans Gurmukhi", "Noto Sans Oriya",
+    ui-sans-serif, sans-serif;
 }
 
 @layer base {
