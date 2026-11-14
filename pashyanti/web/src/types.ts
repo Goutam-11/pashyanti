@@ -15,8 +15,8 @@ export type ServerMsg =
       mic: boolean;
       /** Which voice this call starts in (#6). */
       voice: VoiceMode;
-      /** Present once #5 lands; absent means the switch is not yet wired. */
-      phone_line?: boolean;
+      /** Whether the microphone stream is degraded like a phone line (#5). */
+      phone_line: boolean;
       /** The older toggle shape (#21); mirrors `voice`. */
       cloned_voice?: boolean;
     }

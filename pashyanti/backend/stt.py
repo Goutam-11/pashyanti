@@ -9,6 +9,7 @@ import json
 import websockets
 
 from gnani import KEY
+from harness.phone_line import PhoneLine
 
 URL = "wss://api.vachana.ai/stt/v3/stream"
 BLOCK = 512                  # 512 samples * 2 bytes = 1024 bytes
@@ -61,8 +62,13 @@ class MicSession:
     def __init__(self, on_text, lang="indic-auto", rate=16000, telephony=False):
         self.on_text = on_text
         self.lang = lang
-        self.rate = rate
+        self.rate = rate                  # capture rate
         self.telephony = telephony
+        # A phone line is narrower: capture stays 16 kHz, the socket asks for
+        # 8 kHz, and every frame goes through the streaming transform.
+        self.send_rate = 8000 if telephony else rate
+        self.phone = (PhoneLine(in_rate=rate, snr_db=10.0)
+                      if telephony and rate != 8000 else None)
         self._task = None
         self._stop = asyncio.Event()
         # While we speak, the microphone hears our own speaker. Send silence
@@ -100,7 +106,7 @@ class MicSession:
         def on_audio(indata, frames, time_info, status):
             loop.call_soon_threadsafe(queue.put_nowait, bytes(indata))
 
-        ws = await _connect(headers(self.lang, self.rate, self.telephony))
+        ws = await _connect(headers(self.lang, self.send_rate, self.telephony))
         await ws.recv()          # {"type":"connected", ...}
 
         with sd.RawInputStream(samplerate=self.rate, channels=1, dtype="int16",
@@ -110,7 +116,13 @@ class MicSession:
             async def pump():
                 while not self._stop.is_set():
                     frame = await queue.get()
-                    await ws.send(silence if self.muted else frame)
+                    if self.muted:
+                        frame = silence
+                    if self.phone is None:
+                        await ws.send(frame)
+                    else:
+                        for out in self.phone.process(frame):
+                            await ws.send(out)
                     await asyncio.sleep(BLOCK / self.rate)
 
             pump_task = asyncio.create_task(pump())

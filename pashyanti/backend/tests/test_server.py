@@ -87,6 +87,7 @@ class ServerIntegrationTest(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(hello["mic"])
         self.assertEqual(hello["voice"], "default")
         self.assertFalse(hello["cloned_voice"])
+        self.assertFalse(hello["phone_line"])
         await ws.close()
 
     async def test_reply_walks_the_status_cycle(self):
@@ -275,6 +276,20 @@ class MissingMicTest(unittest.IsolatedAsyncioTestCase):
                 await ws.close()
             finally:
                 await client.close()
+
+
+class PhoneLineFlagTest(unittest.TestCase):
+    """--phone-line / PHONE_LINE=1 is the only way the mode turns on."""
+
+    def test_flag_comes_from_the_command_line(self):
+        self.assertTrue(server._phone_line_enabled(["--phone-line"], {}))
+
+    def test_flag_comes_from_the_environment(self):
+        self.assertTrue(server._phone_line_enabled([], {"PHONE_LINE": "1"}))
+
+    def test_clean_is_the_default(self):
+        self.assertFalse(server._phone_line_enabled([], {}))
+        self.assertFalse(server._phone_line_enabled([], {"PHONE_LINE": "0"}))
 
 
 if __name__ == "__main__":
