@@ -275,5 +275,8 @@ acceptable, and neither is loosening a threshold to make a PR pass.
 - No confidence signal from the API, so "I didn't catch that, please repeat"
   needs a heuristic (empty or suspiciously short transcript).
 - No echo cancellation beyond half-duplex muting.
-- The Twilio Media Streams bridge is designed but not built.
+- The Twilio Media Streams bridge is not built. The spike (#7) closed as a no-go
+  for this deadline — an Indian number needs a bundle review measured in days,
+  and a trial number only accepts verified callers. See
+  `pashyanti/docs/TWILIO-SPIKE.md` and `DECISIONS.md` D-014 before reopening it.
 - Barge-in is impossible while muted: the user cannot interrupt the reply.

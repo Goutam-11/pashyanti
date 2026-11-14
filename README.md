@@ -39,8 +39,11 @@ just gives them a screen.
 
 - Gnani's API exposes speech models only — **no PSTN/SIP, no phone numbers**. The
   audio path is therefore built in two stages: synthetic 8 kHz telephony first
-  (band-limited, µ-law round-tripped, noisy), then a real Twilio Media Streams
-  bridge if time allows. This is stated plainly in the demo rather than hidden.
+  (band-limited, µ-law round-tripped, noisy), then a real call, which needs a
+  carrier. The Twilio Media Streams spike closed as *go only with a US number*,
+  after this deadline: an Indian number cannot be approved in time, and a trial
+  number only accepts verified callers
+  ([`TWILIO-SPIKE.md`](pashyanti/docs/TWILIO-SPIKE.md)).
 - Realtime STT takes **raw PCM s16le, mono, exactly 1024-byte frames**, at
   real-time cadence. It returns one transcript per closed VAD segment — there are
   no interim words.
@@ -143,7 +146,8 @@ Working: live transcription, spoken replies, voice cloning, phone-line accuracy
 measurement, installable frontend, and an interface in English, Hindi, Bengali
 and Marathi. The end-of-call summary card (#4), the repeat notice (#3) and both demo
 switches — *फ़ोन लाइन* / Phone line (#5) and *मेरी आवाज़* / My voice (#6) — are
-live end to end. In progress: the Twilio Media Streams bridge.
+live end to end. Not built: a real phone number — the Twilio spike is a
+documented no-go for this deadline.
 
 ## License
 
