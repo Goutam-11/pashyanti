@@ -70,6 +70,7 @@ One socket at `/ws`, JSON both ways. `web/src/types.ts` is the source of truth.
 |---|---|---|
 | server | `hello` | model names + whether a microphone exists |
 | server | `transcript` | one final caller sentence, with language and latency |
+| server | `retry` | a segment was too short or too noisy to trust; the caller is asked to repeat |
 | server | `status` | `idle │ listening │ thinking │ speaking` |
 | server | `speak` | a reply finished, with `ttfa_ms` and `cached` |
 | server | `summary` | end-of-call artefact: who called, what was agreed, what happens next; also written to `cache/summary.json` |
