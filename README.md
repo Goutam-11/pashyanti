@@ -102,10 +102,21 @@ and it runs fullscreen like an app.
 | `pashyanti/backend/clone_voice.py` | `build ref.wav` → embedding, then `say "..."` in that voice |
 | `pashyanti/web/` | Vite + React + TypeScript, vanilla CSS, no UI framework |
 
+## Documentation
+
+| Document | What is in it |
+|---|---|
+| [`AGENTS.md`](AGENTS.md) | The contract for AI coding agents: hard constraints, commands, conventions, what not to add |
+| [`pashyanti/docs/ARCHITECTURE.md`](pashyanti/docs/ARCHITECTURE.md) | Topology, request path, module ownership, WebSocket protocol, latency budget |
+| [`pashyanti/docs/API-NOTES.md`](pashyanti/docs/API-NOTES.md) | Verified Gnani API behaviour, including the traps |
+| [`pashyanti/docs/DECISIONS.md`](pashyanti/docs/DECISIONS.md) | Why the stack is what it is, and what each choice costs |
+
 ## Status
 
 Hackathon build — *The Great Indian AI Internship Challenge*, November 2026.
-Voice cloning, the summary card and the Twilio bridge are in progress.
+Working: live transcription, spoken replies, voice cloning, phone-line accuracy
+measurement, installable frontend. In progress: the summary card and the Twilio
+Media Streams bridge.
 
 ## License
 

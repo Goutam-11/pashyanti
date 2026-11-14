@@ -21,7 +21,7 @@ internship.txt
 pagetext.py
 
 # scraped vendor docs (reference only, do not republish)
-docs/
+.vendor-docs/
 
 # --- web / node ---
 node_modules/
