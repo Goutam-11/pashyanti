@@ -42,7 +42,7 @@ export function Onboarding({
 
         <h2
           id="tour-title"
-          className="text-center font-indic text-2xl leading-snug text-ink"
+          className="text-center display text-2xl leading-snug text-ink"
         >
           {s.title}
         </h2>

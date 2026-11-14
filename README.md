@@ -111,10 +111,13 @@ and it runs fullscreen like an app.
 | ![English is the default — empty state, mascot and controls](pashyanti/docs/screenshots/app-light.png) | ![Dark theme](pashyanti/docs/screenshots/app-dark.png) |
 | ![Language picker: English, हिंदी, বাংলা, मराठी](pashyanti/docs/screenshots/languages.png) | ![The three-step tour, behind the ? button](pashyanti/docs/screenshots/tour.png) |
 
-Myna, light by default: porcelain paper, midnight ink, one marigold signal.
-The mascot — Sakhi, a myna — is the state indicator: an amber ring pulses while
-listening, her beak opens while speaking, a `?` badge when the words were missed.
-The app icon is the same bird in an ink tile.
+Peacock, light by default: cream paper `#F2EADB`, pine green `#255035`, one
+clay signal for warnings. The mascot — Sakhi, a peacock — is an exact vector
+trace of the owner's reference tile: the three sound arcs stay still at idle and
+pulse while listening, the beak opens while speaking, and a green `?` disc
+appears when the words were missed. The app icon is the same bird on a cream
+tile; the mark, states, palette and type are in
+[`peacock-identity.png`](pashyanti/docs/screenshots/peacock-identity.png).
 
 The interface ships in **English (default), हिंदी, বাংলা and मराठी**, with a
 globe picker in the header. The recogniser is already multilingual

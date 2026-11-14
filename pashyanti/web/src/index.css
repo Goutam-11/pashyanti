@@ -17,38 +17,44 @@
  * 7.9:1 on paper. See DECISIONS.md D-010 and D-011.
  */
 :root {
-  --paper: #f4f6f9;
-  --surface: #ffffff;
-  --surface-2: #ebeff5;
-  --line: #d7dee8;
-  --ink: #0e1b2c;
-  --muted: #46536a;
-  --accent: #e39a2b;
-  --accent-ink: #1a1206;
-  --accent-text: #6f4200;
-  --accent-soft: #fbf0dc;
-  --ok: #0f5f3a;
-  --warn: #8f1d15;
-  --warn-soft: #fbeae8;
-  --on-ink-muted: #c6d0e0;
-  --shadow-pop: 0 18px 40px -20px rgb(14 27 44 / 0.35);
+  --paper: #f2eadb;
+  --surface: #fbf6ec;
+  --surface-2: #ede3d2;
+  --line: #d9ccb7;
+  --ink: #17251c;
+  --muted: #3f4d42;
+  --accent: #255035;
+  --accent-ink: #fbf6ec;
+  --accent-text: #1f4a33;
+  --accent-soft: #e3eadf;
+  --primary: #255035;
+  --primary-ink: #fbf6ec;
+  --on-primary-muted: #e4eee2;
+  --on-ink-muted: #c6d0c0;
+  --ok: #174b30;
+  --warn: #7a2f16;
+  --warn-soft: #f3e2d6;
+  --shadow-pop: 0 18px 40px -20px rgb(23 37 28 / 0.35);
 }
 
 .dark {
-  --paper: #0b1220;
-  --surface: #121c2e;
-  --surface-2: #1a2740;
-  --line: #2a3a55;
-  --ink: #f2f5f9;
-  --muted: #a9b6c9;
-  --accent: #f0b45a;
-  --accent-ink: #1a1206;
-  --accent-text: #f5c97e;
-  --accent-soft: #2a2113;
-  --ok: #68d8a8;
-  --warn: #ff9c96;
-  --warn-soft: #3a1d1b;
-  --on-ink-muted: #46536a;
+  --paper: #101711;
+  --surface: #18221a;
+  --surface-2: #1f2b21;
+  --line: #2e3d31;
+  --ink: #f3ede1;
+  --muted: #b7c2b4;
+  --accent: #8fc7a3;
+  --accent-ink: #101711;
+  --accent-text: #a9d8b8;
+  --accent-soft: #223226;
+  --primary: #8fc7a3;
+  --primary-ink: #101711;
+  --on-primary-muted: #122117;
+  --on-ink-muted: #455347;
+  --ok: #8fd5ad;
+  --warn: #f0a07a;
+  --warn-soft: #3a241b;
   --shadow-pop: 0 18px 40px -20px rgb(0 0 0 / 0.6);
 }
 
@@ -63,14 +69,20 @@
   --color-accent-ink: var(--accent-ink);
   --color-accent-text: var(--accent-text);
   --color-accent-soft: var(--accent-soft);
+  --color-primary: var(--primary);
+  --color-primary-ink: var(--primary-ink);
+  --color-on-primary-muted: var(--on-primary-muted);
   --color-ok: var(--ok);
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
   --color-on-ink-muted: var(--on-ink-muted);
 
-  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-indic: "IBM Plex Sans", "IBM Plex Sans Devanagari",
-    "Noto Sans Bengali", ui-sans-serif, sans-serif;
+  --font-sans: "Karla", "Mukta", "Noto Sans Bengali", ui-sans-serif,
+    system-ui, sans-serif;
+  --font-display: "Fraunces", "Mukta", "Noto Sans Bengali", Georgia, serif;
+  --font-deva: "Mukta", "Noto Sans Bengali", ui-sans-serif, sans-serif;
+  --font-indic: "Karla", "Mukta", "Noto Sans Bengali", ui-sans-serif,
+    sans-serif;
 }
 
 @layer base {
@@ -115,12 +127,20 @@
  * lives here, next to the tokens it reads.
  */
 @layer components {
+  /* Fraunces at SOFT 40: rounded terminals, closer to the embossed mark. */
+  .display {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-variation-settings: "SOFT" 40;
+    letter-spacing: 0;
+  }
+
   .wordmark {
-    font-family: var(--font-indic);
-    font-size: 19px;
+    font-family: var(--font-deva);
+    font-size: 21px;
     font-weight: 600;
     line-height: 1.1;
-    letter-spacing: 0.01em;
+    letter-spacing: 0;
     color: var(--ink);
   }
 
@@ -201,7 +221,7 @@
   }
 
   .status-dot[data-state="missed"] {
-    background: var(--accent-text);
+    background: var(--warn);
   }
 
   .bubble {
@@ -222,8 +242,8 @@
   .bubble-me {
     margin-left: auto;
     border-bottom-right-radius: 6px;
-    background: var(--ink);
-    color: var(--paper);
+    background: var(--primary);
+    color: var(--primary-ink);
   }
 
   .bubble-text {
@@ -244,7 +264,7 @@
   }
 
   .bubble-me .bubble-meta {
-    color: var(--on-ink-muted);
+    color: var(--on-primary-muted);
   }
 
   .chip {
@@ -279,12 +299,12 @@
     align-items: center;
     justify-content: center;
     border-radius: 12px;
-    background: var(--ink);
+    background: var(--primary);
     padding: 0 20px;
     font-family: var(--font-indic);
     font-size: 18px;
     font-weight: 600;
-    color: var(--paper);
+    color: var(--primary-ink);
     transition: transform 80ms ease;
   }
 
@@ -506,14 +526,14 @@
   }
 
   .switch input:checked + .switch-track {
-    border-color: var(--ink);
-    background: var(--ink);
+    border-color: var(--primary);
+    background: var(--primary);
   }
 
   .switch input:checked + .switch-track::after {
     transform: translateX(16px);
-    border-color: var(--accent);
-    background: var(--accent);
+    border-color: var(--primary-ink);
+    background: var(--primary-ink);
   }
 
   .switch input:focus-visible + .switch-track {
@@ -607,9 +627,9 @@
     display: flex;
     align-items: center;
     gap: 11px;
-    border: 1px solid var(--accent-text);
+    border: 1px solid var(--warn);
     border-radius: 14px;
-    background: var(--accent-soft);
+    background: var(--warn-soft);
     padding: 11px 14px;
   }
 
@@ -620,8 +640,8 @@
     flex: none;
     place-items: center;
     border-radius: 999px;
-    background: var(--accent);
-    color: var(--accent-ink);
+    background: var(--warn);
+    color: var(--primary-ink);
     font-family: var(--font-sans);
     font-size: 15px;
     font-weight: 700;
@@ -683,6 +703,7 @@
     transform-box: fill-box;
     transform-origin: center;
   }
+
   .anim-talk {
     animation: talk 0.3s ease-in-out infinite alternate;
     transform-box: fill-box;

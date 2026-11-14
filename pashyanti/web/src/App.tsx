@@ -246,7 +246,7 @@ export default function App() {
               </div>
             ) : (
               <>
-                <h2 className="mt-6 font-indic text-[26px] leading-[1.4] text-ink">
+                <h2 className="mt-6 display text-[26px] leading-[1.35] text-ink">
                   {m.empty.title}
                 </h2>
                 <p className="mt-3 max-w-[19rem] font-indic text-[18px] leading-relaxed text-muted">

@@ -44,8 +44,8 @@ pashyanti/
     src/App.tsx            the one screen: transcript, chips, composer
     src/ws.ts              one socket, reconnect
     src/types.ts           the five message shapes
-    src/components/        Mascot (Sakhi, a myna), Onboarding, ThemeToggle
-    src/components/myna.ts shared mark paths (mascot, icon)
+    src/components/        Mascot (Sakhi, a peacock), Onboarding, ThemeToggle
+    src/components/peacock.ts traced peacock paths (mascot, icon)
     src/i18n/              typed copy for en, hi, bn, mr + the locale context
     src/index.css          every colour as a CSS variable, light + dark
     public/                PWA manifest and icon
@@ -159,10 +159,11 @@ files.
   changes the call language: recognition is `indic-auto`, and TTS is still
   Hindi until the backend exposes a language choice — see D-012.
 - **UI rules that are product rules.** The mascot *is* the state indicator
-  (amber ring pulses = listening, beak opens = speaking, `?` = didn't catch it,
-  still = idle) — never animate it decoratively. The onboarding tour opens only
-  from the `?` button or `?tour=1`; it never opens by itself, because the first
-  screen has to teach in place. One theme on camera: Myna, light.
+  (the three sound arcs pulse = listening, beak opens = speaking, green `?` disc
+  = didn't catch it, still = idle) — never animate it decoratively. The
+  onboarding tour opens only from the `?` button or `?tour=1`; it never opens by
+  itself, because the first screen has to teach in place. One theme on camera:
+  Peacock, light.
 - **Accessibility floor:** body text ≥ 18 px, contrast ≥ 7:1, tap targets
   ≥ 44 px, visible focus ring, and respect `prefers-reduced-motion`.
 
