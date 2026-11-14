@@ -145,6 +145,12 @@ and the retakes are instant.
 - [ ] `मेरी आवाज़` off at the start of the take.
 - [ ] `embedding.json` exists and `tts.has_clone()` is `True`.
 - [ ] One throwaway sentence transcribes and one throwaway reply speaks.
+- [ ] Decide the card: **the extractive card is instant and always appears; a
+      model-written rewrite of `who/agreed/next` follows ~2–3 s later** in the UI
+      language. Both are true to the transcript. If the take needs the exact
+      deterministic wording in the beat sheet, start the server with
+      `SUMMARY_LLM=0` (same shape as `PHONE_LINE=1`) and only the first card
+      appears.
 - [ ] After that sentence, the chip row may replace itself with **caller-language
       chips** (one direct answer, then "please repeat" and "a little slower")
       about 2.5 s later. For a Hindi caller the row always contains
@@ -220,7 +226,7 @@ from the voiceover, never a frame from the transcript.
 | 5 | 0:25–0:34 | Thumb flips **फ़ोन लाइन**; the caller repeats A1, a little slower; a second, near-identical bubble lands. Lower third: `8 clips · 3.6% WER · 10 dB · 8 kHz µ-law`. | Caller, live; the degradation is server-side and is **not** audible in the room | "Same sentence, on a bad line. Eight clips: 3.6% word error at 10 dB." |
 | 6 | 0:34–0:39 | A short noise burst at the mic. The `?` disc, then "समझ नहीं आया — दोहराइए". Hold ≥ 2 s. | Room | "When it isn't sure, it asks — it does not guess." |
 | 7 | 0:39–0:47 | Caller: **"कल सुबह दस बजे का अपॉइंटमेंट खाली है।"** — the bubble clears the retry card. She flips **मेरी आवाज़**, taps **बोलिए** on the pre-filled U2; the reply is spoken in her cloned voice. | Caller, then her cloned voice | "The appointment is free. She says yes — in her own voice." |
-| 8 | 0:47–0:55 | Caller says A4; text lands; she taps **कॉल खत्म करें**; the summary card slides in — `who` (A1), `agreed` (A4), `next` (U2), then `<turns> बार · <duration>`. Hold the card. | Caller, then UI | "And the call ends as a record, not a chat." |
+| 8 | 0:47–0:55 | Caller says A4; text lands; she taps **कॉल खत्म करें**; the summary card slides in — `who` (A1), `agreed` (A4), `next` (U2), then `<turns> बार · <duration>`. Hold the card: about two seconds in, the model may replace those three lines with its own wording of the same facts (or not, if `SUMMARY_LLM=0`). Either card is honest; do not cut between them. | Caller, then UI | "And the call ends as a record, not a chat." |
 | 9 | 0:55–1:00 | End card: **Pashyanti · Prisma v3.0 + Timbre v3.0**, then `3.6% WER · 764 ms`, the limitation line, the repo URL. | One music sting | "Overlapping speech still breaks it. You can't interrupt the reply." |
 
 **Total: 5 + 6 + 8 + 6 + 9 + 5 + 8 + 8 + 5 = 60 s.**
@@ -397,8 +403,10 @@ not in the script above.
 - **"on-device"**, "offline", "private by default" — the audio goes to Gnani's
   API from the server.
 - **"instant"**, "zero latency", "perfect" — 764 ms and 3.6% are the numbers.
-- **"the AI understands your call"** — the summary is `build_summary`, a pure
-  function over the transcript lines, not a model call.
+- **"the AI understands your call"** — the card is a pure function over the
+  transcript lines (`build_summary`); a model may *rephrase* three fields of it
+  from those same lines, with no audio and no facts of its own. Do not claim it
+  listened to the call or understood more than the text.
 - **"the chips translate"** — they are written **in** the caller's language, not
   translated from the user's; nothing in this app translates. A chip is a
   suggestion, not a transcript of what the user said.
@@ -428,7 +436,7 @@ a still — a frozen `?` card is exactly the kind of fake a judge notices.
 |---|---|
 | Is that a real phone call? | No — this video's call is simulated. A separate trial call was tested end to end over Exotel AgentStream (mobile → Indian trial number → our bridge → Prisma/Timbre → the reply was heard); it is not in the video because the trial line is limited, unknown callers may hit a PIN, and the page is not wired to it. Gnani's API still has no PSTN/SIP; see `EXOTEL-SPIKE.md`. |
 | Does it translate? | No. Prisma recognises Indic speech (and English) in the language spoken; the reply is spoken from the text the user typed. |
-| Who makes the summary? | `server.build_summary` — a pure function over the transcript: first caller line, last caller line, last reply, turn count, duration. No model call, so the same call always gives the same card. |
+| Who makes the summary? | Two cards, in order. `server.build_summary` is a pure function over the transcript — first caller line, last caller line, last reply, turn count, duration — and it is sent **instantly**. A second `summary` may follow ~2 s later with only `who/agreed/next` rewritten by `deepseek-v4.1-flash` (the UI language, facts only, empty fields keep the extractive value); if it fails or is slow, the first card is what you keep. `SUMMARY_LLM=0` disables the rewrite entirely. |
 | How accurate is it? | 3.6% WER at 10 dB SNR on 8 clips, `hi-IN`, 8 kHz µ-law, after folding orthography. At 0 dB it is 93.5%, so the app asks for a repeat when the audio is unusable. |
 | What still breaks? | Overlapping speech; no barge-in while the mic is muted; the cloned voice needs a 5–30 s reference and is **Hindi-only**, so a non-Hindi reply uses the default Timbre voice; the reply chips can be blunt or use the wrong grammatical gender, and they follow the *detected* language, which is occasionally wrong (`D-012` amendment, `LLM-NOTES.md`). |
 | Why is the phone only a screen? | In this video it is: capture is server-side (`D-004`), so the phone needs no microphone permission and no HTTPS tunnel. That is also why the caller is in the room — the laptop microphone is the input. A browser *can* feed Prisma's 1024-byte PCM socket: `?mode=talk` does exactly that with an AudioWorklet, and the phone becomes microphone and speaker (`D-004` amendment, [`TALK-MODE.md`](TALK-MODE.md)). It is not in this video and changes nothing on screen. |

@@ -100,6 +100,60 @@ class ParseTest(unittest.TestCase):
         self.assertIsNone(self._reply(None))
 
 
+class SummaryTest(unittest.TestCase):
+    """The card's model call: one JSON object, UI locale, no invented facts."""
+
+    def _summary(self, content, lang="en"):
+        with patch.object(llm, "_post", return_value=content) as post:
+            value = llm.summary([
+                {"who": "caller", "text": "नमस्ते, मैं डॉ. मेहरा की क्लिनिक से हूँ।"},
+                {"who": "caller", "text": "कल दस बजे का समय खाली है।"},
+                {"who": "me", "text": "हाँ, कल दस बजे आ जाऊँगी।"},
+            ], lang)
+        return value, post
+
+    def test_a_json_object_is_parsed_and_capped(self):
+        value, _ = self._summary(
+            '{"who": "Dr. Mehra\'s clinic", "agreed": "tomorrow 10 a.m.", '
+            '"next": "she will come at 10"}')
+        self.assertEqual(value["who"], "Dr. Mehra's clinic")
+        self.assertEqual(value["agreed"], "tomorrow 10 a.m.")
+        self.assertEqual(value["next"], "she will come at 10")
+
+    def test_the_ui_locale_is_named_in_the_prompt(self):
+        _, post = self._summary('{"who":"x","agreed":"","next":""}', "hi")
+        system = post.call_args[0][0][0]["content"]
+        self.assertIn("Hindi", system)
+        self.assertIn("never invent", system.lower())
+
+    def test_a_transcript_of_only_one_side_still_summarises(self):
+        with patch.object(llm, "_post",
+                          return_value='{"who":"a","agreed":"b","next":""}'):
+            value = llm.summary([{"who": "caller", "text": "hello"}])
+        self.assertEqual(value, {"who": "a", "agreed": "b", "next": ""})
+
+    def test_empty_strings_are_returned_not_dropped(self):
+        value, _ = self._summary('{"who":"x","agreed":"","next":""}')
+        self.assertEqual(value, {"who": "x", "agreed": "", "next": ""})
+
+    def test_an_empty_transcript_makes_no_call(self):
+        with patch.object(llm, "_post") as post:
+            self.assertIsNone(llm.summary([]))
+        post.assert_not_called()
+
+    def test_an_object_in_fences_is_accepted(self):
+        value, _ = self._summary(
+            '```json\n{"who":"x","agreed":"y","next":"z"}\n```')
+        self.assertEqual(value, {"who": "x", "agreed": "y", "next": "z"})
+
+    def test_a_missing_field_is_no_answer(self):
+        value, _ = self._summary('{"who":"x","agreed":"y"}')
+        self.assertIsNone(value)
+
+    def test_json_soup_is_no_answer(self):
+        self.assertIsNone(self._summary("The call was about an appointment.")[0])
+
+
 class TransportTest(unittest.TestCase):
     def test_a_500_is_no_answer(self):
         class Response:

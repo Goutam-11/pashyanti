@@ -58,6 +58,28 @@ in-flight request when a newer line arrives, and waits at most
 `SUGGEST_TIMEOUT = 6 s`. If nothing usable comes back, **no `suggest` message is
 sent** and the page keeps the static locale chips it already has.
 
+## The end-of-call card
+
+`llm.summary(lines, lang)` asks for one JSON object — `who` (≤ 60 chars),
+`agreed` (≤ 90), `next` (≤ 90) — from the transcript, in the **UI language**
+(the card is for the user). `Call.end_call` sends the extractive card first and
+only then asks, merges non-empty fields, and sends a second `summary`; a slow or
+failed call leaves the first card. Tests cover the merge and the fallback with
+no key.
+
+Measured on the demo transcript (`नमस्ते, मैं डॉ. मेहरा की क्लिनिक से बोल रही हूँ।`
+… `ठीक है, दस बजे मिलते हैं।`):
+
+| UI language | Latency | Card |
+|---|---|---|
+| `en` | 2153 ms | `who: Clinic receptionist` · `agreed: Appointment tomorrow at 10 am` · `next: User will come to the clinic tomorrow at 10 am` |
+| `hi` | 3050 ms | `who: डॉ. मेहरा की क्लिनिक से कॉलर` · `agreed: कल सुबह दस बजे का अपॉइंटमेंट` · `next: कल सुबह दस बजे मिलना` |
+
+End to end in the app (one wav through the loopback, chip tap, end call): the
+extractive card arrived first (`who` = the first caller line), then the rewrite
+replaced `who` with `पश्यन्ती` and kept `agreed`/`next`; `turns` and `duration_s`
+were identical in both, because those are not the model's to change.
+
 ## Measured, 14 November 2026
 
 | Caller line | Detected | Latency | Chips |

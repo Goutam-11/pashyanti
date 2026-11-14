@@ -52,7 +52,7 @@ export type ServerMsg =
 export type ClientMsg =
   | { type: "reply"; text: string }
   | { type: "new_call" }
-  | { type: "end_call" }
+  | { type: "end_call"; lang?: string }
   | { type: "start_capture" }
   | { type: "set_voice"; mode: VoiceMode }
   | { type: "set_phone_line"; enabled: boolean }

@@ -79,7 +79,7 @@ needs no HTTPS, no microphone permission and no tunnel — plain
 |---|---|---|
 | `server.py` | HTTP + `/ws`, call state, half-duplex muting, the talk-mode handshake | do audio DSP |
 | `stt.py` | microphone, frame cadence, Prisma socket, `FrameParser`/`BrowserMic` for talk mode | know about TTS |
-| `llm.py` | the chip model call (OpenCode Go), the stable session header, JSON parsing | ever raise into `Call`, or log the key |
+| `llm.py` | the chip and card model calls (OpenCode Go), the stable session header, JSON parsing | ever raise into `Call`, or log the key |
 | `chips.py` | the caller-language table for "please repeat" / "a little slower", the 3-chip cap | call the network |
 | `web/src/talk.ts` | AudioWorklet capture (16 kHz, 1024-byte frames) and Web Audio playback | call Gnani, or hold API state |
 | `tts.py` | Timbre SSE, speaker playback, cache | know about the microphone |
@@ -106,7 +106,7 @@ One socket at `/ws`, JSON both ways. `web/src/types.ts` is the source of truth.
 | server | `voice` | this call switched to `default` or `cloned` |
 | server | `cloned_voice` | the same switch in the demo toggle's older shape (#21); mirrors `voice` so the switch survives a reload |
 | server | `phone_line` | the microphone transform switched on or off; the page socket stays up (#32) |
-| server | `summary` | end-of-call artefact: who called, what was agreed, what happens next; also written to `cache/summary.json` |
+| server | `summary` | end-of-call artefact: who called, what was agreed, what happens next; also written to `cache/summary.json`. The first one is extractive and instant; a second with the same shape may follow with `who/agreed/next` rewritten (same facts, UI language) |
 | server | `audio` | talk mode: one base64 s16le chunk of the reply (16 kHz mono); `final: true` with empty data marks the end of the stream |
 | server | `capture` | talk mode: `ready` once the Prisma session is open and the page may send frames, else `error` |
 | server | `error` | human-readable failure, shown in a pill |
@@ -177,6 +177,18 @@ an embedding and no language, so a cloned reply is Hindi by construction: a
 non-Hindi reply uses the default Timbre voice, which speaks all ten languages
 (`tts.effective_mode`).
 
+## End-of-call card
+
+`Call.end_call` sends `build_summary` — a pure function over the transcript, so
+the same call always yields the same card — **before** anything else. If
+`llm.available()` (and `SUMMARY_LLM` is not `0`), it then asks the chip model for
+`who/agreed/next` in the **UI locale** (`end_call.lang`, the card is for the
+user, not the caller), merges only non-empty fields over the extractive ones,
+and sends a second `summary` with the same shape. The page already replaces the
+card on a second `summary`, so nothing in the UI changes. A slow or dead model
+means the first card stays, and `SUMMARY_LLM=0` is the demo's switch back to the
+deterministic card.
+
 ## Phone-line simulation
 
 `server.py --phone-line` (or `PHONE_LINE=1`) passes `telephony=True` to
@@ -216,4 +228,5 @@ These are the only numbers that belong in a demo. Anything else is an adjective.
 | talk mode, no HTTPS/localhost | page refuses before prompting and says the mode needs a secure context |
 | talk mode, browser without AudioWorklet | page says the browser cannot capture; nothing is sent |
 | chip model slow, dead or no key | no `suggest` message; the static locale chips stay on screen and the reply still works |
+| card model slow, dead or no key | the extractive card is already on screen and is the one the user keeps |
 | cloned voice, non-Hindi reply | a `speak` with `lang: bn-IN` (say) uses the default Timbre voice, because the clone has no language parameter |

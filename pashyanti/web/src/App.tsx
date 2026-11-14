@@ -46,7 +46,7 @@ type CaptureState =
   | "error";
 
 export default function App() {
-  const { m } = useI18n();
+  const { locale, m } = useI18n();
   const [lines, setLines] = useState<Line[]>([]);
   const [state, setState] = useState<string>("idle");
   const [mic, setMic] = useState<boolean | null>(null);
@@ -209,7 +209,7 @@ export default function App() {
 
   const endCall = () => {
     if (ended) return;
-    send({ type: "end_call" });
+    send({ type: "end_call", lang: locale });
     setEnded(true);
     setRetry(false);
     setState("idle");

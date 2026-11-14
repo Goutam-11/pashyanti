@@ -41,6 +41,9 @@ MODE_TALK = "talk"
 # so a slow model may not hold the call open.
 SUGGEST_TIMEOUT = 6.0
 CONTEXT_LINES = 3
+# The card is already on screen before this starts; a slow model just means the
+# extractive card is the one the user keeps.
+SUMMARY_LLM_TIMEOUT = 8.0
 
 
 def _phone_line_enabled(argv=None, env=None):
@@ -51,6 +54,15 @@ def _phone_line_enabled(argv=None, env=None):
 
 
 PHONE_LINE = _phone_line_enabled()
+
+
+def _summary_llm_enabled(env=None):
+    """SUMMARY_LLM=0 keeps the card purely extractive (the demo's safe switch)."""
+    env = os.environ if env is None else env
+    return env.get("SUMMARY_LLM", "1") != "0"
+
+
+SUMMARY_LLM = _summary_llm_enabled()
 
 NO_BUILD = """<!doctype html><meta charset=utf-8><body style="font:16px system-ui;
 padding:40px;background:#0f1115;color:#eef1f6">
@@ -69,10 +81,12 @@ def _shorten(text: str, limit: int = SUMMARY_CHARS) -> str:
 
 
 def build_summary(lines: list[dict], started_at: float, ended_at: float) -> dict:
-    """The end-of-call card, computed from the transcript alone.
+    """The first, instant end-of-call card, computed from the transcript alone.
 
-    No model call on purpose: the same call always yields the same card, which
-    is what makes it safe to write to disk and re-read after a page reload.
+    No model call: the same call always yields the same card, so it is safe to
+    write and re-read after a reload, and it is the fallback if the rewrite
+    never comes. `Call.end_call` sends this one before asking the model for a
+    better `who/agreed/next`.
     """
     caller = [str(ln.get("text") or "").strip()
               for ln in lines if ln.get("who") == "caller"]
@@ -85,6 +99,20 @@ def build_summary(lines: list[dict], started_at: float, ended_at: float) -> dict
         "turns": len(caller),
         "duration_s": max(0, int(round(ended_at - started_at))),
     }
+
+
+def merge_summary(base: dict, better: dict | None) -> dict:
+    """The model's non-empty fields over the extractive card.
+
+    A field the model left empty keeps the deterministic value: a blank 'who'
+    would be worse than the first caller line.
+    """
+    merged = dict(base)
+    for key in ("who", "agreed", "next"):
+        value = (better or {}).get(key)
+        if isinstance(value, str) and value.strip():
+            merged[key] = value.strip()
+    return merged
 
 
 def write_summary(summary: dict) -> Path:
@@ -115,6 +143,7 @@ class Call:
         self.telephony = PHONE_LINE
         self.last_lang: str | None = None
         self.suggest_task: asyncio.Task | None = None
+        self.summary_task: asyncio.Task | None = None
 
     async def send(self, payload: dict):
         if not self.ws.closed:
@@ -267,14 +296,40 @@ class Call:
         await self.send({"type": "capture",
                          "state": "ready" if self.mic else "error"})
 
-    async def end_call(self):
-        summary = build_summary(self.lines, self.started_at, time.time())
-        await self.send({"type": "summary", **summary})
+    async def end_call(self, lang: str | None = None):
+        """The extractive card first, then the model's rewrite if it arrives.
+
+        The first card is instant and is the fallback: `build_summary` is a pure
+        function over the transcript, so a slow or dead model cannot delay it or
+        make it worse. `lang` is the **UI** locale — the card is for the user,
+        not for the caller (D-012).
+        """
+        base = build_summary(self.lines, self.started_at, time.time())
+        await self.send({"type": "summary", **base})
+        self._write_summary(base)
+        if not (SUMMARY_LLM and llm.available()):
+            return base
+        better = await self.better_summary(lang)
+        merged = merge_summary(base, better)
+        if merged == base:
+            return base
+        await self.send({"type": "summary", **merged})
+        self._write_summary(merged)
+        return merged
+
+    async def better_summary(self, lang: str | None):
+        try:
+            return await asyncio.wait_for(
+                asyncio.to_thread(llm.summary, self.lines, lang or "en"),
+                timeout=SUMMARY_LLM_TIMEOUT)
+        except Exception:                    # noqa: BLE001  (timeout, network)
+            return None
+
+    def _write_summary(self, summary: dict):
         try:
             write_summary(summary)
         except OSError:
             pass          # the card still reached the page; a full disk is not fatal
-        return summary
 
     async def start_mic(self):
         cls = BrowserMic if self.mode == MODE_TALK else MicSession
@@ -334,7 +389,10 @@ async def ws_handler(request: web.Request):
             if data.get("type") == "reply" and data.get("text", "").strip():
                 asyncio.create_task(call.on_reply(data["text"].strip()))
             elif data.get("type") == "end_call":
-                await call.end_call()
+                # The card must not wait on the socket: the extractive one goes
+                # out inside the task, and a second may follow.
+                call.summary_task = asyncio.create_task(
+                    call.end_call(data.get("lang") or None))
             elif data.get("type") == "start_capture":
                 await call.start_capture()
             elif data.get("type") == "set_voice":

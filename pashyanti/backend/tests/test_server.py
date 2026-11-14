@@ -367,6 +367,120 @@ class ServerIntegrationTest(SocketTestBase):
             self.assertEqual(written["next"], "Sending one now")
         await ws.close()
 
+    async def test_end_call_sends_the_extractive_card_then_the_rewrite(self):
+        ws = await self.client.ws_connect("/ws")
+        await ws.receive_json()
+        for _ in range(200):
+            if len(FakeMic.instances) >= 2:
+                break
+            await asyncio.sleep(0.01)
+        await FakeMic.instances[-1].on_text("I need an ambulance", "hi-IN", 40, 800)
+        await ws.receive_json()                  # transcript
+
+        with tempfile.TemporaryDirectory() as tmp, \
+             patch.object(server, "CACHE", Path(tmp) / "cache"), \
+             patch.object(llm, "available", return_value=True), \
+             patch.object(llm, "summary", return_value={
+                 "who": "the ambulance service",
+                 "agreed": "an ambulance is on its way",
+                 "next": "wait outside"}):
+            await ws.send_json({"type": "end_call", "lang": "hi"})
+            first = await ws.receive_json()
+            second = await ws.receive_json()
+            written = json.loads(
+                (Path(tmp) / "cache" / "summary.json").read_text(encoding="utf-8"))
+
+        # The pure function's card is first and unchanged; the model's follows.
+        self.assertEqual(first["type"], "summary")
+        self.assertEqual(first["who"], "I need an ambulance")
+        self.assertEqual(second["type"], "summary")
+        self.assertEqual(second["who"], "the ambulance service")
+        self.assertEqual(second["turns"], first["turns"])
+        self.assertEqual(second["duration_s"], first["duration_s"])
+        self.assertEqual(written["next"], "wait outside")
+        await ws.close()
+
+    async def test_a_blank_model_summary_sends_only_one_card(self):
+        ws = await self.client.ws_connect("/ws")
+        await ws.receive_json()
+        for _ in range(200):
+            if len(FakeMic.instances) >= 2:
+                break
+            await asyncio.sleep(0.01)
+        await FakeMic.instances[-1].on_text("I need an ambulance", "hi-IN", 40, 800)
+        await ws.receive_json()
+
+        with tempfile.TemporaryDirectory() as tmp, \
+             patch.object(server, "CACHE", Path(tmp) / "cache"), \
+             patch.object(llm, "available", return_value=True), \
+             patch.object(llm, "summary",
+                          return_value={"who": "", "agreed": "", "next": ""}):
+            await ws.send_json({"type": "end_call"})
+            first = await ws.receive_json()
+            # The next frame is the voice switch, not a second summary.
+            await ws.send_json({"type": "set_voice", "mode": "default"})
+            following = await ws.receive_json()
+
+        self.assertEqual(first["type"], "summary")
+        self.assertEqual(first["who"], "I need an ambulance")
+        self.assertEqual(following["type"], "voice")
+        await ws.close()
+
+    async def test_the_summary_model_gets_the_ui_locale(self):
+        seen = []
+
+        def fake_summary(lines, lang):
+            seen.append(lang)
+            return {"who": "डॉ. मेहरा की क्लिनिक", "agreed": "कल दस बजे",
+                    "next": "वह आएगी"}
+
+        ws = await self.client.ws_connect("/ws")
+        await ws.receive_json()
+        for _ in range(200):
+            if len(FakeMic.instances) >= 2:
+                break
+            await asyncio.sleep(0.01)
+        await FakeMic.instances[-1].on_text("कल दस बजे आइए।", "hi-IN", 40, 900)
+        await ws.receive_json()
+
+        with tempfile.TemporaryDirectory() as tmp, \
+             patch.object(server, "CACHE", Path(tmp) / "cache"), \
+             patch.object(llm, "available", return_value=True), \
+             patch.object(llm, "summary", fake_summary):
+            await ws.send_json({"type": "end_call", "lang": "hi"})
+            await ws.receive_json()              # extractive
+            rewritten = await ws.receive_json()
+
+        self.assertEqual(seen, ["hi"])
+        self.assertEqual(rewritten["who"], "डॉ. मेहरा की क्लिनिक")
+        await ws.close()
+
+    async def test_a_slow_summary_model_leaves_the_extractive_card(self):
+        def timeout(*_a, **_k):
+            raise TimeoutError("too slow")
+
+        ws = await self.client.ws_connect("/ws")
+        await ws.receive_json()
+        for _ in range(200):
+            if len(FakeMic.instances) >= 2:
+                break
+            await asyncio.sleep(0.01)
+        await FakeMic.instances[-1].on_text("I need an ambulance", "hi-IN", 40, 800)
+        await ws.receive_json()
+
+        with tempfile.TemporaryDirectory() as tmp, \
+             patch.object(server, "CACHE", Path(tmp) / "cache"), \
+             patch.object(llm, "available", return_value=True), \
+             patch.object(llm, "summary", timeout):
+            await ws.send_json({"type": "end_call"})
+            first = await ws.receive_json()
+            await ws.send_json({"type": "set_voice", "mode": "default"})
+            following = await ws.receive_json()
+
+        self.assertEqual(first["who"], "I need an ambulance")
+        self.assertEqual(following["type"], "voice")
+        await ws.close()
+
     async def test_hallucinated_transcript_asks_to_repeat(self):
         ws = await self.client.ws_connect("/ws")
         await ws.receive_json()                      # hello
@@ -528,6 +642,19 @@ class MissingMicTest(unittest.IsolatedAsyncioTestCase):
                 await ws.close()
             finally:
                 await client.close()
+
+
+class SummaryLlmFlagTest(unittest.TestCase):
+    """SUMMARY_LLM=0 is the demo's escape hatch: one card, no model."""
+
+    def test_on_by_default(self):
+        self.assertTrue(server._summary_llm_enabled({}))
+
+    def test_zero_turns_it_off(self):
+        self.assertFalse(server._summary_llm_enabled({"SUMMARY_LLM": "0"}))
+
+    def test_one_keeps_it_on(self):
+        self.assertTrue(server._summary_llm_enabled({"SUMMARY_LLM": "1"}))
 
 
 class PhoneLineFlagTest(unittest.TestCase):

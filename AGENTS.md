@@ -46,7 +46,7 @@ pashyanti/
     tts.py                 text → Timbre SSE → speaker, cached by hash
     audio.py               1024-byte frames, G.711 µ-law in numpy
     gnani.py               REST client: stt_file, tts, clone_embedding, tts_cloned
-    llm.py                 the chip model (OpenCode Go): one short reply, or None
+    llm.py                 the chip/card model (OpenCode Go): a reply, a card, or None
     chips.py               caller-language "please repeat" / "a little slower" table
     harness/               phone-line accuracy measurement (degrade, wer, corpus, cli)
     probe.py stream_mic.py test_stream_file.py clone_voice.py   standalone tools
@@ -106,8 +106,9 @@ Violating any of these produces a demo that fails in front of a judge.
     on every failure and `Call` sends no `suggest` then, so the static locale
     chips stay. Never let it block a call, never send its key to the browser,
     never log the key. The two safety chips ("please repeat", "a little slower")
-    are a reviewed table in `chips.py`, never model output — see
-    `pashyanti/docs/LLM-NOTES.md`.
+    are a reviewed table in `chips.py`, never model output. The end-of-call card
+    is a pure function first and a model rewrite second; the first card never
+    waits. See `pashyanti/docs/LLM-NOTES.md`.
 
 ## Commands
 
