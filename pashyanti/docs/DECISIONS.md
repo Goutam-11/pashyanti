@@ -203,6 +203,12 @@ replaced by D-011 after owner review; the light-default and accessibility rules
 stand unchanged. The original decision is kept as the record of why light was
 chosen.
 
+**Amended 2026-11-14 (`feat/pixel-matrix-ui`).** The light-default rule is
+superseded by D-016: three grounds ship and the default is Peacock (dark). The
+daylight reasoning below still holds, so the daylight ground survives as Lime
+Wash — one tap away instead of the only option. The accessibility floor is
+unchanged.
+
 ---
 
 ## D-011 — Myna identity: a bird mark, one accent, state as geometry
@@ -397,4 +403,49 @@ speaker confirms the variants, add the Bengali fold, update D-015 and the pinned
 tests in the same PR, and re-run the sweep — transcripts and audio are cached by
 hash, so unchanged clips cost nothing.
 
+---
 
+## D-016 — Halftone dot screen, three grounds, dot-matrix Sakhi
+
+**Context.** The chat surface had one light palette (D-013) and a light/dark
+toggle. Owner review asked for a "pixel matrix" style: character in the
+background, better bubbles, the peacock drawn in the same style, colour options,
+and an HTML prototype to choose from. The prototype set (`opendesign/mockups/
+pashyanti-pixel-matrix/`) recorded three directions, six palettes, ten bubble
+treatments and six backgrounds; the owner picked the dot-screen direction with
+the dot-peacock field, dissolving cards, and three grounds named Peacock, Lime
+Wash and Slate.
+
+**Decision.** The chat surface is a halftone dot screen.
+- A 6 px lattice is the ground; panels are flat holes in it. Surfaces are only
+  1.06–1.11:1 against the field, so the lattice — not fill contrast — is what
+  defines a panel.
+- Bubble edges dissolve into ground-coloured dots instead of ending in a border;
+  the end-of-call card is chamfered, not rounded.
+- Three grounds ship, user-selectable from a header menu, persisted, with
+  `?theme=` overriding: Peacock `#0B110A` / ink `#F2F5E4` / signal `#C9F05C`;
+  Lime Wash `#F1EDDD` / `#17231A` / `#B7DB4B`; Slate `#08201E` / `#E7F3EE` /
+  `#E7A93F`. Default Peacock.
+- Sakhi is rasterised from the traced paths in `peacock.ts` at a finer screen
+  (~1.8 px dots) than the field, and the same geometry is ghosted into the lower
+  field on the field's own lattice, static, and hidden behind the empty state.
+
+**Why.** Measured, not eyeballed: body text on its ground 13.86–17.25:1,
+secondary text 7.89–11.72:1, reply text on the signal block 8.95–14.35:1 — all
+above the 7:1 floor in every ground. The lattice is deliberately 1.60–1.67:1:
+enough to read as a printed screen, not enough to compete with a word. A dot
+halftone is also the one treatment that survives both the demo's acid look and a
+daylight phone without inventing a second design. The mascot keeps the state
+language it already had (arcs pulse = listening, beak opens = speaking, `?` disc
+= missed, still = idle); the field is static for exactly that reason, and it is
+hidden on the empty screen where the real mascot owns the space.
+
+**Consequence.** Every colour lives in `[data-theme]` blocks in
+`web/src/index.css`; a fourth ground is one block plus one row in `theme.tsx`.
+The pixel face (Silkscreen) may only carry Latin-only strings — it has no
+Devanagari, so status labels, buttons, summary labels and notices use the Indic
+UI font, and the pixel face is reserved for latency/language metadata and the
+wordmark's Latin line. `dotPeacock.ts` is a renderer over `peacock.ts`, never a
+second drawing; `public/icon.svg` still comes from the same trace. The arc pulse
+stops under `prefers-reduced-motion`; nothing else moves. Animating the field
+would re-open the rule that the mascot is the only state indicator.

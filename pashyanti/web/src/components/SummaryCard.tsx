@@ -20,7 +20,7 @@ export function SummaryCard({ summary }: { summary: Summary }) {
 
   return (
     <section
-      className="summary-card anim-in"
+      className="summary-card"
       aria-labelledby="summary-title"
       aria-live="polite"
     >

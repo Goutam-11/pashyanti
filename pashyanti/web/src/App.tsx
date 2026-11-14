@@ -13,9 +13,10 @@ import { DemoToggles } from "./components/DemoToggles";
 import { LanguageMenu } from "./components/LanguageMenu";
 import { Mascot, type MascotState } from "./components/Mascot";
 import { Onboarding } from "./components/Onboarding";
+import { PeacockField } from "./components/PeacockField";
 import { RetryNotice } from "./components/RetryNotice";
 import { SummaryCard } from "./components/SummaryCard";
-import { ThemeToggle } from "./components/ThemeToggle";
+import { ThemeMenu } from "./components/ThemeMenu";
 import { useI18n } from "./i18n";
 import { Talk, TalkError } from "./talk";
 import type { CallMode, Line, ServerMsg, Summary } from "./types";
@@ -270,23 +271,39 @@ export default function App() {
           : (m.status[statusKey] ?? m.status.ready);
 
   return (
-    <div className="mx-auto flex h-dvh w-full max-w-[430px] flex-col bg-paper text-ink">
-      <header className="flex items-center gap-2.5 border-b border-line px-4 py-2">
-        <Mascot state={missed ? "unsure" : face(state)} size={30} />
-        <div className="min-w-0 flex-1">
+    <div
+      className="screen mx-auto flex h-dvh w-full max-w-[430px] flex-col"
+      data-empty={empty ? "true" : "false"}
+    >
+      <PeacockField className="peacock-field" />
+
+      <header className="app-top">
+        <span className="mascot-tile">
+          <Mascot state={missed ? "unsure" : face(state)} size={36} />
+        </span>
+        <div className="brand">
           <h1 className="wordmark" lang="hi">
             पश्यन्ती
           </h1>
           <p className="wordmark-latin">Pashyanti</p>
         </div>
 
-        <div className="flex items-center gap-1.5">
-          <span className="status-pill" role="status" aria-live="polite">
-            <span className="status-dot" data-state={dotState} aria-hidden="true" />
-            {statusLabel}
+        <div className="top-tools">
+          <span
+            className="status-pill"
+            role="status"
+            aria-live="polite"
+            data-state={dotState}
+          >
+            <span className="status-dots" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+            </span>
+            <span className="status-label">{statusLabel}</span>
           </span>
           <LanguageMenu />
-          <ThemeToggle />
+          <ThemeMenu />
           <button
             type="button"
             onClick={() => setTour(true)}
@@ -309,11 +326,11 @@ export default function App() {
         />
       )}
 
-      <main className="flex-1 overflow-y-auto px-4 py-4">
+      <main className="app-thread">
         {summary ? (
           <SummaryCard summary={summary} />
         ) : ended ? (
-          <div className="summary-card anim-in" aria-live="polite">
+          <div className="summary-card" aria-live="polite">
             <p className="summary-eyebrow">{m.summary.endedLabel}</p>
             <p className="summary-title">{m.summary.endedTitle}</p>
             <p className="summary-note">
@@ -321,30 +338,22 @@ export default function App() {
             </p>
           </div>
         ) : empty ? (
-          <div className="flex h-full flex-col items-center justify-center px-2 text-center">
-            <Mascot state={missed ? "unsure" : face(state)} size={112} />
+          <div className="empty">
+            <Mascot state={missed ? "unsure" : face(state)} size={116} />
             {missed ? (
               <div className="mt-6 w-full">
                 <RetryNotice />
               </div>
             ) : (
               <>
-                <h2 className="mt-6 display text-[26px] leading-[1.35] text-ink">
-                  {m.empty.title}
-                </h2>
-                <p className="mt-3 max-w-[19rem] font-indic text-[18px] leading-relaxed text-muted">
-                  {m.empty.body}
-                </p>
-                {isTalk && (
-                  <p className="mt-2 max-w-[19rem] font-indic text-[18px] leading-relaxed text-muted">
-                    {m.talk.hint}
-                  </p>
-                )}
+                <h2 className="empty-title">{m.empty.title}</h2>
+                <p className="empty-body">{m.empty.body}</p>
+                {isTalk && <p className="empty-body">{m.talk.hint}</p>}
               </>
             )}
           </div>
         ) : (
-          <ul className="flex flex-col gap-2.5" aria-live="polite">
+          <ul className="turns" aria-live="polite">
             {lines.map((line) => (
               <li
                 key={line.id}
@@ -364,7 +373,7 @@ export default function App() {
               </li>
             ))}
             {missed && (
-              <li className="anim-in">
+              <li>
                 <RetryNotice />
               </li>
             )}
@@ -372,7 +381,7 @@ export default function App() {
         )}
       </main>
 
-      <footer className="border-t border-line px-4 pt-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))]">
+      <footer className="app-foot">
         {ended ? (
           <button type="button" className="btn-primary w-full" onClick={newCall}>
             {m.call.new}
@@ -392,7 +401,7 @@ export default function App() {
         ) : (
           <>
             {lines.length > 0 && (
-              <div className="mb-1.5 flex justify-end">
+              <div className="foot-end">
                 <button type="button" className="footer-end" onClick={endCall}>
                   <svg
                     width="13"
@@ -414,10 +423,7 @@ export default function App() {
               </div>
             )}
 
-            <div
-              className="-mx-1 mb-2.5 flex gap-2 overflow-x-auto px-1 pr-6 [scrollbar-width:none] [mask-image:linear-gradient(to_right,#000_86%,transparent)] [&::-webkit-scrollbar]:hidden"
-              aria-label={m.quickReplies}
-            >
+            <div className="chips" aria-label={m.quickReplies}>
               {chipsToShow.map((chip) => (
                 <button
                   key={chip}
@@ -431,7 +437,7 @@ export default function App() {
             </div>
 
             <form
-              className="flex gap-2"
+              className="composer"
               onSubmit={(e) => {
                 e.preventDefault();
                 reply(draft);

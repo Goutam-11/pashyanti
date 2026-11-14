@@ -35,7 +35,7 @@ export function Onboarding({
       aria-modal="true"
       aria-labelledby="tour-title"
     >
-      <div className="anim-in w-full max-w-md rounded-3xl border border-line bg-surface p-6 shadow-[0_24px_60px_-24px_rgba(14,27,44,0.35)]">
+      <div className="anim-in tour-sheet">
         <div className="mb-4 flex justify-center">
           <Mascot state={s.state} size={96} />
         </div>
@@ -46,7 +46,7 @@ export function Onboarding({
         >
           {s.title}
         </h2>
-        <p className="mt-1 text-center text-[11px] uppercase tracking-[0.18em] text-muted">
+        <p className="mt-1 text-center font-indic text-[12px] tracking-[0.02em] text-muted">
           {s.caption}
         </p>
         <p className="mt-4 text-center font-indic text-lg leading-relaxed text-muted">
