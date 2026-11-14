@@ -40,10 +40,12 @@ pashyanti/
     harness/               phone-line accuracy measurement (degrade, wer, corpus, cli)
     probe.py stream_mic.py test_stream_file.py clone_voice.py   standalone tools
     cache/                 gitignored: TTS audio, transcripts, corpus wavs
-  web/                     Vite 8, React 19, TypeScript, vanilla CSS
-    src/App.tsx            the two-pane phone UI
+  web/                     Vite 8, React 19, TypeScript, Tailwind 4 + CSS tokens
+    src/App.tsx            the one screen: transcript, chips, composer
     src/ws.ts              one socket, reconnect
     src/types.ts           the five message shapes
+    src/components/        Mascot (Sakhi), Onboarding, ThemeToggle
+    src/index.css          every colour as a CSS variable, light + dark
     public/                PWA manifest and icon
   docs/                    architecture, API notes, decisions
 ```
@@ -136,8 +138,21 @@ files.
   retries. Do not remove that.
 - **TypeScript strict, no `any`.** The five message shapes live in
   `web/src/types.ts`; extend that union instead of casting.
-- **CSS is hand-written**, one file, CSS variables at the top. No Tailwind, no
-  component library.
+- **Tailwind for layout, tokens for theme.** `web/src/index.css` holds every
+  colour as a CSS variable under `:root` / `.dark`, mapped into Tailwind with
+  `@theme inline`. Use utilities for layout, spacing and responsive work; give a
+  semantic class to any shape repeated three or more times (bubble, chip, pill).
+  Do not let the JSX become the stylesheet.
+- **Still banned:** a component library (shadcn, MUI, Radix themes) or SSR. This
+  is a two-screen SPA behind one socket. Tailwind earns its place because it is
+  utilities plus a build step, not a component set — see D-009.
+- **UI rules that are product rules.** The mascot *is* the state indicator
+  (ear pulses = listening, mouth = speaking, `?` = didn't catch it) — never
+  animate it decoratively. The onboarding tour opens only from the `?` button or
+  `?tour=1`; it never opens by itself, because the first screen has to teach in
+  place. One theme on camera: Paper & Ink, light.
+- **Accessibility floor:** body text ≥ 18 px, contrast ≥ 7:1, tap targets
+  ≥ 44 px, visible focus ring, and respect `prefers-reduced-motion`.
 
 ## Verify before saying "done"
 
