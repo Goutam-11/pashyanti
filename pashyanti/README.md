@@ -6,18 +6,23 @@ Scaffolding only. No abstractions, no frameworks — one file per job.
 python -m venv .venv && . .venv/bin/activate
 sudo dnf install -y portaudio
 pip install -r requirements.txt
-export GNANI_API_KEY="..."
+cp .env.example .env          # then paste your key
 ```
+
+`api.py` reads `GNANI_API_KEY` from `./.env` if it is set there; a real
+environment variable always wins. Never commit `.env`.
 
 | File | Job |
 |---|---|
 | `api.py` | `tts()` and `stt_file()` — REST calls, nothing else |
 | `probe.py` | One 1,000-char TTS call + one 10 s STT call, to read the credit rate off the dashboard |
 | `stream_mic.py` | Live mic → `wss://api.vachana.ai/stt/v3/stream` |
+| `test_stream_file.py` | Replays a 16 kHz wav into the same socket — tests streaming where there is no microphone |
 
 ```bash
 python probe.py
-python stream_mic.py
+python stream_mic.py                    # needs a real mic
+python test_stream_file.py smoke.wav    # no mic needed
 ```
 
 ## Two facts that will cost you an evening
