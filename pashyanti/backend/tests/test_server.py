@@ -156,7 +156,7 @@ class ServerIntegrationTest(unittest.IsolatedAsyncioTestCase):
 
         with tempfile.TemporaryDirectory() as tmp, \
              patch.object(server, "CACHE", Path(tmp) / "cache"):
-            await mic.on_text("I need an ambulance", "hi", 40)
+            await mic.on_text("I need an ambulance", "hi", 40, 800)
             await ws.receive_json()                  # transcript
 
             await ws.send_json({"type": "reply", "text": "Sending one now"})
@@ -179,6 +179,34 @@ class ServerIntegrationTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(written["turns"], 1)
             self.assertEqual(written["who"], "I need an ambulance")
             self.assertEqual(written["next"], "Sending one now")
+        await ws.close()
+
+    async def test_hallucinated_transcript_asks_to_repeat(self):
+        ws = await self.client.ws_connect("/ws")
+        await ws.receive_json()                      # hello
+        for _ in range(200):
+            if len(FakeMic.instances) >= 2:
+                break
+            await asyncio.sleep(0.01)
+        mic = FakeMic.instances[-1]
+
+        with tempfile.TemporaryDirectory() as tmp, \
+             patch.object(server, "CACHE", Path(tmp) / "cache"):
+            # Four words out of 200 ms of noise: Prisma guessed, so ask again.
+            await mic.on_text("Sir, क्या जमा करें?", "hi", 30, 200)
+            self.assertEqual(await ws.receive_json(), {"type": "retry"})
+
+            await ws.send_json({"type": "end_call"})
+            frames = []
+            while True:
+                frame = await ws.receive_json()
+                frames.append(frame)
+                if frame.get("type") == "summary":
+                    break
+
+            self.assertNotIn("transcript", [f["type"] for f in frames])
+            self.assertEqual(frames[-1]["turns"], 0)
+            self.assertEqual(frames[-1]["who"], "unknown caller")
         await ws.close()
 
 

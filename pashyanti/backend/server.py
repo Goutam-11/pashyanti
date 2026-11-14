@@ -18,7 +18,7 @@ from aiohttp import WSMsgType, web
 
 import tts
 from gnani import KEY  # noqa: F401  (import validates the key early)
-from stt import MicSession
+from stt import MicSession, looks_unusable
 
 WEB = Path(__file__).resolve().parent.parent / "web" / "dist"
 CACHE = Path(__file__).resolve().parent / "cache"
@@ -84,7 +84,10 @@ class Call:
         if not self.ws.closed:
             await self.ws.send_json(payload)
 
-    async def on_transcript(self, text, lang, latency_ms):
+    async def on_transcript(self, text, lang, latency_ms, audio_ms):
+        if looks_unusable(text, audio_ms):
+            await self.send({"type": "retry"})
+            return
         self.lines.append({"who": "caller", "text": text})
         await self.send({"type": "transcript", "text": text,
                          "lang": lang, "latency_ms": latency_ms})
