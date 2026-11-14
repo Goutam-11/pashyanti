@@ -9,7 +9,8 @@ Two rules decide every choice below.
 
 1. **Nothing in the video that this repository cannot reproduce.** If a number is
    on screen, its source is in [Numbers](#the-numbers-and-where-they-came-from).
-2. **The first three seconds name a person and a failure, not the product.** The
+2. **The first three seconds name a person and a failure, not the product.**
+   The hook is burned in as text at frame 1 — LinkedIn autoplays muted — and the
    product appears at 0:05.
 
 Related: [`ARCHITECTURE.md`](ARCHITECTURE.md) (the latency budget),
@@ -38,11 +39,13 @@ to a Deaf user is worse than asking.
 
 - **The user** — the person we follow, holding the phone. If the story is
   someone's real story, they are on camera and have agreed to it; if it is a
-  composite, the caption says **"a re-enactment"** and the caption keeps the
-  biography to one line. Do not invent a biography a judge can disprove.
+  composite, the video caption says **"a re-enactment"** *and* the post says so
+  after its first line. Do not invent a biography a judge can disprove. The
+  cloned-voice reference must be the on-camera person's own recording; for a
+  composite, it must be the performer's — never a third voice.
 - **The caller** — a Hindi speaker in the same room, reading the lines in
   [The call script](#the-call-script). This is a live performance, **not** a
-  recording of a real call: `AGENTS.md` allows synthetic audio only.
+  recording of a real call; no real call audio is used (`AGENTS.md`).
 - All names in this document (Meera, Dr. Mehra) are fictional placeholders.
   Keep them fictional or replace them with the real person's, never half-way.
 - No Aadhaar number, PAN, account number, real phone number or API key is ever
@@ -58,13 +61,15 @@ expensive to discover mid-take.
 ### 1. Serve the built app, not the dev server
 
 ```fish
-cd pashyanti/web && bun run build        # must end clean
-cd ../backend && uv run python server.py # http://0.0.0.0:8080 (LAN)
+cd pashyanti/web && ../../scripts/with-cache.sh bun run build   # must end clean
+cd ../backend && ../../scripts/with-cache.sh uv run python server.py
 ```
 
-`server.py` serves `web/dist`. If it prints the "Frontend not built yet" page,
-the build did not run — stop and fix it rather than shooting the dev server
-(#14 lists this as a blocker).
+The `with-cache.sh` wrapper keeps bun/uv caches out of `/tmp`, which is a 3.6 GB
+tmpfs on the demo machine; filling it breaks every shell command. The server
+serves `web/dist` at `http://0.0.0.0:8080` on the LAN. If the page says
+"Frontend not built yet", the build did not run — stop and fix it rather than
+shooting the dev server (#14 lists this as a blocker).
 
 ### 2. Build the cloned voice and restart the server
 
@@ -99,7 +104,9 @@ and the retakes are instant.
 
 ### 4. Phone
 
-- Same LAN as the server; open `http://<lan-ip>:8080`.
+- Same LAN as the server; open
+  `http://<lan-ip>:8080/?lang=hi&theme=light` — the query overrides a saved
+  locale, so every take starts in the same state.
 - **Add to Home Screen** and open from the icon: fullscreen, no browser chrome,
   no address bar in frame.
 - Do Not Disturb on, notifications off, auto-lock off, brightness maximum,
@@ -108,10 +115,11 @@ and the retakes are instant.
 
 ### 5. Locale and theme
 
-- Language: **हिंदी**, set from the globe picker before recording. The caller
-  speaks Hindi and the chips are then Hindi sentences, so the spoken reply is
-  Hindi text spoken by a Hindi voice. English lives in the edit, as burned-in
-  subtitles — not in the UI, and never as a second take.
+- Language: **हिंदी**, forced with `?lang=hi` before recording; do not open the
+  globe picker on camera. The caller speaks Hindi and the chips are then Hindi
+  sentences, so the spoken reply is Hindi text spoken by a Hindi voice. English
+  lives in the edit, as burned-in subtitles — not in the UI, and never as a
+  second take.
 - Theme: **Peacock, light**. The toggle is never shown (`DECISIONS.md` D-010).
 - This is a read-aloud product for a Hindi-speaking user; do not mix locales
   between beats. The UI language does not change recognition (`D-012`).
@@ -130,7 +138,8 @@ and the retakes are instant.
 
 ### 7. Checks, once, with the camera off
 
-- [ ] Page loads from `http://<lan-ip>:8080` on the phone, fullscreen.
+- [ ] Page loads from `http://<lan-ip>:8080/?lang=hi&theme=light` on the phone,
+      fullscreen.
 - [ ] Header pill reads `तैयार`, mascot idle, no red pill.
 - [ ] `फ़ोन लाइन` off at the start of the take.
 - [ ] `मेरी आवाज़` off at the start of the take.
@@ -149,15 +158,18 @@ the **last** reply the user spoke.
 | Line | Who | Hindi | English gloss | Feeds |
 |---|---|---|---|---|
 | A1 | caller | नमस्ते, मैं डॉ. मेहरा की क्लिनिक से बोल रही हूँ। | Hello, I'm calling from Dr. Mehra's clinic. | `who` |
-| U1 | user (chip) | हाँ, बोलिए। | Yes, go ahead. | — |
-| A2 | caller | *repeat A1 word-for-word* | — | comparison for the phone-line beat |
+| U1 | user (chip **थोड़ा धीरे बोलिए।**) | थोड़ा धीरे बोलिए। | A little slower, please. | — (motivates A2) |
+| A2 | caller | *repeat A1 word-for-word, a little slower* | — | the phone-line A/B |
 | A3 | caller | कल सुबह दस बजे का अपॉइंटमेंट खाली है। | Tomorrow at 10 a.m. is free. | — |
-| U2 | user (typed, cloned voice) | हाँ, कल सुबह दस बजे आ जाऊँगा। | Yes, I'll come tomorrow at 10. | `next` |
+| U2 | user (typed, cloned voice) | हाँ, कल सुबह दस बजे आ जाऊँगी। | Yes, I'll come tomorrow at 10. | `next` |
 | A4 | caller | ठीक है, दस बजे मिलते हैं। | Okay, see you at 10. | `agreed` |
 
 A1 is under the 60-character cap `_shorten` applies, so the card's title is the
 whole sentence. A2 must be word-for-word identical to A1 or the comparison in
-beat 5 is not a comparison — rehearse it with the caller until it is.
+beat 5 is not a comparison — rehearse it with the caller until it is. U2's verb
+agrees with the person on camera: `आ जाऊँगी` (female) or `आ जाऊँगा` (male).
+Keep the persona, the chip and the cloned reference consistent; a female
+persona with a male verb is the kind of detail a Hindi-speaking judge hears.
 
 ### Opening line — write it ten times, shoot three
 
@@ -171,6 +183,17 @@ in the order worth trying:
 4. "Meera lost her hearing at 34. The phone became a locked door."
 5. "This is what a phone call looks like when you cannot hear it." — weakest:
    it promises the product, not the person.
+6. "My uncle lost his voice to cancer. His phone has been silent since."
+7. "My neighbour is Deaf. Every call she makes goes through someone else's
+   mouth."
+8. "My father can't hear on the phone. My mother translates, every time."
+9. "My student is Deaf. She doesn't need an interpreter for a call — she needs
+   the words."
+10. "My friend has cerebral palsy. People hang up before she finishes typing."
+
+Use only a line that is literally true about someone you know, with permission
+to name and film them. If none is true, use the composite persona and label the
+post a re-enactment — do not present a fictional person as a real one.
 
 Pick in the edit, with the sound on. The best line read once beats the perfect
 line read five times.
@@ -184,17 +207,17 @@ from the voiceover, never a frame from the transcript.
 
 | # | In–out | On screen | On the soundtrack | Line (voiceover / burned-in subtitle) |
 |---|---|---|---|---|
-| 1 | 0:00–0:05 | Camera: a phone face-down in two hands. No app, no logo. | Room tone only | "The clinic called at 9:04. Meera watched the phone ring, and could not answer it." |
+| 1 | 0:00–0:05 | Camera: a phone face-down in two hands. **Hook burned in at frame 1.** | Room tone only | Burned-in + voiceover: "The clinic called at 9:04. Meera watched the phone ring, and could not answer it." |
 | 2 | 0:05–0:11 | The phone turns over onto the empty state: Sakhi idle, "सामने वाले की बात यहाँ पढ़िए". | UI, quiet | "This morning, she answered it herself." |
-| 3 | 0:11–0:19 | The caller's bubble grows in the transcript, `hi-IN · <latency> ms` under it. Mascot's arcs pulse. | Caller speaking, live | "Their voice becomes text — in about half a second." |
-| 4 | 0:19–0:26 | She taps **हाँ, बोलिए।**; the reply bubble appears; the beak opens while it speaks. | Her voice through the speaker | "Her tap becomes a voice." |
-| 5 | 0:26–0:35 | Thumb flips **फ़ोन लाइन**; the caller repeats A1; a second, near-identical bubble lands. Lower third: `3.6% WER · 10 dB SNR · 8 kHz µ-law`. | Caller, live; line noise in the room | "Same sentence, on a bad line: 3.6% word error at 10 dB." |
-| 6 | 0:35–0:41 | A short noise burst from the caller. No bubble. The `?` disc, then "समझ नहीं आया — दोहराइए". | Room | "When it isn't sure, it asks — it does not guess." |
-| 7 | 0:41–0:48 | She flips **मेरी आवाज़**, taps **बोलिए** on the pre-filled U2; the reply is spoken in her cloned voice. | Her cloned voice | "Same words, her own voice." |
-| 8 | 0:48–0:55 | Caller says A4; text lands; she taps **कॉल खत्म करें**; the summary card slides in — `who` (A1), `agreed` (A4), `next` (U2), then `<turns> बार · <duration>`. | Caller, then UI | "And the call ends as a record, not a chat." |
-| 9 | 0:55–1:00 | End card: **Pashyanti · Prisma v3.0 + Timbre v3.0**, then `3.6% WER · 764 ms`, then the limitation line, then the repo URL. | One music sting | "Overlapping speech still breaks it — so it asks." |
+| 3 | 0:11–0:19 | The caller's bubble grows in the transcript, `hi-IN · <latency> ms` under it. The mascot is **still** and the pill reads `तैयार` on this first turn — the arcs only start after the first reply; the bubble is the cue. | Caller speaking, live | "Their voice becomes text — in about half a second." |
+| 4 | 0:19–0:25 | She taps **थोड़ा धीरे बोलिए।**; the reply bubble appears after the audio; the beak opens while it speaks. | Her voice through the speaker | "Her tap becomes a voice." |
+| 5 | 0:25–0:34 | Thumb flips **फ़ोन लाइन**; the caller repeats A1, a little slower; a second, near-identical bubble lands. Lower third: `8 clips · 3.6% WER · 10 dB · 8 kHz µ-law`. | Caller, live; the degradation is server-side and is **not** audible in the room | "Same sentence, on a bad line. Eight clips: 3.6% word error at 10 dB." |
+| 6 | 0:34–0:39 | A short noise burst at the mic. The `?` disc, then "समझ नहीं आया — दोहराइए". Hold ≥ 2 s. | Room | "When it isn't sure, it asks — it does not guess." |
+| 7 | 0:39–0:47 | Caller: **"कल सुबह दस बजे का अपॉइंटमेंट खाली है।"** — the bubble clears the retry card. She flips **मेरी आवाज़**, taps **बोलिए** on the pre-filled U2; the reply is spoken in her cloned voice. | Caller, then her cloned voice | "The appointment is free. She says yes — in her own voice." |
+| 8 | 0:47–0:55 | Caller says A4; text lands; she taps **कॉल खत्म करें**; the summary card slides in — `who` (A1), `agreed` (A4), `next` (U2), then `<turns> बार · <duration>`. Hold the card. | Caller, then UI | "And the call ends as a record, not a chat." |
+| 9 | 0:55–1:00 | End card: **Pashyanti · Prisma v3.0 + Timbre v3.0**, then `3.6% WER · 764 ms`, the limitation line, the repo URL. | One music sting | "Overlapping speech still breaks it. You can't interrupt the reply." |
 
-**Total: 5 + 6 + 8 + 7 + 9 + 6 + 7 + 7 + 5 = 60 s.**
+**Total: 5 + 6 + 8 + 6 + 9 + 5 + 8 + 8 + 5 = 60 s.**
 
 Beat 5 says the WER out loud; beat 9 puts both numbers on the end card and
 repeats the limitation. Nothing else in the video is a measurement, and nothing
@@ -204,16 +227,17 @@ in the video is a measurement without a row in
 ### Timing inside the beats
 
 - **0:11** starts on the caller's first syllable, not before it. Trim the breath.
-- **0:26** the toggle is flipped **while** the caller is still finishing A1; the
-  server rebuilds the upstream Prisma socket and loses about one VAD segment
-  (`Call.set_phone_line`), so cut the dead air in the edit but do not fake the
-  transcript: A2 lands on its own.
-- **0:35** the retry notice clears itself on the next transcript; do not let A3
-  start before the `?` card has been on screen for at least 2 s.
-- **0:41** type U2 into the composer **during** beat 6 (the keyboard is never in
-  frame, and a Devanagari keyboard fills the lower half of the screen). Only the
-  filled composer and the tap appear on camera.
-- **0:48** end the call only after A4 has landed, or `agreed` will be A3.
+- **0:25** flip the toggle after U1 has finished cleanly and before the caller
+  starts A2; the server rebuilds the upstream Prisma socket and loses about one
+  VAD segment (`Call.set_phone_line`), so cut the dead air in the edit but do
+  not fake the transcript: A2 lands on its own.
+- **0:34** the retry card is a heuristic; hold it ≥ 2 s, and it clears on the
+  next transcript — A3 at 0:39.
+- **0:39** A3 lands and clears the retry card; then the clone toggle. U2 is
+  typed **before the recording starts**, so the keyboard never appears on
+  camera; only the filled composer and the tap are in frame. The composer keeps
+  its draft through the phone-line rebuild and the retry notice.
+- **0:47** end the call only after A4 has landed, or `agreed` will be A3.
 
 ---
 
@@ -224,21 +248,22 @@ knows which is the screen and which is the room.
 
 | Shot | Source | Phone in hand? | Why |
 |---|---|---|---|
-| S1 hands, phone face-down | camera, close, 60 fps | **yes** | opens on a person, not a product |
+| S1 hands, phone face-down + hook | camera, close, 60 fps | **yes** | opens on a person, not a product; the hook is burned in at frame 1 |
 | S2 the empty state | phone screen recording | no | the frame a judge sees before any words |
 | S3 caller speaking + bubble | phone screen recording | no | the transcript must be legible at 1080×1920 |
 | S4 tap the chip + reply | phone screen recording, plus a cutaway of the thumb | thumb cutaway **yes** | the tap is the interaction; show the finger once |
 | S5 phone-line toggle + repeat | over the shoulder, screen and thumb in frame | **yes** | the switch is a physical act, not a setting |
 | S6 retry notice | phone screen recording | no | hold ≥ 2 s, no cursor over the card |
-| S7 cloned-voice toggle + typed reply | over the shoulder | **yes** | the composer text was typed before the take; only the tap is filmed |
+| S7 A3 + cloned-voice toggle + pre-typed reply | over the shoulder | **yes** | A3 lands and clears the retry card; the composer was filled before the take, so only the tap is filmed |
 | S8 end call → summary card | phone screen recording | **yes** for the tap, **no** for the card | the card is the payoff; give it the full 4:5 frame |
 | S9 end card | edit only | no | name, models, number, limitation |
 
 **Capture the screen on the phone itself.** The built-in recorder gives the real
 device, the real fullscreen PWA and no browser chrome. The app is capped at
-430 px (`App.tsx`: `max-w-[430px]`), so a desktop browser at 430×932 is
-pixel-identical and is an acceptable fallback for retakes of S5–S6; do not mix
-the fallback into a shot that also shows the physical phone.
+430 px (`App.tsx`: `max-w-[430px]`), so a desktop browser at 430 px wide renders
+the same layout — but the height changes the composition, so check the 4:5 card
+crop before trusting a fallback; do not mix the fallback into a shot that also
+shows the physical phone.
 
 **Framing.** The summary card is composed for 4:5 —
 [`screenshots/peacock-summary-4x5.png`](screenshots/peacock-summary-4x5.png) is
@@ -310,22 +335,26 @@ Why it is true, so the answer is ready if asked:
 
 ## Post copy
 
-Paste-ready. First line is the hook; last line is the question.
+Paste-ready. First line is the hook; last line is the question. Use it only
+with a real person whose cloned reference is their own; if the video is a
+composite, add `(A re-enactment with a composite persona.)` after the first line
+and keep every "her" true to the performer.
 
 ```text
 The clinic called at 9:04. Meera watched the phone ring, and could not answer it.
 
 This is her side of the next call. The caller's Hindi arrives as large text on
 her screen. She taps a reply, and it is spoken down the line — in a natural
-Indian voice, or in her own cloned voice from 20 seconds of her speech. The call
-ends with a card: who called, what was agreed, what happens next.
+Indian voice, or in her own cloned voice from a short reference recording
+(5–30 seconds). The call ends with a card: who called, what was agreed, what
+happens next.
 
 Built on Gnani Prisma v3.0 (speech → text) and Timbre v3.0 (text → speech), plus
 the voice-clone endpoint.
 
 On a simulated phone line — 8 kHz, µ-law, 10 dB SNR — word error rate was 3.6%
-across 8 clips, after folding orthography. At 0 dB it was 93.5%, which is why
-the app says "couldn't catch that" instead of showing a guess.
+across 8 clips, after folding orthography. At 0 dB it collapses to 93.5%, so
+when the audio is unusable the app asks for a repeat instead of showing a guess.
 
 What is not solved: overlapping speech breaks it, and the reply cannot be
 interrupted because the microphone is muted while it speaks. There is also no
@@ -389,7 +418,7 @@ a still — a frozen `?` card is exactly the kind of fake a judge notices.
 | Is that a real phone call? | No. No PSTN/SIP/number exists on the API; the caller is a person in the room reading written lines. The Twilio Media Streams bridge is a spike (#7), not built. |
 | Does it translate? | No. Prisma recognises Indic speech (and English) in the language spoken; the reply is spoken from the text the user typed. |
 | Who makes the summary? | `server.build_summary` — a pure function over the transcript: first caller line, last caller line, last reply, turn count, duration. No model call, so the same call always gives the same card. |
-| How accurate is it? | 3.6% WER at 10 dB SNR on 8 clips, `hi-IN`, 8 kHz µ-law, after folding orthography. At 0 dB it is 93.5%, which is why the app asks for a repeat. |
+| How accurate is it? | 3.6% WER at 10 dB SNR on 8 clips, `hi-IN`, 8 kHz µ-law, after folding orthography. At 0 dB it is 93.5%, so the app asks for a repeat when the audio is unusable. |
 | What still breaks? | Overlapping speech; no barge-in while the mic is muted; cloned voice needs a 5–30 s reference; spoken replies are Hindi only (`DECISIONS.md` D-012). |
 | Why is the phone only a screen? | Capture is server-side (`D-004`), so the phone needs no microphone permission and no HTTPS tunnel. The browser cannot feed Prisma's 1024-byte PCM socket anyway. |
 
@@ -407,4 +436,7 @@ a still — a frozen `?` card is exactly the kind of fake a judge notices.
 - [ ] The limitation sentence appears on the end card, unsoftened.
 - [ ] No API key, `.env`, balance screen, real number or real call audio in any
       frame.
-- [ ] Watch it once with the sound off: the story still reads.
+- [ ] Watch it once with the sound off: the hook is burned in and the story
+      still reads.
+- [ ] If the persona is composite, the post says "a re-enactment" after the
+      first line, and the cloned voice is the performer's.
