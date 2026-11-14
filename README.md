@@ -104,6 +104,16 @@ and it runs fullscreen like an app.
 | `pashyanti/backend/clone_voice.py` | `build ref.wav` → embedding, then `say "..."` in that voice |
 | `pashyanti/web/` | Vite + React + TypeScript, vanilla CSS, no UI framework |
 
+## Screens
+
+| | |
+|---|---|
+| ![Light theme — the empty state, mascot and one instruction line](pashyanti/docs/screenshots/app-light.png) | ![Dark theme](pashyanti/docs/screenshots/app-dark.png) |
+| ![The three-step tour, behind the ? button](pashyanti/docs/screenshots/tour.png) | |
+
+Paper & Ink, light by default. The mascot — Sakhi — is the state indicator:
+her ear pulses while listening, her mouth moves while speaking.
+
 ## Documentation
 
 | Document | What is in it |

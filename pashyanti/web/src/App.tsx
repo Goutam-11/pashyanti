@@ -124,7 +124,7 @@ export default function App() {
             >
               बोलिए, मैं सुन रही हूँ
             </p>
-            <p className="mt-2 max-w-[16rem] font-deva text-base leading-relaxed text-muted" lang="hi">
+            <p className="mt-2 max-w-[17rem] font-deva text-[18px] leading-relaxed text-muted" lang="hi">
               सामने वाले की बात यहाँ दिखेगी। जवाब देने के लिए नीचे कोई चिप दबाइए।
             </p>
           </div>
@@ -157,7 +157,7 @@ export default function App() {
       </main>
 
       <footer className="border-t border-line px-4 pt-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))]">
-        <div className="-mx-1 mb-2.5 flex gap-2 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="-mx-1 mb-2.5 flex gap-2 overflow-x-auto px-1 pr-6 [scrollbar-width:none] [mask-image:linear-gradient(to_right,#000_86%,transparent)] [&::-webkit-scrollbar]:hidden">
           {CHIPS.map((c) => (
             <button
               key={c}
