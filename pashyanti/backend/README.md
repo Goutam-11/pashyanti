@@ -20,6 +20,7 @@ uv run python server.py   # http://localhost:8080
 | `probe.py` | one 1,000-char TTS + one 10 s STT call, to read the credit rate |
 | `stream_mic.py` | standalone mic → transcript terminal test |
 | `test_stream_file.py` | replay a wav into the STT socket (no microphone needed) |
+| `talk_replay.py` | replay a wav as the page in talk mode: 1024-byte frames in, the reply audio out |
 | `clone_voice.py` | `build ref.wav` → `embedding.json`, then `say "..."` |
 | `harness/` | Phone-line accuracy: degrade clean audio (band-limit, µ-law, noise) and measure WER against known text |
 

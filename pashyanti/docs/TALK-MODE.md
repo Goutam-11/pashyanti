@@ -92,9 +92,9 @@ The protocol table lives in [`ARCHITECTURE.md`](ARCHITECTURE.md); `audio`,
 
 Two runs, both reproducible from the repository plus a scratch script.
 
-**A. A wav replayed as the phone** (`.scratch/talk-e2e.py`, a websocket client
-that speaks `?mode=talk`, sends `smoke.wav` as 1024-byte frames at 32 ms, then
-taps a reply):
+**A. A wav replayed as the phone** ([`../backend/talk_replay.py`](../backend/talk_replay.py),
+a websocket client that speaks `?mode=talk`, sends `smoke.wav` as 1024-byte
+frames at 32 ms, then taps a reply):
 
 | Measured | Value |
 |---|---|
@@ -106,7 +106,8 @@ taps a reply):
 
 **B. A real browser over HTTPS** (Chrome via Puppeteer with a fake microphone
 device playing the same wav, page loaded through `ngrok`, exactly what a phone
-does; `.scratch/e2e/talk-browser.mjs`):
+does; a throwaway harness, not committed — Puppeteer is not a project
+dependency):
 
 | Measured | Value |
 |---|---|
@@ -119,6 +120,19 @@ does; `.scratch/e2e/talk-browser.mjs`):
 
 The 2592 ms gap is the page half of half-duplex working: capture was stopped
 while the reply played, so the phone did not hear itself.
+
+## Reproduce A
+
+```fish
+cd pashyanti/backend
+uv run python server.py                        # terminal 1
+uv run python talk_replay.py smoke.wav         # terminal 2, ~25 s
+```
+
+It prints the transcript, the reply's `ttfa`/`cached`/`lang` and the audio that
+came back. Run it twice: the second reply is cached and reports 0 ms. The
+browser run in B needs Chrome, Puppeteer and a tunnel, so it lives outside the
+repository; the replay tool and the unit suite are what can be checked here.
 
 ## What was not verified
 
