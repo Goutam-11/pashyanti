@@ -1,0 +1,1784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="color-scheme" content="dark" />
+<meta name="theme-color" content="#0B110A" />
+<meta name="description" content="Pashyanti — ten message-bubble treatments on a dot-screen ground, with contrast evidence and a recommendation." />
+<title>Pashyanti — bubble treatments on a dot screen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&amp;family=Karla:wght@400;500;600;700&amp;family=Mukta:wght@400;500;600&amp;family=Silkscreen&amp;display=swap" rel="stylesheet" />
+<style>
+  /* ---------------------------------------------------------------
+     Tokens. The ten named tokens are used verbatim; three derived
+     tokens are added and named as such.
+     --------------------------------------------------------------- */
+  :root {
+    --field: #0B110A;
+    --panel: #111A0E;
+    --ink: #EFF3DC;
+    --ink-2: #B9C4A6;
+    --line: #24321C;
+    --signal: #1E2C18;
+    --accent: #C9F05C;
+    --accent-ink: #101607;
+    --hot: #E4694A;
+    --cool: #8FC7A3;
+
+    /* derived: a warm signal deep enough to carry --ink at 7.16:1 */
+    --hot-deep: #8E3018;
+    /* derived: the lattice colour, computed from ink */
+    --dot: color-mix(in srgb, var(--ink) 20%, transparent);
+    /* derived: a hairline that reads at 3.2:1, unlike --line at 1.4:1 */
+    --hair: color-mix(in srgb, var(--ink-2) 38%, transparent);
+
+    --paper-field: #F2EADB;
+    --paper-panel: #FBF6EC;
+    --paper-ink: #17251C;
+    --paper-ink-2: #3F4D42;
+    --paper-line: #D9CCB7;
+    --paper-signal: #E9DFCB;
+    --paper-accent: #255035;
+    --paper-accent-ink: #FBF6EC;
+    --paper-hot: #9C3A1D;
+    --paper-hot-deep: #7E2A16;
+    --paper-cool: #255035;
+
+    --lattice: 8px;
+    --bubble: 21px;
+
+    --font-ui: "Karla", ui-sans-serif, system-ui, sans-serif;
+    --font-deva: "Mukta", "Karla", ui-sans-serif, sans-serif;
+    --font-display: "Fraunces", "Mukta", Georgia, serif;
+    --font-mono: "Silkscreen", "Karla", monospace;
+  }
+
+  *,
+  *::before,
+  *::after { box-sizing: border-box; }
+
+  html {
+    background: var(--field);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--field);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-size: 18px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body.body-lg { --bubble: 24px; }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .sheet {
+    width: 100%;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 16px 90px;
+  }
+
+  /* ---------------------------------------------------------------
+     Masthead
+     --------------------------------------------------------------- */
+  .masthead {
+    padding: 54px 0 26px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .eyebrow {
+    margin: 0 0 18px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    line-height: 1.4;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .display {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(34px, 6.2vw, 58px);
+    line-height: 1.02;
+    letter-spacing: -0.015em;
+    max-width: 15ch;
+  }
+
+  .lede {
+    margin: 22px 0 0;
+    max-width: 62ch;
+    font-size: 19px;
+    line-height: 1.55;
+    color: var(--ink-2);
+  }
+
+  .lede strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .fine {
+    margin: 14px 0 0;
+    max-width: 70ch;
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--ink-2);
+  }
+
+  .fine b { color: var(--ink); font-weight: 600; }
+
+  /* ---------------------------------------------------------------
+     Toolbar: token legend + the only two controls
+     --------------------------------------------------------------- */
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px 28px;
+    padding: 18px 0 20px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .tokens {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    max-width: 640px;
+  }
+
+  .tok {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    line-height: 1;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .tok i {
+    display: block;
+    width: 16px;
+    height: 16px;
+    flex: none;
+    border: 1px solid var(--line);
+    background: var(--c);
+  }
+
+  .controls {
+    display: flex;
+    gap: 8px;
+    flex: none;
+  }
+
+  .ctl {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0 14px;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    transition: border-color 120ms ease, background 120ms ease, color 120ms ease;
+  }
+
+  .ctl:hover { border-color: var(--ink-2); }
+
+  .ctl[aria-pressed="true"] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+  }
+
+  .ctl[aria-pressed="true"]:focus-visible { outline-color: var(--ink); }
+
+  /* ---------------------------------------------------------------
+     State strip
+     --------------------------------------------------------------- */
+  .state {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+    padding: 34px 0 36px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  @media (min-width: 860px) {
+    .state {
+      grid-template-columns: minmax(0, 1fr) 430px;
+      align-items: center;
+      gap: 48px;
+    }
+  }
+
+  .state h2 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 26px;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+  }
+
+  .state p {
+    margin: 12px 0 0;
+    max-width: 48ch;
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--ink-2);
+  }
+
+  .state-demo { width: 100%; max-width: 430px; }
+
+  .sd {
+    padding: 14px 0;
+  }
+
+  .sd-b {
+    width: 100%;
+    max-width: 366px;
+    margin-left: auto;
+    padding: 13px 16px 10px;
+    background: var(--hot-deep);
+    color: var(--ink);
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+  }
+
+  .sd-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .sd-lab {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    line-height: 1;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+
+  .dots {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .dots i {
+    display: block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: dot-pulse 1.15s ease-in-out infinite;
+  }
+
+  .dots i:nth-child(2) { animation-delay: 0.16s; }
+  .dots i:nth-child(3) { animation-delay: 0.32s; }
+
+  @keyframes dot-pulse {
+    0%, 70%, 100% { opacity: 0.28; }
+    35% { opacity: 1; }
+  }
+
+  .sd-note {
+    margin: 12px 0 0;
+    max-width: 44ch;
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--ink-2);
+  }
+
+  /* ---------------------------------------------------------------
+     Treatment cards
+     --------------------------------------------------------------- */
+  .grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  @media (min-width: 1020px) {
+    .grid {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      column-gap: 64px;
+    }
+  }
+
+  .card {
+    min-width: 0;
+    border-top: 1px solid var(--line);
+    padding: 30px 0 36px;
+  }
+
+  .card-head {
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr);
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .num {
+    margin: 3px 0 0;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    line-height: 1;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+  }
+
+  .ttl {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 24px;
+    line-height: 1.12;
+    letter-spacing: -0.01em;
+  }
+
+  .tag {
+    display: inline-block;
+    margin-left: 9px;
+    vertical-align: 3px;
+    border: 1px solid var(--line);
+    padding: 2px 6px;
+    font-family: var(--font-mono);
+    font-size: 8px;
+    line-height: 1.4;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .bc {
+    margin: 9px 0 0;
+    max-width: 60ch;
+    font-size: 16px;
+    line-height: 1.55;
+    color: var(--ink-2);
+  }
+
+  .k {
+    margin-right: 5px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+
+  .k--cost { color: var(--ink-2); }
+
+  .tmeta {
+    margin: 16px 0 0;
+    max-width: 62ch;
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--ink-2);
+  }
+
+  .tmeta .k { color: var(--ink-2); }
+
+  .no-notes .bc,
+  .no-notes .tmeta { display: none; }
+
+  /* The stage is the 430px product screen, cropped at its content width. */
+  .stage { margin-inline: 0; }
+
+  @media (max-width: 640px) {
+    .stage { margin-inline: -16px; }
+  }
+
+  .stage-in {
+    width: 100%;
+    max-width: 430px;
+    margin-inline: auto;
+    padding: 20px 16px 26px;
+    /* Tokens are remapped inside a stage, but `color` inherits as a resolved
+       value from <body>; re-declare it here so the paper stages get paper ink. */
+    color: var(--ink);
+    background-color: var(--field);
+    background-image: radial-gradient(circle at 4px 4px, var(--dot) 1.5px, transparent 1.7px);
+    background-size: var(--lattice) var(--lattice);
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+
+  /* A second ground, for the two treatments that must survive paper. */
+  .stage-in.paper {
+    --field: var(--paper-field);
+    --panel: var(--paper-panel);
+    --ink: var(--paper-ink);
+    --ink-2: var(--paper-ink-2);
+    --line: var(--paper-line);
+    --signal: var(--paper-signal);
+    --accent: var(--paper-accent);
+    --accent-ink: var(--paper-accent-ink);
+    --hot: var(--paper-hot);
+    --hot-deep: var(--paper-hot-deep);
+    --dot: color-mix(in srgb, var(--paper-ink) 20%, transparent);
+    box-shadow: inset 0 0 0 1px var(--paper-line);
+  }
+
+  /* ---------------------------------------------------------------
+     Shared line and bubble mechanics
+     --------------------------------------------------------------- */
+  .flow {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .flow > * { max-width: 92%; }
+  .flow > .r { margin-left: auto; }
+
+  .txt {
+    margin: 0;
+    font-family: var(--font-deva);
+    font-size: var(--bubble);
+    font-weight: 400;
+    line-height: 1.42;
+    letter-spacing: 0;
+    overflow-wrap: anywhere;
+    color: inherit;
+  }
+
+  .txt[lang="en"] {
+    font-family: var(--font-ui);
+    font-size: calc(var(--bubble) - 1px);
+    line-height: 1.38;
+    letter-spacing: -0.005em;
+  }
+
+  .meta {
+    margin: 6px 0 0;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    line-height: 1.3;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  /* 01 — staircase slab -------------------------------------------- */
+  .b1 {
+    padding: 1px;
+    background: var(--hair);
+    clip-path: polygon(12px 0, calc(100% - 12px) 0, calc(100% - 8px) 4px,
+      calc(100% - 4px) 8px, 100% 12px, 100% calc(100% - 12px),
+      calc(100% - 4px) calc(100% - 8px), calc(100% - 8px) calc(100% - 4px),
+      calc(100% - 12px) 100%, 12px 100%, 8px calc(100% - 4px),
+      4px calc(100% - 8px), 0 calc(100% - 12px), 0 12px, 4px 8px, 8px 4px);
+  }
+
+  .b1-in {
+    position: relative;
+    padding: 13px 16px 11px 18px;
+    background: var(--panel);
+    clip-path: polygon(11px 0, calc(100% - 11px) 0, calc(100% - 7px) 4px,
+      calc(100% - 3px) 8px, 100% 11px, 100% calc(100% - 11px),
+      calc(100% - 3px) calc(100% - 8px), calc(100% - 7px) calc(100% - 4px),
+      calc(100% - 11px) 100%, 11px 100%, 7px calc(100% - 4px),
+      3px calc(100% - 8px), 0 calc(100% - 11px), 0 11px, 3px 8px, 7px 4px);
+  }
+
+  .b1-in::before,
+  .b1-in::after {
+    content: "";
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background-image: radial-gradient(circle, var(--ink-2) 1px, transparent 1.2px);
+    background-size: 4px 4px;
+  }
+
+  .b1-in::before { top: 4px; left: 12px; }
+  .b1-in::after { bottom: 4px; left: 12px; }
+
+  .b1.r { background: color-mix(in srgb, var(--hot) 55%, var(--hair)); }
+
+  .b1.r .b1-in::after {
+    background-image: radial-gradient(circle, var(--hot) 1.1px, transparent 1.3px);
+  }
+
+  /* 02 — dissolve edge --------------------------------------------- */
+  .b2 {
+    position: relative;
+    padding: 13px 16px 12px;
+    background: var(--panel);
+  }
+
+  .b2::after {
+    content: "";
+    position: absolute;
+    top: 8px;
+    bottom: 8px;
+    left: -8px;
+    width: 28px;
+    background-image: radial-gradient(circle at 4px 4px, var(--dot) 1.5px, transparent 1.7px);
+    background-size: var(--lattice) var(--lattice);
+    -webkit-mask-image: linear-gradient(to right, #000 0%, #000 30%, transparent 90%);
+    mask-image: linear-gradient(to right, #000 0%, #000 30%, transparent 90%);
+  }
+
+  .b2.r::after {
+    left: auto;
+    right: -8px;
+    background-image: radial-gradient(circle at 4px 4px, var(--hot) 1.6px, transparent 1.8px);
+    -webkit-mask-image: linear-gradient(to left, #000 0%, #000 30%, transparent 90%);
+    mask-image: linear-gradient(to left, #000 0%, #000 30%, transparent 90%);
+  }
+
+  /* 03 — stamp ------------------------------------------------------ */
+  .b3 {
+    padding: 10px;
+    background-image: radial-gradient(circle, var(--ink-2) 2px, transparent 2.2px);
+    background-size: 10px 10px;
+    background-position: 5px 5px;
+  }
+
+  .b3-in {
+    padding: 14px 14px 12px;
+    background: var(--panel);
+  }
+
+  .b3.r {
+    background-image: radial-gradient(circle, var(--hot) 2px, transparent 2.2px);
+  }
+
+  .b3.r .b3-in { background: var(--panel); }
+
+  /* 04 — ticket ----------------------------------------------------- */
+  .b4 {
+    display: grid;
+    grid-template-columns: 46px 1px minmax(0, 1fr);
+    grid-template-areas: "reg rule body";
+    width: 100%;
+    background: var(--panel);
+  }
+
+  .b4-reg {
+    grid-area: reg;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 10px 4px;
+  }
+
+  .b4-lab {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-family: var(--font-mono);
+    font-size: 9px;
+    line-height: 1;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  .b4-meta {
+    font-family: var(--font-mono);
+    font-size: 8px;
+    line-height: 1.35;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    text-align: center;
+    color: var(--ink-2);
+    overflow-wrap: anywhere;
+  }
+
+  .b4-rule {
+    grid-area: rule;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--ink-2) 65%, transparent) 0 3px,
+      transparent 3px 8px
+    );
+  }
+
+  .b4-body {
+    grid-area: body;
+    min-width: 0;
+    padding: 12px 14px 11px;
+  }
+
+  .b4.r {
+    grid-template-columns: minmax(0, 1fr) 1px 46px;
+    grid-template-areas: "body rule reg";
+    border-right: 3px solid var(--hot);
+  }
+
+  .b4.r .b4-rule {
+    background-image: repeating-linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--hot) 80%, transparent) 0 3px,
+      transparent 3px 8px
+    );
+  }
+
+  /* 05 — dot halo --------------------------------------------------- */
+  .b5 {
+    padding: 12px;
+    background-image: radial-gradient(circle, var(--ink-2) 2px, transparent 2.2px);
+    background-size: 12px 12px;
+    background-position: 6px 6px;
+  }
+
+  .b5-in {
+    padding: 13px 14px 11px;
+    background: var(--panel);
+  }
+
+  .b5.r {
+    background-image: radial-gradient(circle, var(--hot) 2px, transparent 2.2px);
+  }
+
+  /* 06 — inverted signal block -------------------------------------- */
+  .b6-c {
+    padding: 13px 16px 12px;
+    background: var(--panel);
+  }
+
+  .b6-r {
+    position: relative;
+    padding: 13px 16px 9px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+  }
+
+  .b6-wave {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 5px;
+    color: var(--accent-ink);
+  }
+
+  .b6-wave svg { display: block; }
+
+  /* 07 — split register --------------------------------------------- */
+  .b7 {
+    display: grid;
+    grid-template-columns: 58px 1px minmax(0, 1fr);
+    grid-template-areas: "reg rule body";
+    width: 100%;
+    background: var(--panel);
+  }
+
+  .b7-reg {
+    grid-area: reg;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 11px 6px 11px 9px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    line-height: 1.25;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    overflow-wrap: anywhere;
+  }
+
+  .b7-rule {
+    grid-area: rule;
+    background: color-mix(in srgb, var(--ink-2) 45%, transparent);
+  }
+
+  .b7-body {
+    grid-area: body;
+    min-width: 0;
+    padding: 11px 14px 11px 12px;
+  }
+
+  .b7.r {
+    grid-template-columns: minmax(0, 1fr) 1px 52px;
+    grid-template-areas: "body rule reg";
+  }
+
+  .b7.r .b7-rule { background: var(--hot); }
+
+  /* 08 — ledger ----------------------------------------------------- */
+  .b8 {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+  }
+
+  .b8-c {
+    position: relative;
+    padding-left: 18px;
+  }
+
+  .b8-c::before {
+    content: "";
+    position: absolute;
+    top: 5px;
+    bottom: 5px;
+    left: 0;
+    width: 4px;
+    background-image: radial-gradient(circle, var(--ink-2) 1.5px, transparent 1.7px);
+    background-size: 4px 8px;
+    opacity: 0.8;
+  }
+
+  .b8-r {
+    margin-left: 34px;
+    padding: 12px 16px 11px;
+    background: var(--signal);
+    border-left: 3px solid var(--hot);
+  }
+
+  /* 09 — telegram --------------------------------------------------- */
+  .b9 {
+    width: 100%;
+    background: var(--panel);
+    margin-bottom: 10px;
+    position: relative;
+  }
+
+  .b9-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 7px 12px 6px;
+    background: var(--signal);
+    border-bottom: 1px solid var(--hair);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    line-height: 1.3;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .b9-body { padding: 12px 14px 14px; }
+
+  .b9::after {
+    content: "";
+    position: absolute;
+    left: 1px;
+    right: 1px;
+    bottom: -5px;
+    height: 8px;
+    background-image: radial-gradient(circle at 3px 0, var(--ink-2) 2.2px, transparent 2.4px);
+    background-size: 6px 6px;
+    -webkit-mask-image: linear-gradient(to bottom, #000 30%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 30%, transparent 100%);
+  }
+
+  .b9.r::after {
+    background-image: radial-gradient(circle at 3px 0, var(--hot) 2.2px, transparent 2.4px);
+  }
+
+  .b9.r .b9-head {
+    background: var(--hot-deep);
+    color: var(--ink);
+    border-bottom-color: color-mix(in srgb, var(--hot) 45%, var(--line));
+  }
+
+  /* 10 — halftone tail ---------------------------------------------- */
+  .b10 {
+    position: relative;
+    padding: 13px 15px 12px;
+    background: var(--panel);
+    margin-bottom: 18px;
+  }
+
+  .b10::after {
+    content: "";
+    position: absolute;
+    left: 18px;
+    bottom: -16px;
+    width: 34px;
+    height: 22px;
+    background-image: radial-gradient(circle at 3px 3px, var(--ink-2) 2.2px, transparent 2.4px);
+    background-size: 7px 7px;
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 95%);
+    mask-image: linear-gradient(to bottom, #000 0%, transparent 95%);
+  }
+
+  .b10.r::after {
+    left: auto;
+    right: 18px;
+    background-image: radial-gradient(circle at 3px 3px, var(--hot) 2.2px, transparent 2.4px);
+  }
+
+  /* ---------------------------------------------------------------
+     Recommendation
+     --------------------------------------------------------------- */
+  .rec {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--line);
+    padding: 40px 0 0;
+    margin-top: 8px;
+  }
+
+  .rec h2 {
+    margin: 0;
+    max-width: 20ch;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(30px, 4.4vw, 42px);
+    line-height: 1.05;
+    letter-spacing: -0.015em;
+  }
+
+  .rec h3 {
+    margin: 36px 0 0;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 21px;
+    line-height: 1.2;
+    letter-spacing: -0.005em;
+  }
+
+  .picks {
+    margin: 26px 0 0;
+    padding: 0;
+  }
+
+  .pick {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    padding: 20px 0;
+    border-top: 1px solid var(--line);
+  }
+
+  @media (min-width: 760px) {
+    .pick {
+      grid-template-columns: 250px minmax(0, 1fr);
+      gap: 28px;
+    }
+  }
+
+  .pick dt {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 20px;
+    line-height: 1.25;
+  }
+
+  .pick dd {
+    margin: 0;
+    max-width: 68ch;
+    font-size: 16px;
+    line-height: 1.62;
+    color: var(--ink-2);
+  }
+
+  .pick dd strong { color: var(--ink); font-weight: 600; }
+
+  .verdict {
+    display: block;
+    margin-bottom: 6px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .pick--reject .verdict { color: var(--ink); }
+
+  .pick--reject dt {
+    border-left: 3px solid var(--hot);
+    padding-left: 12px;
+  }
+
+  .tablewrap {
+    margin: 18px 0 0;
+    overflow-x: auto;
+  }
+
+  .budget {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-size: 15px;
+    line-height: 1.4;
+  }
+
+  .budget caption {
+    padding-bottom: 8px;
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    line-height: 1.5;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .budget th {
+    padding: 0 10px 8px 0;
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 8px;
+    font-weight: 400;
+    line-height: 1.4;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .budget td {
+    padding: 9px 10px 9px 0;
+    border-top: 1px solid var(--line);
+    vertical-align: top;
+    color: var(--ink-2);
+    overflow-wrap: anywhere;
+  }
+
+  .budget th:nth-child(1) { width: 33%; }
+  .budget th:nth-child(2) { width: 19%; }
+  .budget th:nth-child(3) { width: 48%; }
+
+  .budget td:first-child { color: var(--ink); }
+  .budget .ok { color: var(--accent); }
+  .budget .no { color: var(--ink); }
+
+  .contrast {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    margin: 14px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  @media (min-width: 600px) {
+    .contrast { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  }
+
+  .contrast li {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 8px 0;
+    border-top: 1px solid var(--line);
+    font-size: 15px;
+    color: var(--ink-2);
+  }
+
+  .contrast b {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  .contrast .fail b {
+    color: var(--ink);
+    border-bottom: 2px solid var(--hot);
+    padding-bottom: 1px;
+  }
+
+  .rec-note {
+    margin: 18px 0 0;
+    max-width: 72ch;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--ink-2);
+  }
+
+  .rec-note b { color: var(--ink); font-weight: 600; }
+
+  .footer {
+    margin-top: 46px;
+    border-top: 1px solid var(--line);
+    padding-top: 18px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--ink-2);
+  }
+
+  .footer p { margin: 0 0 6px; max-width: 80ch; }
+
+  @media (max-width: 640px) {
+    .budget { font-size: 14px; }
+    .budget td, .budget th { padding-right: 7px; }
+    .stage-in { box-shadow: none; }
+    .stage-in.paper { box-shadow: inset 0 0 0 1px var(--paper-line); }
+  }
+
+  /* Motion is state, never decoration. */
+  @media (prefers-reduced-motion: reduce) {
+    .dots i { animation: none; opacity: 0.85; }
+    .ctl { transition: none; }
+    html { scroll-behavior: auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sheet">
+
+  <header class="masthead">
+    <p class="eyebrow">Pashyanti · dot screen · bubble treatments · 01</p>
+    <h1 class="display">Ten ways to print a sentence.</h1>
+    <p class="lede">
+      Ten treatments for the same turn, drawn on one dot lattice so only the bubble changes.
+      Caller lines are ink on a punched hole and carry <strong>hi · 412 ms</strong>; replies
+      carry the warm signal and no metadata. A missed segment is deliberately absent: it is a
+      notice, never a bubble, and must keep the loudest edge on the screen.
+    </p>
+    <p class="fine">
+      Samples are set at <b>21px</b> on the 430px measure the app renders (a 366px bubble inside
+      16px gutters). The product floor is 18px and the current build sets 23px; the second
+      control grows the samples to 24px to test that. Two stages are reprinted on paper stock.
+    </p>
+  </header>
+
+  <div class="toolbar">
+    <ul class="tokens" aria-label="Tokens">
+      <li class="tok"><i style="--c:#0B110A" aria-hidden="true"></i>field</li>
+      <li class="tok"><i style="--c:#111A0E" aria-hidden="true"></i>panel</li>
+      <li class="tok"><i style="--c:#EFF3DC" aria-hidden="true"></i>ink</li>
+      <li class="tok"><i style="--c:#B9C4A6" aria-hidden="true"></i>ink-2</li>
+      <li class="tok"><i style="--c:#24321C" aria-hidden="true"></i>line</li>
+      <li class="tok"><i style="--c:#1E2C18" aria-hidden="true"></i>signal</li>
+      <li class="tok"><i style="--c:#C9F05C" aria-hidden="true"></i>accent</li>
+      <li class="tok"><i style="--c:#101607" aria-hidden="true"></i>accent-ink</li>
+      <li class="tok"><i style="--c:#E4694A" aria-hidden="true"></i>hot</li>
+      <li class="tok"><i style="--c:#8FC7A3" aria-hidden="true"></i>cool</li>
+      <li class="tok"><i style="--c:#8E3018" aria-hidden="true"></i>hot-deep (derived)</li>
+    </ul>
+
+    <div class="controls" role="group" aria-label="Sheet controls">
+      <button class="ctl" type="button" data-act="notes" aria-pressed="true">Notes: on</button>
+      <button class="ctl" type="button" data-act="size" aria-pressed="false">Body: 21px</button>
+    </div>
+  </div>
+
+  <section class="state" aria-labelledby="state-h">
+    <div class="state-copy">
+      <p class="eyebrow">State, not a second element</p>
+      <h2 id="state-h">The reply block is already talking.</h2>
+      <p>
+        Audio in flight is a property of the block, not a new row. Three dots sit on the block's
+        own bottom edge while the voice is being synthesised, and leave when it stops. No spinner,
+        no status chip, no layout shift, no second bubble.
+      </p>
+    </div>
+    <div class="state-demo">
+      <div class="sd">
+        <div class="sd-b">
+          <p class="txt" lang="hi">ठीक है, एक मिनट रुकिए।</p>
+          <div class="sd-row">
+            <span class="sd-lab">Speaking</span>
+            <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+          </div>
+        </div>
+      </div>
+      <p class="sd-note">
+        The indicator is the reply's own bottom line, at 10px: the sentence stays the largest
+        thing in the block. Ink on the warm bed is 7.16:1.
+      </p>
+    </div>
+  </section>
+
+  <main class="grid" id="treatments">
+
+    <!-- 01 -->
+    <article class="card" aria-labelledby="t1h">
+      <div class="card-head">
+        <p class="num">01</p>
+        <div>
+          <h2 class="ttl" id="t1h">Staircase slab</h2>
+          <p class="bc">
+            <span class="k">Buys</span> a hard edge that belongs to the lattice: three 4px steps
+            cut the corner without a curve, and one 1px hairline is the only line the eye parses.
+            <span class="k k--cost">Costs</span> 2px of measure for the border, plus a clip-path
+            and two register marks per line.
+          </p>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="stage-in">
+          <div class="flow">
+            <div class="b1">
+              <div class="b1-in">
+                <p class="txt" lang="hi">नमस्ते, मैं आपकी बात समझ गया। क्या आप शाम को फिर बात कर सकते हैं?</p>
+                <p class="meta">hi · 412 ms</p>
+              </div>
+            </div>
+            <div class="b1 r">
+              <div class="b1-in">
+                <p class="txt" lang="hi">ठीक है, एक मिनट रुकिए।</p>
+              </div>
+            </div>
+            <div class="b1">
+              <div class="b1-in">
+                <p class="txt" lang="hi">मैं अभी बस में हूँ और आवाज़ रुक-रुक कर आ रही है, कृपया धीरे-धीरे दोहराइए।</p>
+                <p class="meta">hi · 688 ms</p>
+              </div>
+            </div>
+            <div class="b1 r">
+              <div class="b1-in">
+                <p class="txt" lang="en">I understood, please repeat that slowly.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="tmeta">
+        <span class="k">Meta</span> 10px Silkscreen on the panel's own baseline, left-aligned,
+        one line under the last wrapped line. The bottom-left register mark flips to
+        <b>--hot</b> on the reply, so the warm signal arrives without a second colour field.
+      </p>
+    </article>
+
+    <!-- 02 -->
+    <article class="card" aria-labelledby="t2h">
+      <div class="card-head">
+        <p class="num">02</p>
+        <div>
+          <h2 class="ttl" id="t2h">Dissolve edge</h2>
+          <p class="bc">
+            <span class="k">Buys</span> no hard outline on the outer edge: the panel gains the
+            lattice for 20px and fades, so the caller's words sit on the screen rather than in a
+            box. <span class="k k--cost">Costs</span> a masked fringe that needs its own contrast
+            check, and it cannot also carry a tail.
+          </p>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="stage-in">
+          <div class="flow">
+            <div class="b2">
+              <p class="txt" lang="hi">नमस्ते, मैं आपकी बात समझ गया। क्या आप शाम को फिर बात कर सकते हैं?</p>
+              <p class="meta">hi · 412 ms</p>
+            </div>
+            <div class="b2 r">
+              <p class="txt" lang="hi">ठीक है, एक मिनट रुकिए।</p>
+            </div>
+            <div class="b2">
+              <p class="txt" lang="hi">मैं अभी बस में हूँ और आवाज़ रुक-रुक कर आ रही है, कृपया धीरे-धीरे दोहराइए।</p>
+              <p class="meta">hi · 688 ms</p>
+            </div>
+            <div class="b2 r">
+              <p class="txt" lang="en">I understood, please repeat that slowly.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="tmeta">
+        <span class="k">Meta</span> stays on the straight edge, never on the dissolve: 10px,
+        left, 2px in from the text. The reply's fringe is printed in <b>--hot</b>, so the warm
+        signal is the dissolving edge itself.
+      </p>
+    </article>
+
+    <!-- 03 -->
+    <article class="card" aria-labelledby="t3h">
+      <div class="card-head">
+        <p class="num">03</p>
+        <div>
+          <h2 class="ttl" id="t3h">Stamp <span class="tag">Paper ground</span></h2>
+          <p class="bc">
+            <span class="k">Buys</span> the strongest printed-artefact charge in the sheet; the
+            perforation ring is the border, so the panel needs none.
+            <span class="k k--cost">Costs</span> 20px of measure (a 10px ring each side) and puts
+            a 10px dot grid directly beside 21px text: two textures at the same frequency.
+          </p>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="stage-in paper">
+          <div class="flow">
+            <div class="b3">
+              <div class="b3-in">
+                <p class="txt" lang="hi">नमस्ते, मैं आपकी बात समझ गया। क्या आप शाम को फिर बात कर सकते हैं?</p>
+                <p class="meta">hi · 412 ms</p>
+              </div>
+            </div>
+            <div class="b3 r">
+              <div class="b3-in">
+                <p class="txt" lang="hi">ठीक है, एक मिनट रुकिए।</p>
+              </div>
+            </div>
+            <div class="b3">
+              <div class="b3-in">
+                <p class="txt" lang="hi">मैं अभी बस में हूँ और आवाज़ रुक-रुक कर आ रही है, कृपया धीरे-धीरे दोहराइए।</p>
+                <p class="meta">hi · 688 ms</p>
+              </div>
+            </div>
+            <div class="b3 r">
+              <div class="b3-in">
+                <p class="txt" lang="en">I understood, please repeat that slowly.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="tmeta">
+        <span class="k">Meta</span> inside, bottom-left, 10px, quiet: the ring owns the edge so
+        the meta can stay small. On paper ink is 14.8:1, but the perforation becomes a printed
+        frame — the "hole in the lattice" logic is gone even though the contrast survives.
+      </p>
+    </article>
+
+    <!-- 04 -->
+    <article class="card" aria-labelledby="t4h">
+      <div class="card-head">
+        <p class="num">04</p>
+        <div>
+          <h2 class="ttl" id="t4h">Ticket</h2>
+          <p class="bc">
+            <span class="k">Buys</span> metadata as structure: the stub carries the speaker and
+            the latency, so the sentence never has a second line of small type.
+            <span class="k k--cost">Costs</span> 47px of a 366px bubble (13%) and vertical
+            reading; at 15 turns the stubs stack into a column louder than the words.
+          </p>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="stage-in">
+          <div class="flow">
+            <div class="b4">
+              <div class="b4-reg">
+                <span class="b4-lab">Caller</span>
+                <span class="b4-meta">hi · 412 ms</span>
+              </div>
+              <div class="b4-rule" aria-hidden="true"></div>
+              <div class="b4-body">
+                <p class="txt" lang="hi">नमस्ते, मैं आपकी बात समझ गया। क्या आप शाम को फिर बात कर सकते हैं?</p>
+              </div>
+            </div>
+            <div class="b4 r">
+              <div class="b4-body">
+                <p class="txt" lang="hi">ठीक है, एक मिनट रुकिए।</p>
+              </div>
+              <div class="b4-rule" aria-hidden="true"></div>
+              <div class="b4-reg">
+                <span class="b4-lab">You</span>
+              </div>
+            </div>
+            <div class="b4">
+              <div class="b4-reg">
+                <span class="b4-lab">Caller</span>
+                <span class="b4-meta">hi · 688 ms</span>
+              </div>
+              <div class="b4-rule" aria-hidden="true"></div>
+              <div class="b4-body">
+                <p class="txt" lang="hi">मैं अभी बस में हूँ और आवाज़ रुक-रुक कर आ रही है, कृपया धीरे-धीरे दोहराइए।</p>
+              </div>
+            </div>
+            <div class="b4 r">
+              <div class="b4-body">
+                <p class="txt" lang="en">I understood, please repeat that slowly.</p>
+              </div>
+              <div class="b4-rule" aria-hidden="true"></div>
+              <div class="b4-reg">
+                <span class="b4-lab">You</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="tmeta">
+        <span class="k">Meta</span> rotated into the 46px stub with the speaker: 9px label,
+        8px numbers, one perforation rule between stub and sentence. A glance at the latency
+        becomes a head-turn, which is the real price of making metadata structural.
+      </p>
+    </article>
+
+    <!-- 05 -->
+    <article class="card" aria-labelledby="t5h">
+      <div class="card-head">
+        <p class="num">05</p>
+        <div>
+          <h2 class="ttl" id="t5h">Dot halo</h2>
+          <p class="bc">
+            <span class="k">Buys</span> one ring of dots instead of a border; the panel floats in
+            the lattice and reads as a printed swatch, not a chat object.
+            <span class="k k--cost">Costs</span> 24px of measure, and a ring that competes with
+            the alert edge the missed-segment notice will need.
+          </p>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="stage-in">
+          <div class="flow">
+            <div class="b5">
+              <div class="b5-in">
+                <p class="txt" lang="hi">नमस्ते, मैं आपकी बात समझ गया। क्या आप शाम को फिर बात कर सकते हैं?</p>
+                <p class="meta">hi · 412 ms</p>
+              </div>
+            </div>
+            <div class="b5 r">
+              <div class="b5-in">
+                <p class="txt" lang="hi">ठीक है, एक मिनट रुकिए।</p>
+              </div>
+            </div>
+            <div class="b5">
+              <div class="b5-in">
+                <p class="txt" lang="hi">मैं अभी बस में हूँ और आवाज़ रुक-रुक कर आ रही है, कृपया धीरे-धीरे दोहराइए।</p>
+                <p class="meta">hi · 688 ms</p>
+              </div>
+            </div>
+            <div class="b5 r">
+              <div class="b5-in">
+                <p class="txt" lang="en">I understood, please repeat that slowly.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="tmeta">
+        <span class="k">Meta</span> inside the panel, bottom-left, 10px. The reply's ring is
+        <b>--hot</b> dots, so the signal is a ring rather than a fill and no warm text has to
+        pass 7:1.
+      </p>
+    </article>
+
+    <!-- 06 -->
+    <article class="card" aria-labelledby="t6h">
+      <div class="card-head">
+        <p class="num">06</p>
+        <div>
+          <h2 class="ttl" id="t6h">Inverted signal block <span class="tag">Contrast test</span></h2>
+          <p class="bc">
+            <span class="k">Buys</span> a reply that is unmistakable at arm's length, with its own
+            waveform stamp; the caller stays a plain hole so the eye lands there first.
+            <span class="k k--cost">Costs</span> the warm rule: acid passes contrast but reads as
+            a control, and a full loud block under every reply doubles the loud area.
+          </p>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="stage-in">
+          <div class="flow">
+            <div class="b6-c">
+              <p class="txt" lang="hi">नमस्ते, मैं आपकी बात समझ गया। क्या आप शाम को फिर बात कर सकते हैं?</p>
+              <p class="meta">hi · 412 ms</p>
+            </div>
+            <div class="b6-r r">
+              <p class="txt" lang="hi">ठीक है, एक मिनट रुकिए।</p>
+              <div class="b6-wave" aria-hidden="true">
+                <svg width="46" height="12" viewBox="0 0 46 12" fill="currentColor">
+                  <rect x="0" y="5" width="2" height="2" />
+                  <rect x="4" y="3" width="2" height="6" />
+                  <rect x="8" y="1" width="2" height="10" />
+                  <rect x="12" y="4" width="2" height="4" />
+                  <rect x="16" y="0" width="2" height="12" />
+                  <rect x="20" y="2" width="2" height="8" />
+                  <rect x="24" y="5" width="2" height="2" />
+                  <rect x="28" y="1" width="2" height="10" />
+                  <rect x="32" y="3" width="2" height="6" />
+                  <rect x="36" y="5" width="2" height="2" />
+                  <rect x="40" y="2" width="2" height="8" />
+                  <rect x="44" y="4" width="2" height="4" />
+                </svg>
+              </div>
+            </div>
+            <div class="b6-c">
+              <p class="txt" lang="hi">मैं अभी बस में हूँ और आवाज़ रुक-रुक कर आ रही है, कृपया धीरे-धीरे दोहराइए।</p>
+              <p class="meta">hi · 688 ms</p>
+            </div>
+            <div class="b6-r r">
+              <p class="txt" lang="en">I understood, please repeat that slowly.</p>
+              <div class="b6-wave" aria-hidden="true">
+                <svg width="46" height="12" viewBox="0 0 46 12" fill="currentColor">
+                  <rect x="0" y="5" width="2" height="2" />
+                  <rect x="4" y="3" width="2" height="6" />
+                  <rect x="8" y="1" width="2" height="10" />
+                  <rect x="12" y="4" width="2" height="4" />
+                  <rect x="16" y="0" width="2" height="12" />
+                  <rect x="20" y="2" width="2" height="8" />
+                  <rect x="24" y="5" width="2" height="2" />
+                  <rect x="28" y="1" width="2" height="10" />
+                  <rect x="32" y="3" width="2" height="6" />
+                  <rect x="36" y="5" width="2" height="2" />
+                  <rect x="40" y="2" width="2" height="8" />
+                  <rect x="44" y="4" width="2" height="4" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="tmeta">
+        <span class="k">Meta</span> none on the reply, correctly; the caller keeps a 10px line
+        under the text. This is the sheet's one deliberate breach of the warm rule:
+        <b>--accent</b> with <b>--accent-ink</b> is 14.1:1, but it is the colour of a control,
+        not of your own voice.
+      </p>
+    </article>
+
+    <!-- 07 -->
+    <article class="card" aria-labelledby="t7h">
+      <div class="card-head">
+        <p class="num">07</p>
+        <div>
+          <h2 class="ttl" id="t7h">Split register</h2>
+          <p class="bc">
+            <span class="k">Buys</span> a column for speaker, language and latency, so the
+            sentence carries no small type at all; scan the register, then read.
+            <span class="k k--cost">Costs</span> 59px of a 366px bubble (16%) and a field the
+            transcript does not record yet: a clock.
+          </p>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="stage-in">
+          <div class="flow">
+            <div class="b7">
+              <div class="b7-reg">
+                <span>Caller</span>
+                <span>00:12</span>
+                <span>Hi</span>
+                <span>412ms</span>
+              </div>
+              <div class="b7-rule" aria-hidden="true"></div>
+              <div class="b7-body">
+                <p class="txt" lang="hi">नमस्ते, मैं आपकी बात समझ गया। क्या आप शाम को फिर बात कर सकते हैं?</p>
+              </div>
+            </div>
+            <div class="b7 r">
+              <div class="b7-body">
+                <p class="txt" lang="hi">ठीक है, एक मिनट रुकिए।</p>
+              </div>
+              <div class="b7-rule" aria-hidden="true"></div>
+              <div class="b7-reg">
+                <span>You</span>
+                <span>Reply</span>
+              </div>
+            </div>
+            <div class="b7">
+              <div class="b7-reg">
+                <span>Caller</span>
+                <span>00:14</span>
+                <span>Hi</span>
+                <span>688ms</span>
+              </div>
+              <div class="b7-rule" aria-hidden="true"></div>
+              <div class="b7-body">
+                <p class="txt" lang="hi">मैं अभी बस में हूँ और आवाज़ रुक-रुक कर आ रही है, कृपया धीरे-धीरे दोहराइए।</p>
+              </div>
+            </div>
+            <div class="b7 r">
+              <div class="b7-body">
+                <p class="txt" lang="en">I understood, please repeat that slowly.</p>
+              </div>
+              <div class="b7-rule" aria-hidden="true"></div>
+              <div class="b7-reg">
+                <span>You</span>
+                <span>Reply</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="tmeta">
+        <span class="k">Meta</span> four rows of 9px Silkscreen in a 58px register, separated by
+        a 1px rule that turns <b>--hot</b> for the reply. It is the cleanest metadata read in the
+        sheet, and it costs the sentence one sixth of its width to buy it.
+      </p>
+    </article>
+
+    <!-- 08 -->
+    <article class="card" aria-labelledby="t8h">
+      <div class="card-head">
+        <p class="num">08</p>
+        <div>
+          <h2 class="ttl" id="t8h">Ledger <span class="tag">Paper ground</span></h2>
+          <p class="bc">
+            <span class="k">Buys</span> nothing between the caller's words and the screen: a
+            dotted spine is the only chrome, so every caller line starts at the same x.
+            <span class="k k--cost">Costs</span> the reply has to carry all of the warm signal,
+            and the missed notice has no panel language to sit inside.
+          </p>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="stage-in paper">
+          <div class="flow">
+            <div class="b8">
+              <div class="b8-c">
+                <p class="txt" lang="hi">नमस्ते, मैं आपकी बात समझ गया। क्या आप शाम को फिर बात कर सकते हैं?</p>
+                <p class="meta">hi · 412 ms</p>
+              </div>
+              <div class="b8-r">
+                <p class="txt" lang="hi">ठीक है, एक मिनट रुकिए।</p>
+              </div>
+              <div class="b8-c">
+                <p class="txt" lang="hi">मैं अभी बस में हूँ और आवाज़ रुक-रुक कर आ रही है, कृपया धीरे-धीरे दोहराइए।</p>
+                <p class="meta">hi · 688 ms</p>
+              </div>
+              <div class="b8-r">
+                <p class="txt" lang="en">I understood, please repeat that slowly.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="tmeta">
+        <span class="k">Meta</span> 10px under the caller text, held 18px off the edge by the
+        dotted spine; the reply keeps none. On paper the caller sits at 13.3:1 and the reply is
+        one indented block: the 3px warm rule is the only signal left, which is the test.
+      </p>
+    </article>
+
+    <!-- 09 -->
+    <article class="card" aria-labelledby="t9h">
+      <div class="card-head">
+        <p class="num">09</p>
+        <div>
+          <h2 class="ttl" id="t9h">Telegram</h2>
+          <p class="bc">
+            <span class="k">Buys</span> the band gives language and latency a fixed home without
+            touching the measure; at 15 turns it repeats like a wire-service slug.
+            <span class="k k--cost">Costs</span> 27px of vertical chrome per caller line, and the
+            10px caps become the loudest small type on the page.
+          </p>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="stage-in">
+          <div class="flow">
+            <div class="b9">
+              <div class="b9-head"><span>In · 23:41</span><span>Hi · 412 ms</span></div>
+              <div class="b9-body">
+                <p class="txt" lang="hi">नमस्ते, मैं आपकी बात समझ गया। क्या आप शाम को फिर बात कर सकते हैं?</p>
+              </div>
+            </div>
+            <div class="b9 r">
+              <div class="b9-head"><span>Out</span><span>You</span></div>
+              <div class="b9-body">
+                <p class="txt" lang="hi">ठीक है, एक मिनट रुकिए।</p>
+              </div>
+            </div>
+            <div class="b9">
+              <div class="b9-head"><span>In · 23:43</span><span>Hi · 688 ms</span></div>
+              <div class="b9-body">
+                <p class="txt" lang="hi">मैं अभी बस में हूँ और आवाज़ रुक-रुक कर आ रही है, कृपया धीरे-धीरे दोहराइए।</p>
+              </div>
+            </div>
+            <div class="b9 r">
+              <div class="b9-head"><span>Out</span><span>You</span></div>
+              <div class="b9-body">
+                <p class="txt" lang="en">I understood, please repeat that slowly.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="tmeta">
+        <span class="k">Meta</span> in the band: 10px caps, direction left, language and latency
+        right, above a torn dot edge. The best metadata treatment here, if the transcript can pay
+        27px of height for every caller line and a clock field that does not exist yet.
+      </p>
+    </article>
+
+    <!-- 10 -->
+    <article class="card" aria-labelledby="t10h">
+      <div class="card-head">
+        <p class="num">10</p>
+        <div>
+          <h2 class="ttl" id="t10h">Halftone tail</h2>
+          <p class="bc">
+            <span class="k">Buys</span> a tail that dissolves into the lattice instead of a
+            speech-balloon point, so the printed-screen metaphor holds; the warm tail is the
+            reply's signal. <span class="k k--cost">Costs</span> 22px of shape carrying no
+            information, and a second direction in a transcript that already alternates.
+          </p>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="stage-in">
+          <div class="flow">
+            <div class="b10">
+              <p class="txt" lang="hi">नमस्ते, मैं आपकी बात समझ गया। क्या आप शाम को फिर बात कर सकते हैं?</p>
+              <p class="meta">hi · 412 ms</p>
+            </div>
+            <div class="b10 r">
+              <p class="txt" lang="hi">ठीक है, एक मिनट रुकिए।</p>
+            </div>
+            <div class="b10">
+              <p class="txt" lang="hi">मैं अभी बस में हूँ और आवाज़ रुक-रुक कर आ रही है, कृपया धीरे-धीरे दोहराइए।</p>
+              <p class="meta">hi · 688 ms</p>
+            </div>
+            <div class="b10 r">
+              <p class="txt" lang="en">I understood, please repeat that slowly.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="tmeta">
+        <span class="k">Meta</span> none on the reply; caller meta sits on the baseline, 14px
+        clear of the tail. The tail's dots carry the warm signal for the reply, which is why it
+        can stay small.
+      </p>
+    </article>
+
+    <!-- Recommendation -->
+    <section class="rec" aria-labelledby="rec-h">
+      <p class="eyebrow">Comparison and recommendation</p>
+      <h2 id="rec-h">Ship one caller edge and one reply block.</h2>
+
+      <dl class="picks">
+        <div class="pick">
+          <dt><span class="verdict">Caller · ship</span>01 Staircase slab</dt>
+          <dd>
+            The caller's line is the reading task, so it should spend almost nothing on measure:
+            <strong>15.7:1</strong> ink on panel, a 1px hairline (2px of measure), no vertical
+            chrome, and the latency on a quiet 10px baseline inside the panel. Dissolve (02) is
+            the more on-brand edge, but it spends the left edge — the scan anchor at 15 turns — on
+            texture. Telegram (09) has the better metadata idea and charges 27px per caller turn,
+            405px across 15; Split register (07) charges 59px of width. Large text is the point,
+            and the 430px screen has no width to give.
+          </dd>
+        </div>
+
+        <div class="pick">
+          <dt><span class="verdict">Reply · ship the structure</span>06 Inverted signal block, corrected to warm</dt>
+          <dd>
+            <strong>The block is right:</strong> a reply is short, loud and spoken, and one solid
+            field reads at arm's length while the caller stays quiet. <strong>Acid is not:</strong>
+            <b>--accent</b> on <b>--accent-ink</b> is 14.1:1, the best pair in the sheet, but it
+            is the colour of a control, not of your own voice. Keep the chamfer, the waveform
+            stamp and the no-metadata rule; set the bed to <b>--hot-deep #8E3018</b> with
+            <b>--ink</b> text (7.16:1). Raw <b>--hot</b> is a mark colour — 5.8:1 against the
+            field, 5.5:1 against the panel, 2.9:1 as a bed for ink — so use it on edges and dots,
+            never under or as text. The state strip tests that bed and its bottom row.
+          </dd>
+        </div>
+
+        <div class="pick pick--reject">
+          <dt><span class="verdict">Reject</span>03 Stamp</dt>
+          <dd>
+            At 430px the bubble is 366px; a 10px ring each side takes 20px of measure and prints a
+            10px dot grid immediately beside 21px text — two textures at the same spatial
+            frequency competing for the same eye movement, on the line the user must read
+            fastest. The ring also spends the loud-edge vocabulary the "couldn't catch that"
+            notice needs to stay unmistakable. On paper it holds contrast (14.8:1) but the
+            perforation becomes a printed frame, so the hole-in-the-lattice idea dies. In a
+            product whose rule is "large text is the point", spending 20px of the reading measure
+            on ornament is the clearest disqualifier. It is the most charming treatment and the
+            least readable one.
+          </dd>
+        </div>
+      </dl>
+
+      <h3>Reading budget at 430px</h3>
+      <div class="tablewrap">
+        <table class="budget">
+          <caption>Width then height spent, in px, inside a 366px bubble.</caption>
+          <thead>
+            <tr><th scope="col">Treatment</th><th scope="col">Spends</th><th scope="col">Verdict</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>01 Staircase slab</td><td>2 · 0</td><td class="ok">Caller: ship</td></tr>
+            <tr><td>02 Dissolve edge</td><td>0 · 0</td><td>Caller alternate</td></tr>
+            <tr><td>03 Stamp</td><td>20 · 0</td><td class="no">Reject</td></tr>
+            <tr><td>04 Ticket</td><td>47 · 0</td><td>Caller alternate, costly meta</td></tr>
+            <tr><td>05 Dot halo</td><td>24 · 0</td><td>Caller alternate</td></tr>
+            <tr><td>06 Inverted block</td><td>0 · 0</td><td class="ok">Reply: ship, recoloured</td></tr>
+            <tr><td>07 Split register</td><td>59 · 0</td><td class="no">Reject for caller</td></tr>
+            <tr><td>08 Ledger</td><td>0 · 0</td><td>Caller alternate on paper</td></tr>
+            <tr><td>09 Telegram</td><td>0 · 27</td><td>Caller alternate, if height allows</td></tr>
+            <tr><td>10 Halftone tail</td><td>0 · 22</td><td>Reply alternate</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Contrast, measured</h3>
+      <ul class="contrast">
+        <li><span>ink on panel</span><b>15.7:1</b></li>
+        <li><span>ink-2 on panel</span><b>9.8:1</b></li>
+        <li><span>accent-ink on accent</span><b>14.1:1</b></li>
+        <li><span>ink on hot-deep</span><b>7.2:1</b></li>
+        <li><span>paper ink on paper panel</span><b>14.8:1</b></li>
+        <li><span>paper ink-2 on paper panel</span><b>8.3:1</b></li>
+        <li class="fail"><span>hot as text on panel</span><b>5.5:1 fails</b></li>
+        <li class="fail"><span>ink on hot</span><b>2.9:1 fails</b></li>
+        <li class="fail"><span>paper hot as text</span><b>6.4:1 fails</b></li>
+        <li class="fail"><span>panel against field</span><b>1.07:1 texture only</b></li>
+      </ul>
+      <p class="rec-note">
+        Computed from the tokens with the WCAG 2.x relative-luminance formula; the product rule
+        is 7:1, so <b>--hot is a mark colour, not a text bed</b> unless it is deepened or lightened.
+        The final row above is the important one for this direction: a panel is only 1.07:1 against the
+        field, so <b>the lattice, not the fill, is what makes a hole visible</b>. Every edge in
+        the sheet therefore either stops the dots, restarts them, or steps them — no border is
+        doing the work that the texture should do.
+      </p>
+
+      <h3>What stays true across all ten</h3>
+      <p class="rec-note">
+        Caller text at 21px or larger, line height 1.42, no metadata under the reply, one warm
+        signal per reply and none on the caller, and the notice for a missed segment left
+        panel-free. Treatments 04 and 07 add a clock the transcript does not have; that field is
+        a backend change, not a styling choice.
+      </p>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <p>Bubble sheet 01 · dot-screen direction · tokens at <b>:root</b> · no build step, no local assets, fonts from Google Fonts only.</p>
+    <p>No server, no local assets, no fixed positioning: built to run from file:// and inside an iframe. Controls are 44px; the only motion is the speaking state, and it stops under prefers-reduced-motion.</p>
+    <p>Set in Fraunces 600, Karla, Mukta and Silkscreen. Devanagari and Latin samples are the same four lines in every treatment.</p>
+  </footer>
+
+</div>
+
+<script>
+  (function () {
+    var notes = document.querySelector('[data-act="notes"]');
+    var size = document.querySelector('[data-act="size"]');
+
+    notes.addEventListener('click', function () {
+      var on = notes.getAttribute('aria-pressed') !== 'true';
+      notes.setAttribute('aria-pressed', on ? 'true' : 'false');
+      notes.textContent = 'Notes: ' + (on ? 'on' : 'off');
+      document.body.classList.toggle('no-notes', !on);
+    });
+
+    size.addEventListener('click', function () {
+      var on = size.getAttribute('aria-pressed') !== 'true';
+      size.setAttribute('aria-pressed', on ? 'true' : 'false');
+      size.textContent = 'Body: ' + (on ? '24px' : '21px');
+      document.body.classList.toggle('body-lg', on);
+    });
+  })();
+</script>
+
+</body>
+</html>

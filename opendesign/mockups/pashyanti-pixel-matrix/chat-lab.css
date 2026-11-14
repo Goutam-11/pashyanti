@@ -1,0 +1,1695 @@
+/* ==========================================================================
+   HALFTONE RELAY — Pashyanti chat lab
+   A dot screen, not a surface. Panels are flat holes in the lattice; one acid
+   signal marks audio in flight; every edge is chamfered or stepped, never
+   rounded. Studio chrome uses the same language as the app it frames.
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  --studio: #0d0f0a;
+  --studio-2: #131610;
+  --studio-3: #191d14;
+  --studio-line: #2a2e22;
+  --studio-ink: #ece8d8;
+  --studio-muted: #909a83;
+  --studio-mute-2: #8f9982;
+
+  --font-body: "Karla", "Mukta", ui-sans-serif, system-ui, sans-serif;
+  --font-indic: "Mukta", "Karla", ui-sans-serif, sans-serif;
+  --font-deva: "Mukta", "Noto Sans Bengali", ui-sans-serif, sans-serif;
+  --font-display: "Fraunces", "Mukta", Georgia, serif;
+  --font-pixel: "Silkscreen", "Courier New", ui-monospace, monospace;
+}
+
+html {
+  background: var(--studio);
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--studio);
+  color: var(--studio-ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+::selection {
+  background: var(--studio-3);
+}
+
+:focus-visible {
+  outline: 2px solid var(--studio-ink);
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   Studio shell
+   -------------------------------------------------------------------------- */
+
+.studio {
+  position: relative;
+  min-height: 100dvh;
+}
+
+.studio-grid {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: radial-gradient(
+    circle,
+    #1c2016 1px,
+    transparent 1.3px
+  );
+  background-size: 8px 8px;
+  opacity: 0.85;
+}
+
+.studio-head {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 22px 28px 16px;
+  border-bottom: 1px solid var(--studio-line);
+  background: var(--studio);
+}
+
+.studio-kicker {
+  display: block;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--studio-muted);
+}
+
+.studio-title {
+  margin: 8px 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(26px, 3vw, 34px);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.005em;
+}
+
+.studio-title em {
+  font-style: normal;
+  font-size: 0.52em;
+  letter-spacing: 0.04em;
+  color: var(--studio-muted);
+}
+
+.studio-sub {
+  max-width: 44rem;
+  margin: 9px 0 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--studio-muted);
+}
+
+.studio-nav {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding-bottom: 6px;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.studio-nav-label {
+  color: var(--studio-mute-2);
+}
+
+.studio-nav a {
+  color: var(--studio-ink);
+  text-decoration: none;
+  border-bottom: 1px solid var(--studio-line);
+  padding-bottom: 2px;
+}
+
+.studio-nav a:hover {
+  border-bottom-color: var(--studio-ink);
+}
+
+.studio-body {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 34px;
+  align-items: start;
+  padding: 26px 28px 48px;
+}
+
+@media (max-width: 1120px) {
+  .studio-body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 26px;
+    padding: 20px 18px 40px;
+  }
+
+  .studio-head {
+    padding: 18px 18px 14px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Stage + phone frame
+   -------------------------------------------------------------------------- */
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+
+.frame-mat {
+  padding: 12px;
+  border: 1px dashed var(--studio-line);
+  background: rgba(255, 255, 255, 0.008);
+}
+
+.frame {
+  position: relative;
+  width: 430px;
+  height: min(880px, calc(100dvh - 252px));
+  min-height: 560px;
+  background: #000;
+}
+
+.studio[data-frame="wide"] .frame,
+.studio[data-frame="wide"] .frame-mat {
+  width: 780px;
+}
+
+.studio[data-frame="wide"] .frame {
+  height: min(880px, calc(100dvh - 210px));
+}
+
+@media (max-width: 900px) {
+  .frame,
+  .studio[data-frame="wide"] .frame,
+  .studio[data-frame="wide"] .frame-mat {
+    width: min(430px, calc(100vw - 60px));
+    height: min(820px, calc(100dvh - 190px));
+  }
+}
+
+.frame-caption {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 12px 0 0;
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--studio-mute-2);
+}
+
+.frame-caption b {
+  color: var(--studio-muted);
+  font-weight: 400;
+}
+
+/* --------------------------------------------------------------------------
+   The app — palettes
+   -------------------------------------------------------------------------- */
+
+.app {
+  --pitch: 6px;
+  --dot: calc(var(--pitch) * 0.19);
+  --lattice-dot: var(--signal);
+  --font-indic: "Mukta", "Karla", ui-sans-serif, sans-serif;
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--field);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
+}
+
+/* Lattice strength: the screen can whisper, print, or shout. */
+.app[data-dots="faint"] {
+  --lattice-dot: color-mix(in srgb, var(--signal) 55%, var(--field));
+}
+
+.app[data-dots="bold"] {
+  --lattice-dot: color-mix(in srgb, var(--signal) 82%, var(--ink));
+}
+
+/* The lattice: every dot is a printed mark. */
+.app::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: radial-gradient(
+    circle,
+    var(--lattice-dot) 0 var(--dot),
+    transparent calc(var(--dot) + 0.45px)
+  );
+  background-size: var(--pitch) var(--pitch);
+  background-position: calc(var(--pitch) / 2) calc(var(--pitch) / 2);
+}
+
+.app[data-palette="lime"] {
+  --field: #0b110a;
+  --panel: #11190f;
+  --ink: #f2f5e4;
+  --ink-2: #c3cfb0;
+  --line: #26341d;
+  --signal: #2b3f21;
+  --accent: #c9f05c;
+  --accent-ink: #0e1408;
+  --hot: #e4694a;
+  --cool: #9fd7b8;
+}
+
+.app[data-palette="marigold"] {
+  --field: #f1eddd;
+  --panel: #fbf8ec;
+  --ink: #17231a;
+  --ink-2: #3d4b3b;
+  --line: #d5ceb9;
+  --signal: #bebba0;
+  --accent: #b7db4b;
+  --accent-ink: #161b0a;
+  --hot: #a54d18;
+  --cool: #2c6b4f;
+}
+
+.app[data-palette="indigo"] {
+  --field: #f3f1ea;
+  --panel: #fbf9f2;
+  --ink: #171a2e;
+  --ink-2: #3a3d59;
+  --line: #d3d0c6;
+  --signal: #bfbcb0;
+  --accent: #232a5c;
+  --accent-ink: #f4f2ea;
+  --hot: #8a5f16;
+  --cool: #3e5a8f;
+}
+
+.app[data-palette="teal"] {
+  --field: #08201e;
+  --panel: #0c2a27;
+  --ink: #e7f3ee;
+  --ink-2: #afc8c2;
+  --line: #1b403b;
+  --signal: #20453e;
+  --accent: #e7a93f;
+  --accent-ink: #1a1206;
+  --hot: #e4694a;
+  --cool: #6fd3c4;
+}
+
+.app[data-palette="madder"] {
+  --field: #201012;
+  --panel: #2a1517;
+  --ink: #f7e9e1;
+  --ink-2: #d2b7ac;
+  --line: #44282a;
+  --signal: #4a3030;
+  --accent: #e08963;
+  --accent-ink: #160a05;
+  --hot: #f0b04a;
+  --cool: #9fc2a8;
+}
+
+.app[data-palette="violet"] {
+  --field: #171126;
+  --panel: #1f1733;
+  --ink: #efe9f6;
+  --ink-2: #c3b9d4;
+  --line: #332b4a;
+  --signal: #352a52;
+  --accent: #a99bff;
+  --accent-ink: #0e0820;
+  --hot: #b7e38b;
+  --cool: #7fd8c6;
+}
+
+/* --------------------------------------------------------------------------
+   App field: lattice + character
+   -------------------------------------------------------------------------- */
+
+.app-field {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.bg-peacock {
+  position: absolute;
+  top: 42%;
+  right: -20%;
+  width: 108%;
+  height: auto;
+  opacity: 0;
+  transition: opacity 320ms ease;
+}
+
+.app[data-bg="peacock"] .bg-peacock {
+  opacity: 0.9;
+}
+
+/* The empty screen belongs to the mascot; the watermark would fight it. */
+.app[data-view="empty"] .bg-peacock {
+  opacity: 0;
+}
+
+.bg-wash {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 320ms ease;
+  background-image: radial-gradient(
+    circle,
+    var(--ink-2) 0 calc(var(--pitch) * 0.3),
+    transparent calc(var(--pitch) * 0.34)
+  );
+  background-size: var(--pitch) var(--pitch);
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 46%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 46%);
+}
+
+.app[data-bg="wash"] .bg-wash {
+  opacity: 0.22;
+}
+
+.app[data-bg="off"]::before,
+.app[data-bg="off"] .bg-peacock,
+.app[data-bg="off"] .bg-wash {
+  display: none;
+}
+
+/* --------------------------------------------------------------------------
+   Header
+   -------------------------------------------------------------------------- */
+
+.app-top {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px 8px 14px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--field) 80%, transparent);
+}
+
+.mascot {
+  display: block;
+  flex: none;
+}
+
+/* The mark is drawn on a finer screen than the field; a flat tile keeps the
+   two frequencies from fighting. It reads as the app's stamp. */
+.mascot-tile {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  flex: none;
+  place-items: center;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+}
+
+.brand {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1;
+}
+
+.brand-deva {
+  font-family: var(--font-deva);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.brand-latin {
+  font-family: var(--font-pixel);
+  font-size: 9.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.top-tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.status {
+  display: inline-flex;
+  height: 30px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  font-size: 12px;
+  line-height: 1;
+  color: var(--ink-2);
+  white-space: nowrap;
+  clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 0 100%);
+}
+
+.status-dots {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.status-dots i {
+  display: block;
+  width: 4px;
+  height: 4px;
+  background: var(--cool);
+}
+
+.status[data-state="thinking"] .status-dots i {
+  background: var(--ink-2);
+}
+
+.status[data-state="speaking"] .status-dots i {
+  background: var(--hot);
+}
+
+.status[data-state="unsure"] .status-dots i {
+  background: var(--hot);
+}
+
+.status[data-state="idle"] .status-dots i {
+  background: var(--ink-2);
+}
+
+.icon-btn {
+  display: inline-grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink-2);
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+
+.icon-btn:hover {
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+/* --------------------------------------------------------------------------
+   Demo switches
+   -------------------------------------------------------------------------- */
+
+.app-switches {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--field) 80%, transparent);
+}
+
+.switch {
+  position: relative;
+  display: flex;
+  min-height: 44px;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 14px;
+  cursor: pointer;
+}
+
+.switch + .switch {
+  border-left: 1px solid var(--line);
+}
+
+.switch-text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.switch-main {
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.switch-sub {
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.switch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.switch-track {
+  position: relative;
+  width: 38px;
+  height: 20px;
+  flex: none;
+  /* A control boundary needs 3:1; --line alone is 1.3-1.5:1 on the field. */
+  border: 1px solid var(--ink-2);
+  background: transparent;
+}
+
+.switch-track::before {
+  content: "";
+  position: absolute;
+  inset: 6px 5px;
+  background-image: radial-gradient(circle, var(--line) 1px, transparent 1.2px);
+  background-size: 5px 5px;
+}
+
+.switch-track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: var(--ink-2);
+  transition:
+    transform 160ms ease,
+    background 160ms ease;
+}
+
+.switch input:checked + .switch-track::after {
+  transform: translateX(18px);
+  background: var(--accent);
+}
+
+.switch input:focus-visible + .switch-track {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   Thread
+   -------------------------------------------------------------------------- */
+
+.thread {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 14px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+
+.thread::-webkit-scrollbar {
+  width: 8px;
+}
+
+.thread::-webkit-scrollbar-thumb {
+  background: var(--line);
+}
+
+.turn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.turn--me {
+  align-items: flex-end;
+}
+
+.turn-idx {
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  letter-spacing: 0.16em;
+  color: var(--ink-2);
+  margin-bottom: 4px;
+  opacity: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Bubbles — shared
+   -------------------------------------------------------------------------- */
+
+.bubble {
+  position: relative;
+  max-width: 92%;
+  padding: 11px 14px 9px;
+  animation: turn-in 200ms ease-out both;
+}
+
+.bubble-text {
+  margin: 0;
+  font-family: var(--font-indic, var(--font-body));
+  font-size: 23px;
+  line-height: 1.42;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+
+.bubble-meta {
+  display: flex;
+  gap: 7px;
+  align-items: baseline;
+  margin-top: 7px;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.bubble-meta span + span::before {
+  content: "·";
+  margin-right: 7px;
+  color: var(--line);
+}
+
+.bubble--caller {
+  background: var(--panel);
+  color: var(--ink);
+}
+
+.bubble--me {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.bubble--me .bubble-meta {
+  color: var(--accent-ink);
+}
+
+.bubble--me .bubble-meta span + span::before {
+  color: var(--accent-ink);
+  opacity: 0.6;
+}
+
+/* Treatment: stepped corner (JS builds the polygon, 3 x 4px steps). */
+.app[data-bubbles="stair"] .bubble {
+  clip-path: none; /* replaced inline by stair() */
+}
+
+/* Treatment: dissolve the edge into the lattice. Field-coloured dots eat the
+   panel; the text keeps clear of the strip. */
+.app[data-bubbles="dissolve"] .bubble--caller {
+  padding-right: 26px;
+}
+
+.app[data-bubbles="dissolve"] .bubble--caller::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 22px;
+  background-image: radial-gradient(
+    circle,
+    var(--field) 2px,
+    transparent 2.3px
+  );
+  background-size: var(--pitch) var(--pitch);
+  mask-image: linear-gradient(to right, #000 0%, transparent 92%);
+  -webkit-mask-image: linear-gradient(to right, #000 0%, transparent 92%);
+  pointer-events: none;
+}
+
+.app[data-bubbles="dissolve"] .bubble--me {
+  padding-left: 26px;
+}
+
+.app[data-bubbles="dissolve"] .bubble--me::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 22px;
+  background-image: radial-gradient(
+    circle,
+    var(--field) 2px,
+    transparent 2.3px
+  );
+  background-size: var(--pitch) var(--pitch);
+  mask-image: linear-gradient(to left, #000 0%, transparent 92%);
+  -webkit-mask-image: linear-gradient(to left, #000 0%, transparent 92%);
+  pointer-events: none;
+}
+
+/* Treatment: stamp — perforated ring, text in the middle. */
+.app[data-bubbles="stamp"] .bubble::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(
+    circle,
+    var(--field) 1.7px,
+    transparent 2px
+  );
+  background-size: 6px 6px;
+  background-position: 1px 1px;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 7px;
+  pointer-events: none;
+}
+
+/* Treatment: ledger — no panel on the caller side, a dotted spine instead. */
+.app[data-bubbles="ledger"] .bubble--caller {
+  max-width: 96%;
+  padding: 10px 14px 10px 20px;
+  /* The reading surface is never the lattice: the hole is opaque, the spine
+     is the only thing that touches the field. */
+  background: var(--panel);
+}
+
+.app[data-bubbles="ledger"] .bubble--caller::before {
+  content: "";
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 6px;
+  width: 6px;
+  background-image: radial-gradient(circle, var(--cool) 1.6px, transparent 1.9px);
+  background-size: 6px 6px;
+  pointer-events: none;
+}
+
+.app[data-bubbles="ledger"] .bubble--me {
+  padding: 13px 14px 11px;
+}
+
+/* --------------------------------------------------------------------------
+   Empty state
+   -------------------------------------------------------------------------- */
+
+.empty {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px;
+  text-align: center;
+}
+
+.empty-title {
+  max-width: 17rem;
+  margin: 10px 0 0;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.32;
+  color: var(--ink);
+}
+
+.empty-body {
+  max-width: 19rem;
+  margin: 0;
+  font-family: var(--font-indic, var(--font-body));
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+/* --------------------------------------------------------------------------
+   Missed + summary
+   -------------------------------------------------------------------------- */
+
+.missed {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  border: 1px solid var(--hot);
+  padding: 10px 12px;
+  animation: turn-in 200ms ease-out both;
+}
+
+.missed-badge {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  place-items: center;
+  background: var(--hot);
+  color: var(--field);
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.missed-main {
+  margin: 0;
+  font-family: var(--font-indic, var(--font-body));
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.missed-sub {
+  margin: 3px 0 0;
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.summary {
+  position: relative;
+  padding: 18px;
+  background: var(--panel);
+  clip-path: polygon(
+    0 0,
+    calc(100% - 18px) 0,
+    100% 18px,
+    100% 100%,
+    0 100%
+  );
+  animation: turn-in 220ms ease-out both;
+}
+
+.summary-eyebrow {
+  margin: 0;
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.summary-title {
+  display: -webkit-box;
+  margin: 9px 0 0;
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.32;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.summary-rule {
+  height: 1px;
+  margin: 15px 0;
+  background: var(--line);
+}
+
+.summary-row + .summary-row {
+  margin-top: 13px;
+}
+
+.summary-label {
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.summary-value {
+  display: -webkit-box;
+  margin: 4px 0 0;
+  overflow: hidden;
+  font-family: var(--font-indic, var(--font-body));
+  font-size: 18px;
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.summary-meta {
+  margin: 16px 0 0;
+  border-top: 1px solid var(--line);
+  padding-top: 11px;
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+/* --------------------------------------------------------------------------
+   Footer — end call, chips, composer
+   -------------------------------------------------------------------------- */
+
+.app-foot {
+  position: relative;
+  z-index: 2;
+  border-top: 1px solid var(--line);
+  padding: 8px 14px calc(10px + env(safe-area-inset-bottom));
+  background: var(--field);
+}
+
+.foot-end {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 0 6px;
+}
+
+.foot-end[hidden] {
+  display: none;
+}
+
+.ghost-btn {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  padding: 0 2px;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.ghost-btn:hover {
+  color: var(--ink);
+}
+
+.ghost-mark {
+  width: 9px;
+  height: 9px;
+  background: currentColor;
+}
+
+.chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 0 2px 10px;
+  scrollbar-width: none;
+  mask-image: linear-gradient(to right, #000 90%, transparent);
+  -webkit-mask-image: linear-gradient(to right, #000 90%, transparent);
+}
+
+.chips::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  display: inline-flex;
+  min-height: 44px;
+  flex: none;
+  align-items: center;
+  border: 1px solid var(--line);
+  background: transparent;
+  padding: 0 15px;
+  font-family: var(--font-indic, var(--font-body));
+  font-size: 16px;
+  color: var(--ink);
+  white-space: nowrap;
+  clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 0 100%);
+}
+
+.chip:hover {
+  background: var(--panel);
+}
+
+.composer {
+  display: flex;
+  gap: 8px;
+}
+
+.composer-input {
+  min-width: 0;
+  min-height: 48px;
+  flex: 1;
+  border: 1px solid var(--line);
+  background: transparent;
+  padding: 0 12px;
+  font-family: var(--font-indic, var(--font-body));
+  font-size: 17px;
+  color: var(--ink);
+}
+
+.composer-input::placeholder {
+  color: var(--ink-2);
+}
+
+.composer-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.btn-speak {
+  min-height: 48px;
+  min-width: 96px;
+  border: 0;
+  background: var(--accent);
+  padding: 0 16px;
+  font-family: var(--font-indic, var(--font-body));
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--accent-ink);
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+}
+
+.btn-speak:active {
+  transform: translateY(1px);
+}
+
+.new-call {
+  width: 100%;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+}
+
+/* --------------------------------------------------------------------------
+   Variant A — LATTICE / paper proof
+   -------------------------------------------------------------------------- */
+
+/* The proof rule belongs to the stepped treatment; stamp and ledger carry
+   their own edge language. */
+.app[data-variant="a"][data-bubbles="stair"] .bubble--caller {
+  border-top: 2px solid var(--ink);
+}
+
+.app[data-variant="a"] .bubble--me {
+  background: var(--ink);
+  color: var(--field);
+}
+
+.app[data-variant="a"] .bubble--me .bubble-meta {
+  color: var(--field);
+}
+
+.app[data-variant="a"] .bubble--me .bubble-meta span + span::before {
+  color: var(--field);
+}
+
+.app[data-variant="a"] .empty-title {
+  font-size: 28px;
+  max-width: 15rem;
+}
+
+.app[data-variant="a"] .brand-deva {
+  font-size: 21px;
+}
+
+.app[data-variant="a"] .status {
+  border-color: var(--line);
+}
+
+.app[data-variant="a"] .chip {
+  background: var(--panel);
+}
+
+/* --------------------------------------------------------------------------
+   Variant B — SIGNAL / dark field
+   -------------------------------------------------------------------------- */
+
+.app[data-variant="b"] .bubble-text {
+  font-size: 23px;
+  font-weight: 500;
+  letter-spacing: 0.002em;
+}
+
+.app[data-variant="b"] .empty-title {
+  font-size: 30px;
+  max-width: 15rem;
+  letter-spacing: -0.01em;
+}
+
+.app[data-variant="b"] .empty {
+  justify-content: flex-end;
+  padding-bottom: 4px;
+}
+
+.app[data-variant="b"] .app-foot {
+  background: var(--field);
+}
+
+.app[data-variant="b"] .btn-speak {
+  min-width: 104px;
+}
+
+.app[data-variant="b"] .status {
+  height: 28px;
+  font-size: 11px;
+}
+
+/* --------------------------------------------------------------------------
+   Variant C — QUIET / editorial
+   -------------------------------------------------------------------------- */
+
+/* C is the editorial direction, so the caller line gets a Devanagari serif —
+   Fraunces has no Devanagari, and a Latin-only serif would leave Hindi lines
+   looking like every other variant. */
+.app[data-variant="c"] .bubble--caller .bubble-text {
+  font-family: "Tiro Devanagari Hindi", "Fraunces", var(--font-deva), serif;
+  font-weight: 400;
+  font-size: 23px;
+  line-height: 1.45;
+}
+
+.app[data-variant="c"] .bubble-meta {
+  letter-spacing: 0.16em;
+}
+
+.app[data-variant="c"] .empty-title {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.22;
+  max-width: 14rem;
+}
+
+.app[data-variant="c"] .empty-body {
+  font-size: 17px;
+}
+
+.app[data-variant="c"] .turn-idx {
+  opacity: 1;
+}
+
+.app[data-variant="c"] .thread {
+  padding-left: 18px;
+  padding-right: 18px;
+}
+
+.app[data-variant="c"] .summary {
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%);
+}
+
+/* Wide frame: the layout earns the extra width rather than stretching. */
+.app[data-screen="wide"] .thread {
+  padding-left: max(14px, calc((100% - 620px) / 2));
+  padding-right: max(14px, calc((100% - 620px) / 2));
+}
+
+.app[data-screen="wide"] .app-foot > .composer,
+.app[data-screen="wide"] .app-foot > .chips {
+  max-width: 620px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.app[data-screen="wide"] .app-switches {
+  padding-left: 0;
+}
+
+.app[data-screen="wide"] .bubble {
+  max-width: 78%;
+}
+
+.app[data-screen="wide"] .empty {
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+/* --------------------------------------------------------------------------
+   Motion
+   -------------------------------------------------------------------------- */
+
+@keyframes turn-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dot-wave {
+  0%,
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 0.35;
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes dot-transmit {
+  from {
+    transform: translateX(-2px);
+    opacity: 0.4;
+  }
+  to {
+    transform: translateX(2px);
+    opacity: 1;
+  }
+}
+
+.app[data-motion="on"] .status[data-state="listening"] .status-dots i {
+  animation: dot-wave 1.25s ease-in-out infinite;
+}
+
+.app[data-motion="on"] .status[data-state="listening"] .status-dots i:nth-child(2) {
+  animation-delay: 0.16s;
+}
+
+.app[data-motion="on"] .status[data-state="listening"] .status-dots i:nth-child(3) {
+  animation-delay: 0.32s;
+}
+
+.app[data-motion="on"] .status[data-state="speaking"] .status-dots i {
+  animation: dot-transmit 0.42s ease-in-out infinite alternate;
+}
+
+.app[data-motion="on"] .status[data-state="speaking"] .status-dots i:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.app[data-motion="on"] .status[data-state="speaking"] .status-dots i:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bubble,
+  .missed,
+  .summary,
+  .status-dots i,
+  .frame,
+  .bg-peacock,
+  .bg-wash {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Tweaks panel
+   -------------------------------------------------------------------------- */
+
+.panel {
+  position: sticky;
+  top: 20px;
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  border: 1px solid var(--studio-line);
+  background: var(--studio-2);
+  padding: 0 0 6px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--studio-line) transparent;
+}
+
+@media (max-width: 1120px) {
+  .panel {
+    position: static;
+    max-height: none;
+    order: 2;
+  }
+}
+
+.panel-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--studio-line);
+}
+
+.panel-title {
+  margin: 0;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--studio-ink);
+}
+
+.panel-mini {
+  min-height: 32px;
+  border: 1px solid var(--studio-line);
+  background: transparent;
+  padding: 0 10px;
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--studio-muted);
+}
+
+.panel-mini:hover {
+  color: var(--studio-ink);
+  border-color: var(--studio-muted);
+}
+
+.block {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--studio-line);
+}
+
+.block-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid var(--studio-line);
+}
+
+.block-row .block {
+  border-bottom: 0;
+}
+
+.block-row .block + .block {
+  border-left: 1px solid var(--studio-line);
+}
+
+.block-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--studio-muted);
+}
+
+.block-meta {
+  color: var(--studio-ink);
+}
+
+.block-note {
+  margin: 9px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--studio-mute-2);
+}
+
+.block-note b {
+  color: var(--studio-ink);
+  font-weight: 500;
+}
+
+/* Variant cards */
+.variants {
+  display: grid;
+  gap: 7px;
+}
+
+.variant {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  grid-template-areas:
+    "glyph name"
+    "glyph note";
+  column-gap: 10px;
+  min-height: 48px;
+  align-items: center;
+  border: 1px solid var(--studio-line);
+  background: transparent;
+  padding: 7px 10px;
+  text-align: left;
+}
+
+.variant:hover {
+  border-color: var(--studio-muted);
+}
+
+.variant[aria-pressed="true"] {
+  border-color: var(--studio-ink);
+  background: var(--studio-3);
+}
+
+.variant-glyph {
+  grid-area: glyph;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--studio-line);
+  background-color: var(--field);
+  background-image: radial-gradient(circle, var(--signal) 0 1px, transparent 1.3px);
+  background-size: 4px 4px;
+}
+
+.variant-glyph[data-glyph="a"] {
+  --field: #f1eddd;
+  --signal: #cfcaae;
+  border-color: #d5ceb9;
+}
+
+.variant-glyph[data-glyph="b"] {
+  --field: #0b110a;
+  --signal: #c9f05c;
+  background-size: 3px 3px;
+}
+
+.variant-glyph[data-glyph="c"] {
+  --field: #f3f1ea;
+  --signal: #232a5c;
+  background-size: 5px 5px;
+}
+
+.variant-name {
+  grid-area: name;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--studio-ink);
+}
+
+.variant-note {
+  grid-area: note;
+  font-family: var(--font-pixel);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--studio-mute-2);
+}
+
+/* Palette swatches */
+.palettes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--studio-line);
+  background: transparent;
+  padding: 8px 2px 7px;
+  min-height: 64px;
+}
+
+.swatch:hover {
+  border-color: var(--studio-muted);
+}
+
+.swatch[aria-pressed="true"] {
+  border-color: var(--studio-ink);
+}
+
+.swatch-dots {
+  display: grid;
+  grid-template-columns: repeat(3, 4px);
+  gap: 2px;
+  padding: 5px 4px;
+  border: 1px solid var(--line);
+}
+
+.swatch-dots i {
+  width: 4px;
+  height: 4px;
+  background: var(--c);
+}
+
+.swatch-name {
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--studio-muted);
+  writing-mode: horizontal-tb;
+}
+
+/* Range */
+.range {
+  width: 100%;
+  height: 32px;
+  accent-color: var(--studio-ink);
+  background: transparent;
+}
+
+/* Selects */
+.select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--studio-line);
+  background: var(--studio-3);
+  padding: 0 8px;
+  font-size: 13px;
+  color: var(--studio-ink);
+}
+
+/* Check */
+.check {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  color: var(--studio-ink);
+}
+
+.check input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--studio-ink);
+}
+
+/* Segmented */
+.seg {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border: 1px solid var(--studio-line);
+}
+
+.seg button {
+  min-height: 44px;
+  border: 0;
+  border-left: 1px solid var(--studio-line);
+  background: transparent;
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--studio-muted);
+}
+
+.seg button:first-child {
+  border-left: 0;
+}
+
+.seg button[aria-pressed="true"] {
+  background: var(--studio-ink);
+  color: var(--studio);
+}
+
+/* Notes */
+.notes {
+  border-bottom: 0;
+}
+
+.notes-list {
+  margin: 0;
+  padding: 0 0 0 14px;
+  display: grid;
+  gap: 7px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--studio-mute-2);
+}
+
+.notes-list code {
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  color: var(--studio-muted);
+  letter-spacing: 0.04em;
+}
+
+/* Tiny screens: panel below, controls full width */
+@media (max-width: 520px) {
+  .frame-caption {
+    font-size: 8px;
+  }
+}
+
+/* Host deactivated Tweaks: no residual chrome. */
+body.tweaks-off .panel {
+  display: none;
+}
+
+body.tweaks-off .studio-body {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.inline-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--studio-muted);
+}
+
+.inline-field .select {
+  width: 128px;
+}

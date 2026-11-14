@@ -1,0 +1,1957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="color-scheme" content="dark" />
+<title>Pashyanti — six backgrounds behind one screen</title>
+<meta name="description" content="Pixel-matrix background treatments for the Pashyanti chat screen, with measured contrast, motion and cost notes." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&amp;family=Karla:wght@400;500;600;700&amp;family=Mukta:wght@400;500;600;700&amp;family=Silkscreen:wght@400&amp;display=swap" rel="stylesheet" />
+<style>
+/*
+ * PASHYANTI — background character sheet.
+ *
+ * Art direction committed: pixel matrix / halftone dot screen. Round dots on a
+ * 6-10 px pitch, hard edges, panels punched out of the lattice, acid lime +
+ * terracotta + bone on near-black.
+ *
+ * The screen is a phone assistant for Deaf and hard-of-hearing users in India.
+ * The caller's speech is the loudest thing on the device, and Sakhi the peacock
+ * is the state indicator, never decoration. So every background here has a
+ * ceiling: it may have character, it may not have a voice.
+ *
+ * Two rules drive the whole sheet:
+ *   1. Text lives on panels. A panel is a hole in the lattice, and holes are
+ *      opaque where they carry words. Text over raw art exists in exactly one
+ *      place (the empty state) and is measured there.
+ *   2. The texture is capped at 1.5:1 against --field, which keeps --ink-2 at
+ *      or above 7:1 even if a panel is ever removed. The single exception is
+ *      treatment 04's five signal marks, and the caption says so.
+ */
+
+/* The ten tokens, verbatim. */
+:root {
+  --field: #0B110A;
+  --panel: #111A0E;
+  --ink: #EFF3DC;
+  --ink-2: #B9C4A6;
+  --line: #24321C;
+  --signal: #1E2C18;
+  --accent: #C9F05C;
+  --accent-ink: #101607;
+  --hot: #E4694A;
+  --cool: #8FC7A3;
+
+  /* Ten committed colours, shared with the chrome sheet. Everything below is this
+     sheet's own kit, not a token. */
+  --font-sans: "Karla", ui-sans-serif, system-ui, sans-serif;
+  --font-deva: "Mukta", "Noto Sans Devanagari", ui-sans-serif, sans-serif;
+  --font-display: "Fraunces", "Mukta", Georgia, serif;
+  --font-micro: "Silkscreen", ui-monospace, monospace;
+
+  /* The reply bubble is --accent in both grounds; only the value of --accent
+     changes, because acid lime cannot hold text on bone. */
+  --bubble-me: var(--accent);
+  --bubble-me-ink: var(--accent-ink);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  background: var(--field);
+  color: var(--ink);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--field);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 17px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* The sheet carries the lattice too, but only as a masthead wash that fades
+   out — a page of dots would be wallpaper, which is the thing being avoided. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 540px;
+  pointer-events: none;
+  background-image: radial-gradient(circle at 1px 1px, rgba(201, 240, 92, 0.07) 1px, transparent 1.6px);
+  background-size: 12px 12px;
+  -webkit-mask-image: linear-gradient(#000 0%, rgba(0, 0, 0, 0.35) 55%, transparent 100%);
+  mask-image: linear-gradient(#000 0%, rgba(0, 0, 0, 0.35) 55%, transparent 100%);
+  z-index: 0;
+}
+
+.sheet {
+  position: relative;
+  z-index: 1;
+  max-width: 1420px;
+  margin: 0 auto;
+  padding: 64px 24px 96px;
+}
+
+/* ── masthead ─────────────────────────────────────────────── */
+
+.eyebrow {
+  margin: 0 0 18px;
+  font-family: var(--font-micro);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+h1 {
+  max-width: 21ch;
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(34px, 4.4vw, 56px);
+  line-height: 1.02;
+  letter-spacing: -0.012em;
+  font-variation-settings: "SOFT" 40;
+}
+
+.lede {
+  max-width: 66ch;
+  margin: 20px 0 0;
+  font-size: 18px;
+  line-height: 1.62;
+  color: var(--ink-2);
+}
+
+.lede b { color: var(--ink); font-weight: 600; }
+
+/* ── the three rules ──────────────────────────────────────── */
+
+.rules {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  margin: 40px 0 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.rule { padding: 14px 18px 16px; border-left: 1px solid var(--line); }
+.rule:first-child { border-left: 0; padding-left: 0; }
+
+.rule dt {
+  margin: 0;
+  font-family: var(--font-micro);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.rule dd { margin: 7px 0 0; font-size: 15px; line-height: 1.45; color: var(--ink); }
+
+/* ── sections ─────────────────────────────────────────────── */
+
+.sec { margin: 92px 0 0; }
+
+.sec-head {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin: 0 0 26px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.sec-no {
+  font-family: var(--font-micro);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+}
+
+.sec-head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(22px, 2.2vw, 30px);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.sec-note {
+  margin: 0 0 0 auto;
+  max-width: 46ch;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  text-align: right;
+}
+
+/* ── token table ──────────────────────────────────────────── */
+
+.tokens {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+}
+
+@media (max-width: 760px) {
+  .tokens { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.tok { background: var(--field); padding: 12px 12px 14px; }
+
+.tok-swatch {
+  display: block;
+  height: 36px;
+  border: 1px solid var(--line);
+}
+
+.tok-name {
+  margin: 10px 0 0;
+  font-family: var(--font-micro);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--ink-2);
+}
+
+.tok-hex {
+  margin: 3px 0 0;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.tok-role { margin: 6px 0 0; font-size: 12.5px; line-height: 1.35; color: var(--ink-2); }
+
+.tok-ratio {
+  margin: 6px 0 0;
+  font-family: var(--font-micro);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: var(--cool);
+}
+
+/* ── the specimen grid ────────────────────────────────────── */
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 438px);
+  justify-content: center;
+  gap: 60px 28px;
+}
+
+.specimen { margin: 0; display: flex; flex-direction: column; }
+
+.spec-tag {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 8px;
+  font-family: var(--font-micro);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.spec-tag b { font-weight: 400; color: var(--accent); }
+
+/* A phone frame with a 4 px step and crisp corners: padding in --signal, a
+   1 px hairline, no radius anywhere. */
+.phone {
+  padding: 4px;
+  background: var(--signal);
+  border: 1px solid var(--line);
+}
+
+/* ── the screen: 430 x 760, the only variable in the sheet ── */
+
+.screen {
+  position: relative;
+  z-index: 0;
+  aspect-ratio: 430 / 760;
+  overflow: hidden;
+  background: var(--field);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  line-height: 1.4;
+}
+
+.screen[data-ground="light"] {
+  /* Not a ninth palette: these are the shipped Peacock light tokens from
+     web/src/index.css, so the paper variant costs the system nothing. */
+  --field: #F2EADB;
+  --panel: #FBF6EC;
+  --ink: #17251C;
+  --ink-2: #3F4D42;
+  --line: #D9CCB7;
+  --signal: #E9DFCB;
+  --accent: #255035;
+  --accent-ink: #FBF6EC;
+  --hot: #9C3A1D;
+  --cool: #255035;
+}
+
+.bg-wrap {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--field);
+}
+
+/* 12 px of overscan so the drift in 04 never exposes an edge. */
+.bg {
+  position: absolute;
+  left: -12px;
+  top: -12px;
+  width: calc(100% + 24px);
+  height: calc(100% + 24px);
+  display: block;
+}
+
+.bg.drift {
+  animation: drift 72s ease-in-out infinite alternate;
+  animation-play-state: paused;
+}
+
+.screen.is-live .bg.drift { animation-play-state: running; }
+
+@keyframes drift {
+  from { transform: translate3d(3px, -4px, 0); }
+  to { transform: translate3d(-8px, 7px, 0); }
+}
+
+/* ── chat chrome ──────────────────────────────────────────── */
+
+/* `.panel` carries no look of its own. It marks the opaque surfaces the painter
+   knocks out and the measurer treats as flat ground — masthead, bubbles, chips,
+   field, send. Each of those sets its own background below. */
+
+.chrome {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.masthead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 56px;
+  flex: none;
+  padding: 0 12px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
+.mascot { display: inline-flex; flex: none; color: var(--accent); line-height: 0; }
+
+.brand {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+}
+
+.wordmark {
+  margin: 0;
+  font-family: var(--font-deva);
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1.05;
+  color: var(--ink);
+}
+
+.wordmark-latin {
+  margin: 0;
+  font-family: var(--font-micro);
+  font-size: 8.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  line-height: 1;
+  color: var(--ink-2);
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  flex: none;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  color: var(--ink);
+}
+
+/* Listening owns --cool here, matching the app's status rule; --hot is the
+   outgoing/speaking signal and must not mean two things. */
+.status-dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--cool);
+}
+
+/* 44 px floor: every control in this chrome is at least 44 x 44. */
+.icon-btn {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink-2);
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.stage {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 12px 0;
+  overflow: hidden;
+}
+
+.stage-empty {
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  text-align: center;
+}
+
+.bubble {
+  position: relative;
+  max-width: 88%;
+  padding: 11px 14px 12px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+}
+
+/* A stepped tail, not a rounded one: 7 px square with two hairlines. */
+.bubble-caller::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  bottom: -6px;
+  width: 7px;
+  height: 7px;
+  background: var(--panel);
+  border-left: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.bubble-me {
+  margin-left: auto;
+  border-color: var(--bubble-me);
+  background: var(--bubble-me);
+  color: var(--bubble-me-ink);
+}
+
+.bubble-me::after {
+  content: "";
+  position: absolute;
+  right: 6px;
+  bottom: -6px;
+  width: 7px;
+  height: 7px;
+  background: var(--bubble-me);
+  border-right: 1px solid var(--bubble-me);
+  border-bottom: 1px solid var(--bubble-me);
+}
+
+.bubble-text {
+  margin: 0;
+  font-family: var(--font-deva);
+  font-size: 23px;
+  font-weight: 400;
+  line-height: 1.42;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  display: block;
+  margin-top: 5px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+}
+
+.empty {
+  display: flex;
+  max-width: 330px;
+  flex-direction: column;
+  align-items: center;
+}
+
+.mascot-lg { margin: 0 0 2px; }
+
+.empty-title {
+  margin: 24px 0 0;
+  font-family: var(--font-deva);
+  font-size: 25px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--ink);
+}
+
+.empty-body {
+  margin: 12px 0 0;
+  font-family: var(--font-deva);
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+/* The dock is not a panel: its cells are. That is what lets the denser band
+   in 01 read around the composer instead of vanishing under a full-width bar. */
+.dock {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
+  padding: 10px 12px 14px;
+  border-top: 1px solid var(--line);
+}
+
+.chips {
+  display: flex;
+  gap: 8px;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, #000 86%, transparent 100%);
+  mask-image: linear-gradient(to right, #000 86%, transparent 100%);
+}
+
+.chip {
+  display: inline-flex;
+  height: 44px;
+  flex: none;
+  align-items: center;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  font-family: var(--font-deva);
+  font-size: 18px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.composer { display: flex; gap: 8px; }
+
+.input {
+  height: 48px;
+  min-width: 0;
+  flex: 1;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  font-family: var(--font-deva);
+  font-size: 18px;
+}
+
+.input::placeholder { color: var(--ink-2); }
+
+.send {
+  display: inline-flex;
+  height: 48px;
+  min-width: 76px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  border: 1px solid var(--bubble-me);
+  background: var(--bubble-me);
+  color: var(--bubble-me-ink);
+  font-family: var(--font-deva);
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ── caption under each frame ─────────────────────────────── */
+
+.cap { padding: 16px 0 0; }
+
+.cap h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 22px;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.cap-note { margin: 8px 0 0; font-size: 15px; line-height: 1.55; color: var(--ink-2); }
+.cap-note b { color: var(--ink); font-weight: 600; }
+
+.cap-spec { margin: 16px 0 0; border-top: 1px solid var(--line); }
+
+.cap-spec > div {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.cap-spec dt {
+  padding-top: 3px;
+  font-family: var(--font-micro);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.cap-spec dd { margin: 0; font-size: 14px; line-height: 1.5; color: var(--ink-2); }
+
+.cap-spec dd strong {
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.cap-spec code {
+  font-family: var(--font-micro);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  color: var(--cool);
+}
+
+/* ── the pick ─────────────────────────────────────────────── */
+
+.picks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 26px;
+}
+
+.pick { border-top: 3px solid var(--accent); padding: 18px 0 0; }
+.pick[data-verdict="no"] { border-top-color: var(--hot); }
+
+.pick-lab {
+  margin: 0;
+  font-family: var(--font-micro);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.pick h3 {
+  margin: 9px 0 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 26px;
+  line-height: 1.12;
+  letter-spacing: -0.012em;
+  color: var(--ink);
+}
+
+.pick p { margin: 11px 0 0; font-size: 15px; line-height: 1.6; color: var(--ink-2); }
+.pick p b { color: var(--ink); font-weight: 600; }
+.pick p strong { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.pick-sum {
+  max-width: 78ch;
+  margin: 34px 0 0;
+  padding-left: 16px;
+  border-left: 2px solid var(--accent);
+  font-size: 16px;
+  line-height: 1.62;
+  color: var(--ink-2);
+}
+
+.pick-wide { max-width: 438px; margin: 44px auto 0; }
+
+/* ── method footer ────────────────────────────────────────── */
+
+.method {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 44px;
+  margin: 96px 0 0;
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
+}
+
+.method h2 {
+  margin: 0 0 14px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.method ol, .method ul { margin: 0; padding-left: 18px; font-size: 14.5px; line-height: 1.6; color: var(--ink-2); }
+.method li + li { margin-top: 9px; }
+.method b { color: var(--ink); font-weight: 600; }
+
+.method code {
+  font-family: var(--font-micro);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--cool);
+}
+
+.colophon {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 28px;
+  margin: 44px 0 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+.colophon span { flex: 1 1 320px; }
+
+.colophon b {
+  margin-right: 6px;
+  font-family: var(--font-micro);
+  font-size: 9.5px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* ── focus, motion, narrow layout ─────────────────────────── */
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.input:focus-visible { outline-offset: 0; }
+
+noscript {
+  display: block;
+  margin: 0 0 24px;
+  padding: 14px 16px;
+  border: 1px solid var(--hot);
+  font-size: 15px;
+  color: var(--ink);
+}
+
+@media (min-width: 976px) {
+  .grid { grid-template-columns: repeat(2, 438px); }
+}
+
+@media (min-width: 1440px) {
+  .grid { grid-template-columns: repeat(3, 438px); }
+}
+
+@media (max-width: 560px) {
+  .sheet { padding: 40px 8px 64px; }
+  .grid { grid-template-columns: minmax(0, 1fr); gap: 48px; }
+  .rules, .picks, .method { grid-template-columns: minmax(0, 1fr); }
+  .rule { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); }
+  .rule:first-child { border-top: 0; }
+  .sec-note { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bg.drift { animation: none !important; }
+  html { scroll-behavior: auto; }
+}
+</style>
+</head>
+<body>
+
+<div class="sheet">
+
+  <noscript>This sheet builds its chrome and measures every contrast figure at load. With JavaScript off you get empty frames — no numbers are typed by hand, by design.</noscript>
+
+  <header>
+    <p class="eyebrow">Pashyanti · background character sheet · pixel matrix</p>
+    <h1>Six backgrounds that stay behind the words.</h1>
+    <p class="lede">
+      One 430 × 760 phone, one chrome, one variable: the field. The caller's speech is the
+      loudest thing on this screen and Sakhi is its state indicator, so a background here may
+      have character but not a voice. Every ratio below is <b>read back off the canvas at
+      load</b> — no figure here is typed by hand, and the sample count is printed next to
+      each one.
+    </p>
+
+    <dl class="rules">
+      <div class="rule">
+        <dt>Contrast floor</dt>
+        <dd>Text ≥ 7:1 wherever it sits. The dark texture is capped at 1.5:1, which keeps
+          ink-2 at 7.3:1 even without a panel; on paper a bare dot drops it to 5.9:1, so paper
+          keeps every word on a panel. 04's five signal marks are the one exception.</dd>
+      </div>
+      <div class="rule">
+        <dt>Lattice</dt>
+        <dd>8 px base pitch, 6 px under the dock. Round dots, hard edges, no blur, no grain
+          overlay. Panels are opaque holes with a 6 px punch-out margin.</dd>
+      </div>
+      <div class="rule">
+        <dt>Motion</dt>
+        <dd>Static unless the treatment is the motion study. Nothing loops when the app is
+          idle, and prefers-reduced-motion removes the one drift entirely.</dd>
+      </div>
+    </dl>
+  </header>
+
+  <section class="sec" aria-labelledby="tok-h">
+    <div class="sec-head">
+      <span class="sec-no">A</span>
+      <h2 id="tok-h">The ten colours</h2>
+      <p class="sec-note">Verbatim at <code>:root</code>. Each ratio is the token against the
+        surface named in its role, measured at load.</p>
+    </div>
+
+    <div class="tokens">
+      <div class="tok">
+        <span class="tok-swatch" style="background: var(--field)"></span>
+        <p class="tok-name">--field</p>
+        <p class="tok-hex">#0B110A</p>
+        <p class="tok-role">Screen ground. The only surface a dot is ever drawn on.</p>
+        <p class="tok-ratio" data-ratio="--field|--field">base</p>
+      </div>
+      <div class="tok">
+        <span class="tok-swatch" style="background: var(--panel)"></span>
+        <p class="tok-name">--panel</p>
+        <p class="tok-hex">#111A0E</p>
+        <p class="tok-role">Masthead, bubbles, dock cells. Every hole that carries words.</p>
+        <p class="tok-ratio" data-ratio="--panel|--field">—</p>
+      </div>
+      <div class="tok">
+        <span class="tok-swatch" style="background: var(--ink)"></span>
+        <p class="tok-name">--ink</p>
+        <p class="tok-hex">#EFF3DC</p>
+        <p class="tok-role">Body text, wordmark. The caller's line sits here.</p>
+        <p class="tok-ratio" data-ratio="--ink|--panel">—</p>
+      </div>
+      <div class="tok">
+        <span class="tok-swatch" style="background: var(--ink-2)"></span>
+        <p class="tok-name">--ink-2</p>
+        <p class="tok-hex">#B9C4A6</p>
+        <p class="tok-role">Meta, placeholder, micro-labels. The tightest number on the page.</p>
+        <p class="tok-ratio" data-ratio="--ink-2|--panel">—</p>
+      </div>
+      <div class="tok">
+        <span class="tok-swatch" style="background: var(--line)"></span>
+        <p class="tok-name">--line</p>
+        <p class="tok-hex">#24321C</p>
+        <p class="tok-role">1 px hairlines only. Never text, never a dot.</p>
+        <p class="tok-ratio" data-ratio="--line|--panel">—</p>
+      </div>
+      <div class="tok">
+        <span class="tok-swatch" style="background: var(--signal)"></span>
+        <p class="tok-name">--signal</p>
+        <p class="tok-hex">#1E2C18</p>
+        <p class="tok-role">The 4 px bezel step; the inert surface between field and panel.</p>
+        <p class="tok-ratio" data-ratio="--signal|--field">—</p>
+      </div>
+      <div class="tok">
+        <span class="tok-swatch" style="background: var(--accent)"></span>
+        <p class="tok-name">--accent</p>
+        <p class="tok-hex">#C9F05C</p>
+        <p class="tok-role">The user's own voice: reply fill, send, signal dots.</p>
+        <p class="tok-ratio" data-ratio="--accent|--field">—</p>
+      </div>
+      <div class="tok">
+        <span class="tok-swatch" style="background: var(--accent-ink)"></span>
+        <p class="tok-name">--accent-ink</p>
+        <p class="tok-hex">#101607</p>
+        <p class="tok-role">Text on accent. The reply bubble pair.</p>
+        <p class="tok-ratio" data-ratio="--accent-ink|--accent">—</p>
+      </div>
+      <div class="tok">
+        <span class="tok-swatch" style="background: var(--hot)"></span>
+        <p class="tok-name">--hot</p>
+        <p class="tok-hex">#E4694A</p>
+        <p class="tok-role">Audio moving: the listening dot, one constellation signal. Never text.</p>
+        <p class="tok-ratio" data-ratio="--hot|--panel">—</p>
+      </div>
+      <div class="tok">
+        <span class="tok-swatch" style="background: var(--cool)"></span>
+        <p class="tok-name">--cool</p>
+        <p class="tok-hex">#8FC7A3</p>
+        <p class="tok-role">Measured figures — the numbers this sheet is arguing with.</p>
+        <p class="tok-ratio" data-ratio="--cool|--panel">—</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" aria-labelledby="six-h">
+    <div class="sec-head">
+      <span class="sec-no">B</span>
+      <h2 id="six-h">The six, dark ground</h2>
+      <p class="sec-note">Identical chrome in every frame — header, one caller bubble, one
+        reply, one composer, one static mascot. The chrome is a single template in the script,
+        so it cannot drift between specimens.</p>
+    </div>
+
+    <div class="grid">
+
+      <figure class="specimen">
+        <p class="spec-tag"><span><b>01</b> · dark · static</span><span>430 × 760</span></p>
+        <div class="phone">
+          <div class="screen" data-t="lattice" data-id="f1">
+            <div class="bg-wrap"><canvas class="bg" aria-hidden="true"></canvas></div>
+          </div>
+        </div>
+        <figcaption class="cap">
+          <h3>Dot lattice field</h3>
+          <p class="cap-note"><b>Buys</b> a machined surface and a 6 px band over the dock that
+            says where to type without an arrow. <b>Costs</b> presence: at this contrast the lattice
+            is gone on a dimmed screen in daylight, so the band is the only part anyone feels.</p>
+          <dl class="cap-spec">
+            <div><dt>Worst text</dt><dd><strong data-out="f1.text">—</strong> at the <span data-out="f1.where">—</span>; body copy <strong data-out="f1.body">—</strong>.</dd></div>
+            <div><dt>Art peak</dt><dd><strong data-out="f1.art">—</strong> against <code>--field</code>, <span data-out="f1.px">—</span> exposed samples.</dd></div>
+            <div><dt>Motion</dt><dd>Nothing moves. One paint at load; no loop, no rAF, no listener — so reduced motion has nothing to suppress.</dd></div>
+            <div><dt>Cost</dt><dd>Canvas. <strong data-out="f1.dots">—</strong> dots in <span data-out="f1.groups">—</span> fill calls, one pass. Class: cheap.</dd></div>
+          </dl>
+        </figcaption>
+      </figure>
+
+      <figure class="specimen">
+        <p class="spec-tag"><span><b>02</b> · dark · static</span><span>430 × 760</span></p>
+        <div class="phone">
+          <div class="screen" data-t="watermark" data-id="f2">
+            <div class="bg-wrap"><canvas class="bg" aria-hidden="true"></canvas></div>
+          </div>
+        </div>
+        <figcaption class="cap">
+          <h3>Peacock watermark</h3>
+          <p class="cap-note"><b>Buys</b> a subject in the 300 px of nothing under two bubbles —
+            the head at 7×, cropped by the right edge, with the crest clearing the bubbles. <b>Costs</b> meaning: a second peacock on
+            a screen whose peacock is the state indicator.</p>
+          <dl class="cap-spec">
+            <div><dt>Worst text</dt><dd><strong data-out="f2.text">—</strong> at the <span data-out="f2.where">—</span>; body copy <strong data-out="f2.body">—</strong>.</dd></div>
+            <div><dt>Art peak</dt><dd><strong data-out="f2.art">—</strong> against <code>--field</code>, <span data-out="f2.px">—</span> exposed samples.</dd></div>
+            <div><dt>Motion</dt><dd>Nothing moves, by rule: a watermark that drifted would read as state. Nothing to reduce.</dd></div>
+            <div><dt>Cost</dt><dd>Canvas. <strong data-out="f2.dots">—</strong> dots in <span data-out="f2.groups">—</span> fill calls, fed by one 800 px mask readback that is built once and shared with 05. Class: cheap.</dd></div>
+          </dl>
+        </figcaption>
+      </figure>
+
+      <figure class="specimen">
+        <p class="spec-tag"><span><b>03</b> · dark · static</span><span>430 × 760</span></p>
+        <div class="phone">
+          <div class="screen" data-t="wash" data-id="f3">
+            <div class="bg-wrap"><canvas class="bg" aria-hidden="true"></canvas></div>
+          </div>
+        </div>
+        <figcaption class="cap">
+          <h3>Dithered wash</h3>
+          <p class="cap-note"><b>Buys</b> depth from no image: the radius falls from 3.3 px to
+            nothing, so the field reads printed rather than filled. <b>Costs</b> most of itself —
+            the dense end sits behind the masthead, so you pay for a gradient and see the tail.</p>
+          <dl class="cap-spec">
+            <div><dt>Worst text</dt><dd><strong data-out="f3.text">—</strong> at the <span data-out="f3.where">—</span>; body copy <strong data-out="f3.body">—</strong>.</dd></div>
+            <div><dt>Art peak</dt><dd><strong data-out="f3.art">—</strong> against <code>--field</code>, <span data-out="f3.px">—</span> exposed samples.</dd></div>
+            <div><dt>Motion</dt><dd>Nothing moves: a printed vignette that breathed would look like a bug. Nothing to reduce.</dd></div>
+            <div><dt>Cost</dt><dd>Canvas. <strong data-out="f3.dots">—</strong> dots in <span data-out="f3.groups">—</span> fill calls, radius bucketed to 0.1 px. Class: cheap.</dd></div>
+          </dl>
+        </figcaption>
+      </figure>
+
+      <figure class="specimen">
+        <p class="spec-tag"><span><b>04</b> · dark · drift</span><span>430 × 760</span></p>
+        <div class="phone">
+          <div class="screen" data-t="constellation" data-id="f4">
+            <div class="bg-wrap"><canvas class="bg drift" aria-hidden="true"></canvas></div>
+          </div>
+        </div>
+        <figcaption class="cap">
+          <h3>Constellation field</h3>
+          <p class="cap-note"><b>Buys</b> somewhere for the eye to rest, and spends the whole
+            motion budget in one place: four lime signals and one terracotta.
+            <b>Costs</b> the product rule — motion on a screen where nothing is happening.</p>
+          <dl class="cap-spec">
+            <div><dt>Worst text</dt><dd><strong data-out="f4.text">—</strong> at the <span data-out="f4.where">—</span>; body copy <strong data-out="f4.body">—</strong>.</dd></div>
+            <div><dt>Art peak</dt><dd><strong data-out="f4.art">—</strong> against <code>--field</code> — the signal marks, not the texture; the field dots sit at <strong data-out="f4.base">—</strong>.</dd></div>
+            <div><dt>Motion</dt><dd>One transform: 11 px of drift over 72 s, alternate, compositor-only. Paused by IntersectionObserver off-screen; absent under reduced motion. No timer, no rAF.</dd></div>
+            <div><dt>Cost</dt><dd>Canvas. <strong data-out="f4.dots">—</strong> dots in <span data-out="f4.groups">—</span> fill calls; the drift is one compositor transform, not a repaint. Class: cheap while visible, free while paused.</dd></div>
+          </dl>
+        </figcaption>
+      </figure>
+
+      <figure class="specimen">
+        <p class="spec-tag"><span><b>05</b> · dark · static</span><span>430 × 760</span></p>
+        <div class="phone">
+          <div class="screen" data-t="cutout" data-id="f5">
+            <div class="bg-wrap"><canvas class="bg" aria-hidden="true"></canvas></div>
+          </div>
+        </div>
+        <figcaption class="cap">
+          <h3>Cut-out silhouette</h3>
+          <p class="cap-note"><b>Buys</b> the mark as architecture: the lattice is the material
+            and the bird is a hole in it, so no second fill competes for colour.
+            <b>Costs</b> a rim — without the hairline the hole reads as a canvas that failed to
+            paint.</p>
+          <dl class="cap-spec">
+            <div><dt>Worst text</dt><dd><strong data-out="f5.text">—</strong> at the <span data-out="f5.where">—</span>; body copy <strong data-out="f5.body">—</strong>.</dd></div>
+            <div><dt>Art peak</dt><dd><strong data-out="f5.art">—</strong> against <code>--field</code>, <span data-out="f5.px">—</span> exposed samples.</dd></div>
+            <div><dt>Motion</dt><dd>Nothing moves: the hole is geometry, and moving it would make it a character. Nothing to reduce.</dd></div>
+            <div><dt>Cost</dt><dd>Canvas. <strong data-out="f5.dots">—</strong> dots plus one stroked path, <span data-out="f5.groups">—</span> fill calls, <span data-out="f5.skip">—</span> positions suppressed by the hole and the panel punch-outs. Class: cheap, one shared readback.</dd></div>
+          </dl>
+        </figcaption>
+      </figure>
+
+      <figure class="specimen">
+        <p class="spec-tag"><span><b>06</b> · dark · static</span><span>430 × 760</span></p>
+        <div class="phone">
+          <div class="screen" data-t="rings" data-id="f6">
+            <div class="bg-wrap"><canvas class="bg" aria-hidden="true"></canvas></div>
+          </div>
+        </div>
+        <figcaption class="cap">
+          <h3>Contour rings</h3>
+          <p class="cap-note"><b>Buys</b> the empty state its own geometry: rings under Sakhi's
+            eye ring pull the gaze to the mascot, the one thing on that screen that means
+            something. <b>Costs</b> coverage — behind two bubbles you buy the motif twice and see
+            it once.</p>
+          <dl class="cap-spec">
+            <div><dt>Worst text</dt><dd><strong data-out="f6.text">—</strong> at the <span data-out="f6.where">—</span>; body copy <strong data-out="f6.body">—</strong>.</dd></div>
+            <div><dt>Art peak</dt><dd><strong data-out="f6.art">—</strong> against <code>--field</code>, <span data-out="f6.px">—</span> exposed samples.</dd></div>
+            <div><dt>Motion</dt><dd>Nothing moves: rings are the frame of a still image, not a loop. Nothing to reduce.</dd></div>
+            <div><dt>Cost</dt><dd>Canvas. <strong data-out="f6.dots">—</strong> dots in <span data-out="f6.groups">—</span> fill calls, one circle test each. Class: cheap.</dd></div>
+          </dl>
+        </figcaption>
+      </figure>
+
+    </div>
+  </section>
+
+  <section class="sec" aria-labelledby="light-h">
+    <div class="sec-head">
+      <span class="sec-no">C</span>
+      <h2 id="light-h">Two on paper</h2>
+      <p class="sec-note">Same chrome, same geometry; the tokens invert to the app's own
+        Peacock light theme, so this is not a fifth palette. Dots become ink at 12% instead of
+        bone, and the lattice still reads in a bright room.</p>
+    </div>
+
+    <div class="grid">
+
+      <figure class="specimen">
+        <p class="spec-tag"><span><b>01-L</b> · light · static</span><span>430 × 760</span></p>
+        <div class="phone">
+          <div class="screen" data-t="lattice" data-id="g1" data-ground="light">
+            <div class="bg-wrap"><canvas class="bg" aria-hidden="true"></canvas></div>
+          </div>
+        </div>
+        <figcaption class="cap">
+          <h3>Dot lattice field, paper ground</h3>
+          <p class="cap-note"><b>Buys</b> a daylight screen: ink-2 on the panel is 8.3:1, so the
+            floor holds with no scrim. <b>Costs</b> the accent — acid lime is 1.1:1 on bone, so it
+            resolves to the shipped deep green, and the panel stops being a preference: over a
+            bare dot ink-2 is 5.9:1.</p>
+          <dl class="cap-spec">
+            <div><dt>Worst text</dt><dd><strong data-out="g1.text">—</strong> at the <span data-out="g1.where">—</span>; body copy <strong data-out="g1.body">—</strong>.</dd></div>
+            <div><dt>Art peak</dt><dd><strong data-out="g1.art">—</strong> against <code>--field</code>, <span data-out="g1.px">—</span> exposed samples. Dark dots on paper read as a printed screen.</dd></div>
+            <div><dt>Motion</dt><dd>Nothing moves; nothing to reduce.</dd></div>
+            <div><dt>Cost</dt><dd>Canvas. <strong data-out="g1.dots">—</strong> dots in <span data-out="g1.groups">—</span> fill calls. Identical to 01 — the ground is tokens, not code.</dd></div>
+          </dl>
+        </figcaption>
+      </figure>
+
+      <figure class="specimen">
+        <p class="spec-tag"><span><b>06-L</b> · light · static</span><span>430 × 760</span></p>
+        <div class="phone">
+          <div class="screen" data-t="rings" data-id="g6" data-ground="light">
+            <div class="bg-wrap"><canvas class="bg" aria-hidden="true"></canvas></div>
+          </div>
+        </div>
+        <figcaption class="cap">
+          <h3>Contour rings, paper ground</h3>
+          <p class="cap-note"><b>Buys</b> the same inward pull as graphite on stock — rings are a
+            print device before they are a screen one. <b>Costs</b> the warm signal: #E4694A is
+            2.7:1 on bone, so the listening dot steps down to the app's own warn colour.</p>
+          <dl class="cap-spec">
+            <div><dt>Worst text</dt><dd><strong data-out="g6.text">—</strong> at the <span data-out="g6.where">—</span>; body copy <strong data-out="g6.body">—</strong>.</dd></div>
+            <div><dt>Art peak</dt><dd><strong data-out="g6.art">—</strong> against <code>--field</code>, <span data-out="g6.px">—</span> exposed samples.</dd></div>
+            <div><dt>Motion</dt><dd>Nothing moves; nothing to reduce.</dd></div>
+            <div><dt>Cost</dt><dd>Canvas. <strong data-out="g6.dots">—</strong> dots in <span data-out="g6.groups">—</span> fill calls. Class: cheap.</dd></div>
+          </dl>
+        </figcaption>
+      </figure>
+
+    </div>
+  </section>
+
+  <section class="sec" aria-labelledby="pick-h">
+    <div class="sec-head">
+      <span class="sec-no">D</span>
+      <h2 id="pick-h">What to ship</h2>
+      <p class="sec-note">One background per screen, not per mood. The empty state is the only
+        place the field is allowed to be a poster.</p>
+    </div>
+
+    <div class="picks">
+
+      <article class="pick" data-verdict="yes">
+        <p class="pick-lab">Default screen · live transcript</p>
+        <h3>01 · Dot lattice field</h3>
+        <p>The transcript screen has one job: the caller's words are the loudest thing on it.
+          01 is the only treatment that adds nothing to read, and its denser band does the
+          wayfinding the dock needs. Body copy measures <strong data-out="f1.body">—</strong> on
+          the bubble hole; the texture never gets above <strong data-out="f1.art">—</strong>.</p>
+        <p>Runner-up is 03, and only if the void under the bubbles is the thing the demo needs
+          to sell — re-anchor its dense end on the composer first, because as drawn it hides
+          under the masthead.</p>
+      </article>
+
+      <article class="pick" data-verdict="yes">
+        <p class="pick-lab">Empty state · before the first line</p>
+        <h3>06 · Contour rings</h3>
+        <p>The empty screen is the one moment the field may be a poster. Rings centred on
+          Sakhi's eye ring answer "what is this screen" before the copy does, and the mascot
+          stays the only thing with a state.</p>
+        <p>With the scrim behind the text block the floor is
+          <strong data-out="e1.text">—</strong>; without it, <strong data-out="e1.bare">—</strong>.
+          Buy the scrim — it costs one radial fill and it is what turns a good number into a
+          safe one.</p>
+      </article>
+
+      <article class="pick" data-verdict="no">
+        <p class="pick-lab">Reject for the product · 02 and 04</p>
+        <h3>02 · Peacock watermark</h3>
+        <p>A second peacock on the screen where the peacock is the state indicator. It cannot be
+          quiet enough to stop explaining and loud enough to be worth its pixels, and the state
+          read is the one thing this screen cannot afford to muddy.</p>
+        <p>The same objection rejects 04 as product motion: nothing should move when nothing is
+          happening. Keep 02 for the share image and 04 for the video's title card — both are
+          good pictures and neither is a good screen.</p>
+        <p>05 is not rejected. It is the summary screen's background, the one moment the page is
+          a document and a hole in the lattice is the right register.</p>
+      </article>
+
+    </div>
+
+    <p class="pick-sum">Read the six measured rows straight down: they report the same number.
+      That is the finding, not a coincidence. An opaque hole means the field cannot reach a word,
+      so all six clear the floor and the argument between them is character, not contrast. The
+      one frame where the ground does touch type is E, below, and it is the only frame that had
+      to buy a scrim.</p>
+
+    <figure class="specimen pick-wide">
+      <p class="spec-tag"><span><b>E</b> · the pick, at the empty state</span><span>scrim on</span></p>
+      <div class="phone">
+        <div class="screen" data-t="rings" data-id="e1" data-empty="1" data-rings="empty">
+          <div class="bg-wrap"><canvas class="bg" aria-hidden="true"></canvas></div>
+        </div>
+      </div>
+      <figcaption class="cap">
+        <h3>Contour rings as the empty state</h3>
+        <p class="cap-note">The same ring code, re-centred on Sakhi, with a 50% field scrim under
+          the text block. This is the only frame in the sheet where a word sits on raw art, so it
+          is the frame that has to pay for itself.</p>
+        <dl class="cap-spec">
+          <div><dt>Worst text</dt><dd><strong data-out="e1.text">—</strong> at the <span data-out="e1.where">—</span>; body copy <strong data-out="e1.body">—</strong>.</dd></div>
+          <div><dt>Art peak</dt><dd><strong data-out="e1.art">—</strong> against <code>--field</code> behind the text, <span data-out="e1.px">—</span> exposed samples.</dd></div>
+          <div><dt>Motion</dt><dd>Nothing moves. The scrim is painted once, before the numbers are read; nothing to reduce.</dd></div>
+          <div><dt>Cost</dt><dd>Canvas. <strong data-out="e1.dots">—</strong> dots in <span data-out="e1.groups">—</span> fill calls plus one radial gradient. Class: cheap.</dd></div>
+        </dl>
+      </figcaption>
+    </figure>
+  </section>
+
+  <footer class="method">
+    <section aria-labelledby="m1">
+      <h2 id="m1">How the numbers were taken</h2>
+      <ol>
+        <li>Every ratio is computed at load. The canvas is read back with
+          <code>getImageData</code>, each measured text node's ancestor backgrounds are
+          alpha-composited over the sampled pixels, and the minimum WCAG ratio is reported.</li>
+        <li><b>Worst text</b> is the lowest ratio anywhere in the chrome — usually the 11 px meta
+          line, not the 23 px bubble. <b>Body copy</b> is the two bubble texts alone, which is the
+          number that actually matters to a reader.</li>
+        <li><b>Art peak</b> is the highest-contrast pixel outside any panel rectangle, measured
+          against <code>--field</code>. It says how loud the texture is, not how safe the text
+          is.</li>
+        <li>3 px stride for the background scan, 2 px stride inside each text box. Panels are
+          measured from their live DOM rectangles, so a frame that is scaled down is measured at
+          the scale it renders.</li>
+      </ol>
+    </section>
+
+    <section aria-labelledby="m2">
+      <h2 id="m2">What was not verified</h2>
+      <ul>
+        <li>No screenshot in this environment. The peacock was checked numerically — winding
+          numbers, bounding box, crop maths, an ASCII raster — but no one has looked at the
+          rendered page in a browser.</li>
+        <li>Daylight legibility is asserted from the 7:1 floor, not from a lux meter or a phone
+          held up to the sun.</li>
+        <li>Google Fonts is the only network dependency. Offline, the page falls back to system
+          fonts and the Devanagari metrics change; the layout is in px so it holds, but the line
+          breaks in the bubbles will differ.</li>
+        <li>Cost figures are dot counts and fill calls from the paint pass, not a profile on a
+          low-end Android. The one motion is an 11 px CSS transform and was not measured on device.</li>
+      </ul>
+    </section>
+  </footer>
+
+  <p class="colophon">
+    <span><b>Chrome strings</b> the pill reads Listening per the brief; the shipped Hindi labels
+      (सुन रहे हैं, बोलिए) slot in without a layout change.</span>
+    <span><b>Peacock</b> paths verbatim from peacock.ts. The arcs stay in the 28 px masthead
+      mark and are omitted from all six fields: they are the mascot's state vocabulary, not a
+      texture.</span>
+  </p>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* The mascot's traced paths, verbatim from pashyanti/web/src/components/peacock.ts.
+     The arcs are kept for the 28 px masthead mark and deliberately excluded from every
+     background: pulsing arcs mean "listening", so a still copy of them would lie. */
+  var P = {"shoulder": "M44.49 78.91L45.00 78.91L45.75 78.98L46.73 79.11L47.96 79.30L49.42 79.55L50.76 79.87L51.98 80.26L53.08 80.70L54.07 81.21L54.96 81.73L55.74 82.24L56.43 82.75L57.01 83.26L57.46 83.69L57.77 84.03L57.94 84.30L57.98 84.48L58.04 84.65L58.13 84.79L58.25 84.92L58.40 85.03L58.55 85.19L58.72 85.41L58.89 85.69L59.07 86.01L59.28 86.47L59.52 87.06L59.78 87.77L60.08 88.61L60.30 89.44L60.47 90.26L60.57 91.07L60.60 91.87L60.60 92.64L60.54 93.37L60.44 94.07L60.30 94.72L60.17 95.22L60.06 95.57L59.97 95.76L59.89 95.80L57.68 95.83L53.34 95.85L46.86 95.85L38.24 95.85L31.44 95.75L26.43 95.55L23.24 95.25L21.85 94.85L20.77 94.50L19.98 94.21L19.50 93.97L19.32 93.79L19.09 93.61L18.81 93.43L18.49 93.24L18.13 93.06L17.76 92.82L17.40 92.53L17.03 92.19L16.67 91.78L16.44 91.42L16.35 91.09L16.40 90.80L16.58 90.54L17.01 90.13L17.68 89.57L18.60 88.84L19.77 87.97L21.09 87.06L22.55 86.13L24.15 85.18L25.90 84.19L27.61 83.30L29.27 82.52L30.89 81.83L32.46 81.25L33.93 80.75L35.30 80.33L36.57 79.99L37.73 79.73L38.87 79.52L39.99 79.33L41.07 79.19L42.13 79.08L43.05 79.00L43.84 78.94Z", "head": "M60.64 23.04L60.82 23.07L61.01 23.18L61.19 23.34L61.37 23.57L61.55 23.86L61.70 24.51L61.81 25.51L61.88 26.87L61.92 28.59L61.97 29.89L62.02 30.79L62.08 31.27L62.16 31.34L62.22 31.47L62.28 31.66L62.32 31.89L62.36 32.18L62.42 32.41L62.51 32.58L62.63 32.68L62.78 32.71L62.92 32.70L63.07 32.65L63.22 32.55L63.36 32.40L63.48 32.19L63.57 31.92L63.64 31.58L63.67 31.18L63.74 30.78L63.83 30.38L63.95 29.98L64.09 29.57L64.20 29.09L64.27 28.52L64.31 27.88L64.31 27.15L64.36 26.50L64.45 25.93L64.59 25.45L64.77 25.05L65.00 24.74L65.30 24.52L65.64 24.39L66.05 24.35L66.38 24.42L66.66 24.58L66.87 24.85L67.01 25.21L66.98 25.91L66.78 26.95L66.41 28.33L65.86 30.05L65.47 31.35L65.23 32.25L65.15 32.73L65.22 32.80L65.38 32.87L65.62 32.92L65.93 32.97L66.34 33.00L66.78 33.08L67.25 33.19L67.76 33.33L68.31 33.52L68.87 33.75L69.43 34.02L70.01 34.34L70.59 34.70L71.17 35.11L71.73 35.57L72.29 36.07L72.84 36.62L73.31 37.14L73.71 37.63L74.04 38.10L74.30 38.54L74.50 38.95L74.64 39.33L74.73 39.69L74.77 40.01L74.77 40.28L74.73 40.48L74.66 40.62L74.55 40.69L74.46 40.82L74.39 41.00L74.33 41.24L74.30 41.53L74.23 41.76L74.14 41.92L74.02 42.02L73.88 42.06L73.71 42.04L73.53 41.97L73.33 41.84L73.11 41.66L72.91 41.52L72.73 41.43L72.56 41.38L72.42 41.38L72.24 41.26L72.04 41.00L71.81 40.62L71.56 40.11L71.27 39.62L70.94 39.17L70.57 38.74L70.17 38.33L69.54 38.03L68.68 37.81L67.60 37.68L66.28 37.64L65.20 37.59L64.37 37.51L63.76 37.42L63.40 37.31L63.11 37.19L62.89 37.07L62.74 36.93L62.67 36.78L62.58 36.68L62.47 36.63L62.34 36.62L62.19 36.66L62.06 36.73L61.93 36.84L61.81 36.99L61.70 37.17L61.60 37.30L61.51 37.40L61.43 37.44L61.35 37.44L61.31 37.48L61.29 37.55L61.30 37.66L61.33 37.81L61.44 37.98L61.60 38.18L61.83 38.41L62.12 38.67L62.44 38.89L62.79 39.09L63.16 39.27L63.56 39.41L63.92 39.68L64.23 40.06L64.49 40.56L64.71 41.18L64.93 41.69L65.15 42.10L65.37 42.39L65.59 42.57L65.88 42.73L66.25 42.85L66.68 42.95L67.20 43.03L67.70 43.03L68.19 42.95L68.67 42.81L69.15 42.59L69.63 42.52L70.12 42.62L70.63 42.86L71.14 43.27L71.52 43.60L71.78 43.88L71.90 44.09L71.90 44.23L71.86 44.38L71.77 44.52L71.63 44.67L71.45 44.82L71.14 44.97L70.70 45.14L70.13 45.31L69.44 45.49L68.72 45.60L67.97 45.64L67.20 45.60L66.39 45.49L65.64 45.34L64.95 45.14L64.31 44.89L63.73 44.60L63.18 44.22L62.67 43.77L62.19 43.23L61.76 42.61L61.42 42.07L61.18 41.61L61.04 41.24L61.01 40.95L60.95 40.69L60.88 40.47L60.79 40.29L60.68 40.14L60.55 40.04L60.40 39.99L60.24 39.98L60.06 40.01L59.87 40.10L59.69 40.22L59.51 40.40L59.33 40.62L59.23 40.93L59.21 41.33L59.27 41.82L59.42 42.41L59.61 42.95L59.85 43.44L60.13 43.88L60.46 44.29L60.82 44.69L61.23 45.09L61.67 45.49L62.14 45.89L62.70 46.26L63.36 46.59L64.11 46.88L64.95 47.13L65.93 47.29L67.04 47.34L68.29 47.30L69.68 47.15L70.76 47.09L71.55 47.11L72.03 47.21L72.21 47.39L72.35 47.55L72.44 47.70L72.49 47.83L72.49 47.94L72.44 48.06L72.35 48.18L72.21 48.32L72.03 48.47L71.62 48.68L70.98 48.95L70.12 49.29L69.02 49.69L68.05 50.08L67.21 50.47L66.50 50.84L65.92 51.20L65.42 51.62L65.00 52.10L64.66 52.63L64.40 53.21L64.22 53.82L64.11 54.46L64.07 55.13L64.11 55.82L64.29 56.63L64.62 57.54L65.10 58.56L65.72 59.69L66.27 60.62L66.74 61.33L67.14 61.83L67.47 62.12L67.79 62.46L68.10 62.84L68.40 63.27L68.69 63.74L68.99 64.17L69.30 64.56L69.62 64.90L69.95 65.19L70.20 65.43L70.36 65.63L70.44 65.79L70.44 65.90L70.62 66.16L70.96 66.58L71.48 67.16L72.18 67.89L72.72 68.48L73.10 68.94L73.33 69.26L73.40 69.44L73.50 69.61L73.63 69.78L73.79 69.93L73.97 70.08L74.10 70.22L74.20 70.34L74.24 70.46L74.24 70.57L74.38 70.82L74.65 71.20L75.06 71.72L75.61 72.38L76.22 73.26L76.90 74.38L77.64 75.72L78.44 77.29L79.13 78.79L79.72 80.21L80.19 81.56L80.56 82.84L80.86 84.08L81.10 85.28L81.27 86.45L81.38 87.59L81.42 88.77L81.41 90.01L81.32 91.31L81.18 92.66L81.04 93.74L80.91 94.54L80.80 95.07L80.68 95.33L80.56 95.53L80.41 95.70L80.25 95.82L80.07 95.89L78.94 95.94L76.88 95.98L73.88 96.00L69.93 96.00L66.90 95.97L64.79 95.92L63.58 95.84L63.29 95.73L63.10 95.50L63.01 95.15L63.01 94.69L63.13 94.10L63.21 93.53L63.26 92.96L63.29 92.40L63.29 91.86L63.28 91.32L63.26 90.79L63.23 90.27L63.20 89.76L63.13 89.25L63.04 88.73L62.92 88.22L62.78 87.71L62.62 87.21L62.46 86.72L62.28 86.23L62.10 85.76L61.94 85.38L61.79 85.11L61.67 84.94L61.55 84.87L61.41 84.69L61.23 84.42L61.01 84.04L60.75 83.57L60.51 83.19L60.30 82.89L60.09 82.69L59.91 82.58L59.75 82.45L59.60 82.28L59.47 82.09L59.36 81.87L59.20 81.62L58.98 81.35L58.71 81.05L58.38 80.72L58.10 80.47L57.89 80.28L57.72 80.17L57.61 80.14L57.52 80.05L57.45 79.93L57.39 79.75L57.36 79.53L57.38 79.28L57.48 78.99L57.63 78.66L57.85 78.29L58.01 77.81L58.12 77.21L58.18 76.49L58.18 75.65L58.16 74.91L58.12 74.27L58.07 73.73L58.00 73.29L57.91 72.91L57.82 72.58L57.72 72.31L57.61 72.09L57.52 71.84L57.45 71.57L57.39 71.27L57.36 70.94L57.27 70.61L57.15 70.28L56.97 69.95L56.75 69.62L56.58 69.30L56.45 68.99L56.37 68.69L56.33 68.40L56.09 67.68L55.63 66.53L54.97 64.95L54.09 62.94L53.33 61.10L52.69 59.42L52.17 57.90L51.77 56.55L51.45 55.39L51.21 54.43L51.06 53.65L50.99 53.07L50.95 52.21L50.95 51.08L50.99 49.67L51.06 47.99L51.14 46.69L51.23 45.76L51.33 45.20L51.44 45.02L51.55 44.73L51.66 44.35L51.77 43.87L51.88 43.28L52.04 42.71L52.24 42.14L52.48 41.59L52.77 41.04L53.00 40.57L53.17 40.19L53.27 39.89L53.30 39.67L53.48 39.34L53.79 38.90L54.23 38.35L54.82 37.70L55.29 37.13L55.66 36.66L55.91 36.27L56.06 35.98L56.06 35.63L55.91 35.23L55.62 34.78L55.18 34.27L54.65 33.75L54.01 33.22L53.27 32.68L52.43 32.13L51.79 31.69L51.35 31.36L51.11 31.14L51.08 31.03L50.98 30.90L50.81 30.73L50.58 30.54L50.29 30.32L50.06 30.09L49.90 29.86L49.80 29.61L49.76 29.35L49.77 29.12L49.83 28.90L49.93 28.70L50.07 28.52L50.27 28.39L50.53 28.31L50.84 28.30L51.20 28.33L51.81 28.72L52.65 29.47L53.72 30.58L55.04 32.04L56.11 33.13L56.93 33.86L57.50 34.23L57.83 34.23L58.10 34.19L58.30 34.12L58.43 34.01L58.51 33.86L58.49 33.65L58.38 33.38L58.18 33.04L57.89 32.64L57.66 32.29L57.49 32.00L57.39 31.76L57.36 31.58L57.30 31.43L57.23 31.30L57.14 31.20L57.03 31.13L56.76 30.79L56.34 30.18L55.77 29.32L55.04 28.19L54.48 27.28L54.10 26.61L53.89 26.16L53.85 25.94L53.85 25.70L53.89 25.45L53.96 25.17L54.07 24.88L54.23 24.65L54.45 24.49L54.73 24.39L55.06 24.35L55.37 24.41L55.66 24.55L55.93 24.79L56.19 25.12L56.51 25.71L56.89 26.57L57.34 27.69L57.85 29.08L58.33 30.27L58.79 31.25L59.22 32.04L59.62 32.62L59.97 33.00L60.26 33.16L60.50 33.12L60.68 32.86L60.82 32.63L60.91 32.43L60.95 32.26L60.95 32.11L60.94 31.92L60.92 31.68L60.90 31.40L60.86 31.07L60.75 30.57L60.57 29.89L60.31 29.04L59.99 28.02L59.72 27.09L59.52 26.25L59.38 25.50L59.31 24.85L59.28 24.32L59.30 23.92L59.36 23.64L59.47 23.50L59.60 23.37L59.75 23.26L59.91 23.17L60.09 23.09L60.28 23.05L60.46 23.03Z", "pupil": "M67.71 39.19L67.93 39.19L68.11 39.21L68.25 39.25L68.36 39.30L68.44 39.38L68.49 39.50L68.53 39.69L68.55 39.92L68.55 40.22L68.48 40.44L68.35 40.61L68.16 40.71L67.91 40.74L67.69 40.74L67.51 40.71L67.36 40.64L67.25 40.53L67.19 40.37L67.17 40.17L67.20 39.92L67.27 39.63L67.38 39.41L67.52 39.27Z", "beak": "M77.36 42.08L77.98 42.44L78.64 42.89L79.33 43.42L80.07 44.03L80.83 44.73L81.51 45.42L82.09 46.11L82.58 46.80L82.99 47.50L83.28 48.05L83.46 48.45L83.53 48.70L83.50 48.81L83.42 48.90L83.31 48.95L83.17 48.98L82.99 48.98L82.64 48.90L82.13 48.73L81.45 48.48L80.61 48.16L79.68 47.90L78.66 47.72L77.54 47.61L76.34 47.57L75.38 47.49L74.67 47.36L74.20 47.19L73.99 46.97L73.84 46.72L73.77 46.45L73.77 46.15L73.84 45.82L73.99 45.46L74.23 45.05L74.55 44.61L74.95 44.14L75.31 43.67L75.62 43.19L75.88 42.72L76.10 42.24L76.42 41.98L76.84 41.92ZM77.49 44.07L77.71 44.10L77.88 44.18L78.01 44.29L78.09 44.43L78.13 44.61L78.13 44.77L78.09 44.90L78.02 45.00L77.91 45.07L77.79 45.12L77.66 45.14L77.53 45.13L77.38 45.09L77.25 45.04L77.14 44.99L77.05 44.93L76.98 44.85L76.93 44.76L76.89 44.65L76.87 44.52L76.87 44.38L76.89 44.26L76.93 44.17L76.98 44.10L77.05 44.07L77.16 44.05L77.31 44.05Z", "arcs": ["M60.39 4.06L61.67 4.09L62.89 4.16L64.06 4.27L65.17 4.42L66.23 4.60L67.18 4.79L68.02 4.97L68.75 5.15L69.37 5.33L70.06 5.57L70.83 5.86L71.67 6.21L72.58 6.61L73.48 7.03L74.38 7.47L75.26 7.93L76.14 8.40L76.99 8.92L77.81 9.48L78.60 10.10L79.37 10.75L79.99 11.27L80.47 11.63L80.80 11.85L80.98 11.92L81.26 12.12L81.64 12.45L82.13 12.91L82.71 13.49L83.17 13.98L83.50 14.36L83.70 14.64L83.77 14.82L83.81 15.02L83.81 15.22L83.77 15.43L83.70 15.65L83.57 15.83L83.39 15.97L83.15 16.08L82.86 16.16L82.57 16.18L82.30 16.14L82.04 16.05L81.78 15.90L81.50 15.69L81.19 15.42L80.85 15.08L80.48 14.68L80.16 14.36L79.89 14.12L79.66 13.97L79.48 13.89L79.18 13.69L78.76 13.36L78.22 12.91L77.56 12.32L77.02 11.87L76.58 11.54L76.25 11.34L76.03 11.27L75.72 11.11L75.32 10.87L74.83 10.55L74.24 10.15L73.73 9.83L73.29 9.59L72.93 9.44L72.63 9.37L72.40 9.28L72.21 9.19L72.09 9.09L72.01 8.98L71.87 8.88L71.65 8.79L71.36 8.71L70.99 8.64L70.66 8.54L70.37 8.44L70.12 8.31L69.90 8.16L69.43 7.98L68.72 7.76L67.76 7.50L66.56 7.21L65.24 6.98L63.82 6.79L62.28 6.67L60.64 6.59L59.38 6.56L58.51 6.56L58.01 6.59L57.90 6.67L57.51 6.76L56.84 6.87L55.88 6.99L54.64 7.14L53.39 7.37L52.13 7.68L50.86 8.07L49.58 8.54L48.43 9.03L47.41 9.52L46.51 10.02L45.75 10.53L45.10 10.95L44.57 11.26L44.16 11.47L43.87 11.58L43.52 11.78L43.12 12.10L42.66 12.51L42.15 13.02L41.73 13.41L41.40 13.68L41.17 13.84L41.02 13.87L40.80 14.02L40.51 14.28L40.14 14.64L39.70 15.12L39.32 15.50L38.99 15.79L38.72 15.99L38.50 16.10L38.27 16.18L38.03 16.24L37.79 16.27L37.53 16.27L37.30 16.21L37.10 16.10L36.93 15.94L36.78 15.72L36.70 15.46L36.68 15.17L36.73 14.84L36.84 14.48L37.22 13.95L37.88 13.26L38.81 12.40L40.01 11.37L41.09 10.50L42.04 9.77L42.86 9.18L43.56 8.75L44.28 8.32L45.03 7.90L45.80 7.49L46.60 7.08L47.41 6.71L48.21 6.36L49.01 6.04L49.82 5.75L50.71 5.47L51.70 5.20L52.77 4.93L53.94 4.67L54.94 4.48L55.76 4.36L56.41 4.29L56.88 4.29L57.29 4.27L57.64 4.24L57.92 4.18L58.14 4.11L58.62 4.06L59.37 4.05Z", "M60.17 10.33L61.59 10.37L62.93 10.46L64.19 10.61L65.37 10.81L66.47 11.07L67.41 11.32L68.19 11.58L68.82 11.83L69.29 12.09L69.71 12.29L70.05 12.43L70.33 12.53L70.55 12.56L70.76 12.62L70.96 12.72L71.16 12.83L71.34 12.98L71.54 13.11L71.76 13.22L72.00 13.31L72.25 13.38L72.73 13.64L73.42 14.08L74.33 14.70L75.47 15.50L76.42 16.21L77.21 16.83L77.82 17.36L78.26 17.80L78.61 18.22L78.89 18.62L79.08 19.00L79.19 19.37L79.24 19.69L79.24 19.96L79.19 20.19L79.08 20.37L78.92 20.51L78.72 20.60L78.48 20.65L78.18 20.65L77.91 20.61L77.66 20.54L77.42 20.43L77.20 20.28L77.01 20.13L76.84 19.96L76.71 19.79L76.60 19.61L76.40 19.40L76.13 19.16L75.77 18.90L75.34 18.60L74.97 18.33L74.68 18.07L74.46 17.84L74.31 17.62L74.16 17.44L73.99 17.32L73.82 17.23L73.64 17.20L73.46 17.13L73.27 17.01L73.09 16.87L72.91 16.69L72.65 16.49L72.33 16.29L71.92 16.08L71.45 15.87L71.06 15.67L70.75 15.48L70.52 15.32L70.37 15.17L70.20 15.05L70.00 14.96L69.77 14.90L69.51 14.86L69.23 14.78L68.92 14.65L68.58 14.48L68.22 14.26L67.82 14.06L67.41 13.87L66.96 13.71L66.48 13.57L65.93 13.43L65.29 13.30L64.57 13.18L63.76 13.07L62.88 12.99L61.91 12.94L60.86 12.91L59.73 12.91L58.69 12.94L57.74 12.99L56.88 13.07L56.12 13.18L55.27 13.35L54.34 13.59L53.32 13.89L52.23 14.26L51.22 14.64L50.31 15.04L49.49 15.46L48.76 15.90L48.19 16.26L47.79 16.53L47.55 16.72L47.48 16.83L47.37 16.93L47.23 17.02L47.04 17.11L46.82 17.18L46.47 17.42L45.98 17.82L45.34 18.38L44.58 19.11L43.97 19.68L43.51 20.08L43.21 20.32L43.06 20.39L42.88 20.45L42.66 20.48L42.41 20.50L42.11 20.50L41.87 20.47L41.67 20.42L41.51 20.34L41.40 20.23L41.32 20.08L41.27 19.90L41.24 19.68L41.24 19.42L41.27 19.17L41.35 18.91L41.46 18.66L41.60 18.40L41.98 17.99L42.58 17.43L43.41 16.70L44.47 15.83L45.55 15.02L46.67 14.27L47.81 13.58L48.98 12.96L49.98 12.47L50.82 12.10L51.50 11.87L52.01 11.76L52.44 11.65L52.78 11.54L53.05 11.43L53.23 11.32L53.65 11.18L54.31 11.02L55.20 10.83L56.33 10.61L57.54 10.45L58.82 10.36Z", "M59.82 16.56L60.92 16.56L61.94 16.60L62.89 16.70L63.76 16.83L64.57 17.01L65.22 17.19L65.71 17.35L66.05 17.51L66.23 17.65L66.53 17.82L66.95 18.00L67.49 18.20L68.14 18.42L68.84 18.72L69.57 19.11L70.33 19.57L71.14 20.12L71.90 20.69L72.61 21.30L73.27 21.93L73.89 22.58L74.37 23.12L74.70 23.54L74.88 23.84L74.92 24.02L74.90 24.20L74.83 24.36L74.70 24.52L74.52 24.66L74.31 24.78L74.10 24.87L73.86 24.94L73.60 24.97L73.32 24.91L73.01 24.75L72.67 24.48L72.31 24.12L71.83 23.70L71.25 23.22L70.55 22.69L69.75 22.11L69.07 21.64L68.53 21.30L68.11 21.07L67.82 20.96L67.58 20.85L67.40 20.74L67.27 20.63L67.20 20.52L66.96 20.38L66.56 20.22L65.99 20.03L65.26 19.81L64.47 19.61L63.64 19.42L62.74 19.26L61.79 19.11L60.93 19.01L60.17 18.96L59.49 18.95L58.91 18.99L58.19 19.10L57.33 19.28L56.33 19.53L55.20 19.86L54.20 20.20L53.32 20.55L52.57 20.90L51.95 21.27L51.28 21.73L50.55 22.27L49.76 22.91L48.92 23.64L48.20 24.20L47.60 24.58L47.12 24.79L46.75 24.83L46.45 24.77L46.21 24.63L46.04 24.39L45.93 24.06L45.89 23.73L45.93 23.40L46.04 23.07L46.22 22.75L46.40 22.48L46.59 22.28L46.77 22.14L46.95 22.07L47.14 21.95L47.34 21.79L47.55 21.58L47.77 21.32L48.08 21.02L48.48 20.68L48.98 20.28L49.56 19.84L50.25 19.41L51.03 18.97L51.92 18.53L52.90 18.09L53.88 17.71L54.85 17.38L55.80 17.11L56.75 16.89L57.74 16.72L58.76 16.61Z"]};
+
+  var TAU = Math.PI * 2;
+  var DW = 430, DH = 760;          /* design size of the phone */
+  var PAD = 12;                    /* canvas overscan, so 04 can drift without an edge */
+  var CW = DW + PAD * 2, CH = DH + PAD * 2;
+  var X0 = PAD, Y0 = PAD;          /* design origin inside the canvas */
+
+  /* ── colour ─────────────────────────────────────────────── */
+
+  function hexToRGB(hex) {
+    var h = String(hex).trim().replace("#", "");
+    if (h.length === 3) h = h.charAt(0) + h.charAt(0) + h.charAt(1) + h.charAt(1) + h.charAt(2) + h.charAt(2);
+    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+  }
+
+  function css(hex, alpha) {
+    var c = hexToRGB(hex);
+    if (alpha >= 1) return "rgb(" + c[0] + "," + c[1] + "," + c[2] + ")";
+    return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + alpha + ")";
+  }
+
+  function parseColor(value) {
+    if (!value) return [0, 0, 0, 0];
+    var s = String(value).trim();
+    if (s.charAt(0) === "#") {
+      var c = hexToRGB(s);
+      return [c[0], c[1], c[2], 1];
+    }
+    var m = s.match(/rgba?\(([^)]+)\)/);
+    if (!m) return [0, 0, 0, 0];
+    var parts = m[1].split(/[\s,\/]+/).filter(Boolean);
+    return [parseFloat(parts[0]) || 0, parseFloat(parts[1]) || 0, parseFloat(parts[2]) || 0,
+            parts.length > 3 ? parseFloat(parts[3]) : 1];
+  }
+
+  function channel(v) {
+    v = v / 255;
+    return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  }
+
+  function luminance(c) {
+    return 0.2126 * channel(c[0]) + 0.7152 * channel(c[1]) + 0.0722 * channel(c[2]);
+  }
+
+  function contrast(a, b) {
+    var la = luminance(a), lb = luminance(b);
+    var hi = Math.max(la, lb), lo = Math.min(la, lb);
+    return (hi + 0.05) / (lo + 0.05);
+  }
+
+  function ratioText(v) {
+    return (Math.round(v * 10) / 10).toFixed(1) + ":1";
+  }
+
+  function tokens(el) {
+    var cs = getComputedStyle(el);
+    var read = function (name) { return cs.getPropertyValue(name).trim(); };
+    return {
+      field: read("--field"), panel: read("--panel"), ink: read("--ink"),
+      ink2: read("--ink-2"), line: read("--line"), signal: read("--signal"),
+      accent: read("--accent"), accentInk: read("--accent-ink"),
+      hot: read("--hot"), cool: read("--cool")
+    };
+  }
+
+  /* ── dot batch: one path per (radius, colour) pair ───────── */
+
+  function batch() {
+    var groups = Object.create(null), order = [], total = 0, suppressed = 0;
+
+    return {
+      add: function (x, y, r, color) {
+        var key = color + "@" + r;
+        var g = groups[key];
+        if (!g) { g = groups[key] = { r: r, color: color, pts: [] }; order.push(g); }
+        g.pts.push(x, y);
+        total += 1;
+      },
+      skip: function () { suppressed += 1; },
+      flush: function (ctx) {
+        for (var i = 0; i < order.length; i++) {
+          var g = order[i], pts = g.pts, r = g.r;
+          ctx.fillStyle = g.color;
+          ctx.beginPath();
+          for (var j = 0; j < pts.length; j += 2) {
+            ctx.moveTo(pts[j] + r, pts[j + 1]);
+            ctx.arc(pts[j], pts[j + 1], r, 0, TAU);
+          }
+          ctx.fill();
+        }
+        return { dots: total, groups: order.length, suppressed: suppressed };
+      }
+    };
+  }
+
+  /* ── geometry: DOM px to canvas logical px ──────────────── */
+
+  function geometry(frame) {
+    var wrap = frame.el.querySelector(".bg-wrap").getBoundingClientRect();
+    return {
+      left: wrap.left - PAD,
+      top: wrap.top - PAD,
+      sx: (wrap.width + PAD * 2) / CW,
+      sy: (wrap.height + PAD * 2) / CH
+    };
+  }
+
+  function toLogical(g, clientX, clientY) {
+    return { x: (clientX - g.left) / g.sx, y: (clientY - g.top) / g.sy };
+  }
+
+  function knockouts(frame, g) {
+    var out = [];
+    var els = frame.el.querySelectorAll(".panel");
+    for (var i = 0; i < els.length; i++) {
+      var r = els[i].getBoundingClientRect();
+      if (!r.width || !r.height) continue;
+      var margin = parseFloat(els[i].getAttribute("data-knock")) || 6;
+      var p = toLogical(g, r.left, r.top);
+      var q = toLogical(g, r.right, r.bottom);
+      out.push({ x0: p.x - margin, y0: p.y - margin, x1: q.x + margin, y1: q.y + margin });
+    }
+    return out;
+  }
+
+  function blocked(list, x, y, extra) {
+    var pad = extra || 0;
+    for (var i = 0; i < list.length; i++) {
+      var k = list[i];
+      if (x > k.x0 - pad && x < k.x1 + pad && y > k.y0 - pad && y < k.y1 + pad) return true;
+    }
+    return false;
+  }
+
+  /* ── the peacock mask: paths rasterised once, read as alpha ─ */
+
+  var MASK = null;
+
+  function peacockMask() {
+    if (MASK) return MASK;
+    var RES = 8;                                  /* device px per viewBox unit */
+    var canvas = document.createElement("canvas");
+    canvas.width = 100 * RES;
+    canvas.height = 100 * RES;
+    var ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.scale(RES, RES);
+    ctx.fillStyle = "#fff";
+    var shapes = [P.shoulder, P.head, P.pupil, P.beak];
+    for (var i = 0; i < shapes.length; i++) {
+      ctx.fill(new Path2D(shapes[i]), "nonzero");
+    }
+    var img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    MASK = { data: img.data, w: img.width, h: img.height, res: RES };
+    return MASK;
+  }
+
+  function maskAt(mask, vx, vy) {
+    var px = Math.round(vx * mask.res);
+    var py = Math.round(vy * mask.res);
+    if (px < 0 || py < 0 || px >= mask.w || py >= mask.h) return 0;
+    return mask.data[(py * mask.w + px) * 4 + 3] / 255;
+  }
+
+  /* ── treatments ─────────────────────────────────────────── */
+
+  /* 01. Uniform lattice, then a denser band that anchors the dock. */
+  function lattice(frame, T, ctx, K) {
+    var b = batch();
+    var PITCH = 8, R = 1.5, ALPHA = 0.12;
+    var BAND = Y0 + 548;                          /* where the pitch changes */
+    var y, x;
+
+    for (y = 4; y < BAND; y += PITCH) {
+      for (x = 4; x < CW; x += PITCH) {
+        if (blocked(K, x, y)) { b.skip(); continue; }
+        b.add(x, y, R, css(T.ink, ALPHA));
+      }
+    }
+
+    for (y = BAND; y < CH; y += 6) {
+      var t = Math.min(1, (y - BAND) / 120);
+      var r = Math.round((1.5 + 0.65 * t) * 10) / 10;
+      var a = Math.round((ALPHA + 0.02 * t) * 100) / 100;
+      for (x = 4; x < CW; x += 6) {
+        if (blocked(K, x, y)) { b.skip(); continue; }
+        b.add(x, y, r, css(T.ink, a));
+      }
+    }
+
+    return b.flush(ctx);
+  }
+
+  /* 02. The head at 10x, cropped by the right edge, rasterised to dots. */
+  function watermark(frame, T, ctx, K) {
+    var b = batch();
+    var m = peacockMask();
+    var S = 7;                                    /* design px per viewBox unit */
+    var EYE_X = X0 + 350, EYE_Y = Y0 + 395;       /* where viewBox (68,40) lands */
+
+    for (var y = 4; y < CH; y += 8) {
+      for (var x = 4; x < CW; x += 8) {
+        if (blocked(K, x, y)) { b.skip(); continue; }
+        var vx = 68 + (x - EYE_X) / S;
+        var vy = 40 + (y - EYE_Y) / S;
+        var cover = maskAt(m, vx, vy);
+        if (cover < 0.2) continue;
+        var r = Math.round((0.9 + 1.6 * cover) * 10) / 10;
+        var a = Math.round(0.14 * Math.min(1, cover * 1.2) * 100) / 100;
+        b.add(x, y, r, css(T.ink, a));
+      }
+    }
+
+    return b.flush(ctx);
+  }
+
+  /* 03. Halftone vignette: radius falls with a diagonal, ordered-dithered edge. */
+  var BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+
+  function wash(frame, T, ctx, K) {
+    var b = batch();
+    var top = Y0 + 44, bottom = Y0 + 626;
+
+    for (var y = 4; y < CH; y += 8) {
+      for (var x = 4; x < CW; x += 8) {
+        if (blocked(K, x, y)) { b.skip(); continue; }
+        var slope = 0.1 * (x - X0 - 215);          /* leans the band off the axis */
+        var cover = (bottom - (y + slope)) / (bottom - top);
+        if (cover <= 0) continue;
+        cover = Math.min(1, Math.pow(cover, 1.35));
+        var dither = BAYER[(y >> 3 & 3) * 4 + (x >> 3 & 3)] / 16;
+        cover *= 0.86 + 0.28 * dither;
+        var r = Math.round(3.3 * Math.sqrt(cover) * 10) / 10;
+        if (r < 0.45) continue;
+        b.add(x, y, r, css(T.ink, 0.14));
+      }
+    }
+
+    return b.flush(ctx);
+  }
+
+  /* 04. Sparse field, five signal marks, one drift. */
+  function mulberry32(seed) {
+    return function () {
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  function constellation(frame, T, ctx, K) {
+    var b = batch();
+    var rnd = mulberry32(20261114);
+    var pts = [], guard = 0;
+
+    while (pts.length < 260 && guard < 90000) {
+      guard += 1;
+      var px = 10 + rnd() * (CW - 20);
+      var py = 10 + rnd() * (CH - 20);
+      if (blocked(K, px, py, 4)) { b.skip(); continue; }
+      var near = false;
+      for (var i = 0; i < pts.length; i += 1) {
+        var dx = pts[i].x - px, dy = pts[i].y - py;
+        if (dx * dx + dy * dy < 16 * 16) { near = true; break; }
+      }
+      if (near) continue;
+      pts.push({ x: px, y: py, r: Math.round((0.8 + rnd() * 1.5) * 10) / 10,
+                 a: Math.round((0.1 + rnd() * 0.035) * 100) / 100 });
+    }
+
+    var basePeak = 1;
+    for (var j = 0; j < pts.length; j++) {
+      b.add(pts[j].x, pts[j].y, pts[j].r, css(T.ink, pts[j].a));
+      var mixed = hexToRGB(T.ink).map(function (v, k) {
+        return v * pts[j].a + hexToRGB(T.field)[k] * (1 - pts[j].a);
+      });
+      var local = contrast(mixed, hexToRGB(T.field));
+      if (local > basePeak) basePeak = local;
+    }
+    frame.basePeak = basePeak;
+
+    /* Signals sit in the band between the bubbles and the dock: they are meant to
+       be seen, so they are the one thing above the texture ceiling. */
+    var signals = [
+      { fx: 0.24, fy: 0.52, a: 0.42, hot: false },
+      { fx: 0.72, fy: 0.60, a: 0.42, hot: false },
+      { fx: 0.41, fy: 0.71, a: 0.42, hot: false },
+      { fx: 0.16, fy: 0.79, a: 0.42, hot: false },
+      { fx: 0.58, fy: 0.66, a: 0.6, hot: true }
+    ];
+
+    for (var k = 0; k < signals.length; k++) {
+      var sx = X0 + signals[k].fx * DW, sy = Y0 + signals[k].fy * DH;
+      if (blocked(K, sx, sy, 10)) continue;
+      b.add(sx, sy, signals[k].hot ? 2.4 : 2.1,
+            css(signals[k].hot ? T.hot : T.accent, signals[k].a));
+    }
+
+    return b.flush(ctx);
+  }
+
+  /* 05. Lattice everywhere except the silhouette: the bird is a hole. */
+  function cutout(frame, T, ctx, K) {
+    var b = batch();
+    var m = peacockMask();
+    var S = 4.4;                                  /* big enough to read, small
+                                                     enough to leave a field */
+    var CX = X0 + 215, CY = Y0 + 440;             /* centre of the bird's bbox */
+    var ORIGIN_X = CX - S * 49.95;
+    var ORIGIN_Y = CY - S * 59.5;
+
+    for (var y = 4; y < CH; y += 7) {
+      for (var x = 4; x < CW; x += 7) {
+        if (blocked(K, x, y)) { b.skip(); continue; }
+        var vx = (x - ORIGIN_X) / S;
+        var vy = (y - ORIGIN_Y) / S;
+        if (maskAt(m, vx, vy) > 0.5) { b.skip(); continue; }
+        b.add(x, y, 1.45, css(T.ink, 0.13));
+      }
+    }
+
+    var out = b.flush(ctx);
+
+    /* The rim is the whole treatment: without it the hole has no edge. */
+    ctx.save();
+    ctx.translate(ORIGIN_X, ORIGIN_Y);
+    ctx.scale(S, S);
+    ctx.lineWidth = 1.4 / S;
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = css(T.line, 0.95);
+    ctx.stroke(new Path2D(P.shoulder));
+    ctx.stroke(new Path2D(P.head));
+    ctx.stroke(new Path2D(P.pupil));
+    ctx.stroke(new Path2D(P.beak));
+    ctx.restore();
+
+    return out;
+  }
+
+  /* 06. Concentric dotted rings, the feather eye behind the empty state. */
+  function rings(frame, T, ctx, K) {
+    var b = batch();
+    var empty = frame.el.getAttribute("data-rings") === "empty";
+    var CX = X0 + 215;
+    var CY = Y0 + (empty ? 253 : 470);
+    var COUNT = 9, STEP = 46;
+
+    for (var k = 1; k <= COUNT; k += 1) {
+      var R = k * STEP;
+      var n = Math.max(12, Math.round(TAU * R / 9));
+      var r = Math.round((1.1 + 1.4 * Math.max(0, 1 - Math.abs(k - 3) / 5)) * 10) / 10;
+      var alpha = k === 3 ? 0.15 : 0.12;
+      for (var i = 0; i < n; i += 1) {
+        var a = (i / n) * TAU + k * 0.19;
+        var x = CX + Math.cos(a) * R;
+        var y = CY + Math.sin(a) * R;
+        if (x < 2 || y < 2 || x > CW - 2 || y > CH - 2) continue;
+        if (blocked(K, x, y)) { b.skip(); continue; }
+        b.add(x, y, r, css(T.ink, alpha));
+      }
+    }
+
+    var out = b.flush(ctx);
+
+    if (empty) {
+      /* Measure the bare rings first, then buy the margin with the scrim. The
+         caption reports both, so the cost of the scrim is visible rather than
+         implied. */
+      out.bare = worstText(frame).ratio;
+      var cx = X0 + 215, cy = Y0 + 405;
+      var grad = ctx.createRadialGradient(cx, cy, 40, cx, cy, 205);
+      grad.addColorStop(0, css(T.field, 0.5));
+      grad.addColorStop(1, css(T.field, 0));
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, CW, CH);
+    }
+
+    return out;
+  }
+
+  var PAINTERS = {
+    lattice: lattice,
+    watermark: watermark,
+    wash: wash,
+    constellation: constellation,
+    cutout: cutout,
+    rings: rings
+  };
+
+  /* ── the chrome: one template, so the background is the only variable ── */
+
+  function mascot(size, withArcs) {
+    var body = "";
+    if (withArcs) {
+      for (var i = 0; i < P.arcs.length; i += 1) body += '<path d="' + P.arcs[i] + '"/>';
+    }
+    body += '<path d="' + P.shoulder + '"/>';
+    body += '<path d="' + P.head + '"/>';
+    body += '<path d="' + P.pupil + '"/>';
+    body += '<path d="' + P.beak + '" fill-rule="evenodd"/>';
+    return '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '" ' +
+           'aria-hidden="true" focusable="false"><g fill="currentColor">' + body + "</g></svg>";
+  }
+
+  function chrome(empty) {
+    var stage = empty ?
+      '<div class="stage stage-empty"><div class="empty">' +
+        '<span class="mascot mascot-lg" aria-hidden="true">' + mascot(112, true) + "</span>" +
+        '<p class="empty-title" data-m="body" data-ml="empty title" lang="hi">सामने वाले की बात यहाँ पढ़िए</p>' +
+        '<p class="empty-body" data-m="body" data-ml="empty body" lang="hi">जवाब देने के लिए नीचे कोई चिप दबाइए या अपने शब्द लिखिए।</p>' +
+      "</div></div>" :
+      '<div class="stage">' +
+        '<article class="bubble bubble-caller panel">' +
+          '<p class="bubble-text" data-m="body" data-ml="caller bubble" lang="hi">नमस्ते, मैं आपकी बात समझ गया।</p>' +
+          '<small class="meta" data-m="meta" data-ml="meta, 11 px">hi · 640 ms</small>' +
+        "</article>" +
+        '<article class="bubble bubble-me panel">' +
+          '<p class="bubble-text" data-m="body" data-ml="reply bubble" lang="hi">ठीक है, एक मिनट रुकिए।</p>' +
+        "</article>" +
+      "</div>";
+
+    /* The chrome is a picture of a UI, repeated nine times. It is inert on purpose:
+       nothing in it works, and 45 tab stops between the captions would be a
+       worse sheet for keyboard and switch users, not a more faithful one. */
+    return '<div class="chrome" inert>' +
+      '<div class="masthead panel">' +
+        '<span class="mascot" aria-hidden="true">' + mascot(28, true) + "</span>" +
+        '<div class="brand">' +
+          '<p class="wordmark" lang="hi">पश्यन्ती</p>' +
+          '<p class="wordmark-latin" data-m="meta" data-ml="masthead micro-label">Pashyanti</p>' +
+        "</div>" +
+        '<span class="status" role="status" data-m="meta" data-ml="status pill">' +
+          '<span class="status-dot" aria-hidden="true"></span>Listening</span>' +
+        '<button class="icon-btn" type="button" aria-label="How it works">?</button>' +
+      "</div>" +
+      stage +
+      '<div class="dock">' +
+        '<div class="chips" aria-label="Quick replies">' +
+          '<button class="chip panel" type="button" lang="hi">हाँ, बोलिए।</button>' +
+          '<button class="chip panel" type="button" lang="hi">मैं समझ गया।</button>' +
+          '<button class="chip panel" type="button" lang="hi">एक मिनट रुकिए।</button>' +
+        "</div>" +
+        '<div class="composer">' +
+          '<input class="input panel" type="text" lang="hi" placeholder="अपना जवाब लिखिए…" aria-label="अपना जवाब लिखिए" />' +
+          '<button class="send panel" type="button" lang="hi">बोलिए</button>' +
+        "</div>" +
+      "</div>" +
+    "</div>";
+  }
+
+  /* ── paint ──────────────────────────────────────────────── */
+
+  function paint(frame) {
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    var canvas = frame.canvas;
+    canvas.width = Math.round(CW * dpr);
+    canvas.height = Math.round(CH * dpr);
+
+    var ctx = frame.ctx;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    var g = geometry(frame);
+    var T = tokens(frame.el);
+    frame.T = T;
+
+    ctx.fillStyle = T.field;
+    ctx.fillRect(0, 0, CW, CH);
+
+    var K = knockouts(frame, g);
+    var kind = frame.el.getAttribute("data-t");
+    var stats = PAINTERS[kind](frame, T, ctx, K);
+    frame.paintStats = stats;
+  }
+
+  /* ── measure ────────────────────────────────────────────── */
+
+  /* Everything painted between a glyph and the canvas: panels, bubbles, the
+     masthead. The screen's own background is behind the canvas, not in front of
+     it, so it must never enter this stack — compositing it would report the flat
+     field and hide the dots that a word is actually sitting on. */
+  function backdrop(el) {
+    var c = [0, 0, 0], a = 0, node = el;
+    while (node && node.nodeType === 1) {
+      if (node.classList && node.classList.contains("screen")) break;
+      var bg = parseColor(getComputedStyle(node).backgroundColor);
+      if (bg[3] > 0.001) {
+        var al = bg[3];
+        c = [bg[0] * al + c[0] * (1 - al),
+             bg[1] * al + c[1] * (1 - al),
+             bg[2] * al + c[2] * (1 - al)];
+        a = al + a * (1 - al);
+        if (a > 0.999) break;
+      }
+      node = node.parentElement;
+    }
+    return { c: c, a: Math.min(1, a) };
+  }
+
+  function readCanvas(frame) {
+    var img = frame.ctx.getImageData(0, 0, frame.canvas.width, frame.canvas.height);
+    return {
+      data: img.data,
+      w: img.width,
+      h: img.height,
+      at: function (x, y) {
+        var ix = Math.round(x * (img.width / CW));
+        var iy = Math.round(y * (img.height / CH));
+        if (ix < 0) ix = 0; if (iy < 0) iy = 0;
+        if (ix >= img.width) ix = img.width - 1;
+        if (iy >= img.height) iy = img.height - 1;
+        var o = (iy * img.width + ix) * 4;
+        return [img.data[o], img.data[o + 1], img.data[o + 2]];
+      }
+    };
+  }
+
+  function worstText(frame, image) {
+    var T = frame.T;
+    var g = geometry(frame);
+    var px = image || readCanvas(frame);
+    var worst = { ratio: 99, label: "" };
+    var body = { ratio: 99, label: "" };
+    var samples = 0;
+
+    var nodes = frame.el.querySelectorAll("[data-m]");
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      var r = el.getBoundingClientRect();
+      if (!r.width || !r.height) continue;
+      var p = toLogical(g, r.left, r.top);
+      var q = toLogical(g, r.right, r.bottom);
+      var text = parseColor(getComputedStyle(el).color);
+      var back = backdrop(el);
+      var kind = el.getAttribute("data-m");
+      var label = el.getAttribute("data-ml") || kind;
+
+      for (var y = Math.ceil(p.y); y < q.y; y += 2) {
+        for (var x = Math.ceil(p.x); x < q.x; x += 2) {
+          var pix = px.at(x, y);
+          var comp = [
+            back.c[0] * back.a + pix[0] * (1 - back.a),
+            back.c[1] * back.a + pix[1] * (1 - back.a),
+            back.c[2] * back.a + pix[2] * (1 - back.a)
+          ];
+          samples += 1;
+          var ratio = contrast(text, comp);
+          if (ratio < worst.ratio) worst = { ratio: ratio, label: label };
+          if (kind === "body" && ratio < body.ratio) body = { ratio: ratio, label: label };
+        }
+      }
+    }
+
+    if (worst.ratio === 99) { worst = { ratio: 1, label: "no text" }; }
+    if (body.ratio === 99) body = worst;
+
+    frame.textStats = { worst: worst, body: body, samples: samples };
+    return worst;
+  }
+
+  function artPeak(frame, image) {
+    var T = frame.T;
+    var g = geometry(frame);
+    var field = hexToRGB(T.field);
+    var px = image || readCanvas(frame);
+    var rects = [];
+    var els = frame.el.querySelectorAll(".panel");
+
+    for (var i = 0; i < els.length; i++) {
+      var r = els[i].getBoundingClientRect();
+      if (!r.width || !r.height) continue;
+      var p = toLogical(g, r.left, r.top);
+      var q = toLogical(g, r.right, r.bottom);
+      rects.push(p.x, p.y, q.x, q.y);
+    }
+
+    var peak = 1, exposed = 0;
+    for (var y = 2; y < CH; y += 3) {
+      for (var x = 2; x < CW; x += 3) {
+        var inside = false;
+        for (var k = 0; k < rects.length; k += 4) {
+          if (x > rects[k] && x < rects[k + 2] && y > rects[k + 1] && y < rects[k + 3]) { inside = true; break; }
+        }
+        if (inside) continue;
+        exposed += 1;
+        var ratio = contrast(px.at(x, y), field);
+        if (ratio > peak) peak = ratio;
+      }
+    }
+
+    frame.artStats = { peak: peak, exposed: exposed };
+    return peak;
+  }
+
+  /* ── the run ────────────────────────────────────────────── */
+
+  var METRICS = {};
+
+  function measure(frame, image) {
+    var px = image || readCanvas(frame);
+    worstText(frame, px);
+    artPeak(frame, px);
+  }
+
+  function publish(frame) {
+    var id = frame.el.getAttribute("data-id");
+    var t = frame.textStats, a = frame.artStats, s = frame.paintStats;
+    var out = METRICS[id] || (METRICS[id] = {});
+    out.text = ratioText(t.worst.ratio);
+    out.where = t.worst.label;
+    out.body = ratioText(t.body.ratio);
+    out.art = ratioText(a.peak);
+    out.px = a.exposed.toLocaleString("en-US");
+    out.dots = s.dots.toLocaleString("en-US");
+    out.groups = String(s.groups);
+    out.skip = s.suppressed.toLocaleString("en-US");
+    if (typeof s.bare === "number") out.bare = ratioText(s.bare);
+    if (typeof frame.basePeak === "number") out.base = ratioText(frame.basePeak);
+  }
+
+  function publishAll() {
+    var nodes = document.querySelectorAll("[data-out]");
+    for (var i = 0; i < nodes.length; i++) {
+      var key = nodes[i].getAttribute("data-out");
+      var dot = key.indexOf(".");
+      var value = METRICS[key.slice(0, dot)] && METRICS[key.slice(0, dot)][key.slice(dot + 1)];
+      if (value !== undefined && value !== null) nodes[i].textContent = value;
+    }
+  }
+
+  function publishTokens() {
+    var root = getComputedStyle(document.documentElement);
+    var nodes = document.querySelectorAll("[data-ratio]");
+    for (var i = 0; i < nodes.length; i++) {
+      var spec = nodes[i].getAttribute("data-ratio").split("|");
+      var a = root.getPropertyValue(spec[0]).trim();
+      var b = root.getPropertyValue(spec[1]).trim();
+      if (spec[0] === spec[1]) { nodes[i].textContent = "base"; continue; }
+      nodes[i].textContent = ratioText(contrast(hexToRGB(a), hexToRGB(b)));
+    }
+  }
+
+  function paintAndMeasure() {
+    var frames = [].map.call(document.querySelectorAll(".screen"), function (el) {
+      return {
+        el: el,
+        canvas: el.querySelector("canvas.bg"),
+        ctx: el.querySelector("canvas.bg").getContext("2d", { willReadFrequently: true })
+      };
+    });
+
+    for (var i = 0; i < frames.length; i++) {
+      paint(frames[i]);
+      measure(frames[i]);
+      publish(frames[i]);
+    }
+    publishAll();
+  }
+
+  function buildChrome() {
+    var screens = document.querySelectorAll(".screen");
+    for (var i = 0; i < screens.length; i++) {
+      if (screens[i].querySelector(".chrome")) continue;
+      screens[i].insertAdjacentHTML("beforeend", chrome(screens[i].hasAttribute("data-empty")));
+    }
+  }
+
+  function wireDrift() {
+    if (!("IntersectionObserver" in window)) return;
+    var io = new IntersectionObserver(function (entries) {
+      for (var i = 0; i < entries.length; i++) {
+        var screen = entries[i].target;
+        if (!screen.querySelector("canvas.drift")) continue;
+        screen.classList.toggle("is-live", entries[i].isIntersecting);
+      }
+    }, { rootMargin: "80px", threshold: 0 });
+    var screens = document.querySelectorAll(".screen");
+    for (var i = 0; i < screens.length; i++) io.observe(screens[i]);
+  }
+
+  var started = false;
+
+  function boot() {
+    if (started) return;
+    started = true;
+    buildChrome();
+    paintAndMeasure();
+    publishTokens();
+    wireDrift();
+  }
+
+  /* Fonts move the chrome, and the knock-outs are read off the live layout, so
+     the first paint waits for them — with a floor so a blocked CDN cannot leave
+     the sheet blank. */
+  function refine() {
+    if (!started) { boot(); return; }
+    paintAndMeasure();
+  }
+
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(refine);
+  }
+  window.addEventListener("load", boot, { once: true });
+  window.setTimeout(boot, 1500);
+
+  var resizeTimer = 0;
+  window.addEventListener("resize", function () {
+    window.clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(refine, 220);
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Halftone Relay — Pashyanti chat lab</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,400..700,20,0&family=Karla:wght@400;500;600;700&family=Mukta:wght@400;500;600;700&family=Silkscreen:wght@400;700&family=Tiro+Devanagari+Hindi:ital@0;1&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="chat-lab.css" />
+  </head>
+  <body>
+    <div class="studio" id="studio" data-frame="phone">
+      <div class="studio-grid" aria-hidden="true"></div>
+
+      <header class="studio-head">
+        <div>
+          <span class="studio-kicker">Pashyanti · chat surface</span>
+          <h1 class="studio-title">
+            Halftone Relay <em>· pixel-matrix study</em>
+          </h1>
+          <p class="studio-sub">
+            Three directions, six palettes, four bubble treatments — all live. Pick
+            a variant, then edit the CSS: every colour is one token block.
+          </p>
+        </div>
+        <nav class="studio-nav" aria-label="Study sheets">
+          <span class="studio-nav-label">Sheets</span>
+          <a href="palettes.html">Palettes</a>
+          <a href="bubbles.html">Bubbles</a>
+          <a href="backgrounds.html">Backgrounds</a>
+        </nav>
+      </header>
+
+      <div class="studio-body">
+        <section class="stage" aria-label="Prototype">
+          <div class="frame-mat">
+            <div class="frame" id="frame">
+              <div
+                class="app"
+                id="app"
+                data-variant="b"
+                data-palette="lime"
+                data-bubbles="dissolve"
+                data-bg="peacock"
+                data-motion="on"
+                data-screen="phone"
+              >
+                <div class="app-field" aria-hidden="true">
+                  <canvas class="bg-peacock" id="bgPeacock"></canvas>
+                  <div class="bg-wash"></div>
+                </div>
+
+                <header class="app-top">
+                  <span class="mascot-tile">
+                    <canvas
+                      class="mascot mascot--top"
+                      id="mascotTop"
+                      width="46"
+                      height="46"
+                      role="img"
+                      aria-label="Sakhi, listening"
+                    ></canvas>
+                  </span>
+                  <div class="brand">
+                    <span class="brand-deva" lang="hi">पश्यन्ती</span>
+                    <span class="brand-latin">Pashyanti</span>
+                  </div>
+                  <div class="top-tools">
+                    <span
+                      class="status"
+                      id="status"
+                      role="status"
+                      aria-live="polite"
+                      data-state="listening"
+                    >
+                      <span class="status-dots" aria-hidden="true">
+                        <i></i><i></i><i></i>
+                      </span>
+                      <span class="status-label" id="statusLabel">Listening</span>
+                    </span>
+                    <button class="icon-btn" type="button" aria-label="Language: English">
+                      EN
+                    </button>
+                    <button class="icon-btn" type="button" aria-label="How this works">
+                      ?
+                    </button>
+                  </div>
+                </header>
+
+                <div class="app-switches" role="group" aria-label="Call settings">
+                  <label class="switch">
+                    <span class="switch-text">
+                      <span class="switch-main">Phone line</span>
+                      <span class="switch-sub">bad line</span>
+                    </span>
+                    <input type="checkbox" role="switch" checked id="switchLine" />
+                    <span class="switch-track" aria-hidden="true"></span>
+                  </label>
+                  <label class="switch">
+                    <span class="switch-text">
+                      <span class="switch-main">My voice</span>
+                      <span class="switch-sub">cloned voice</span>
+                    </span>
+                    <input type="checkbox" role="switch" id="switchVoice" />
+                    <span class="switch-track" aria-hidden="true"></span>
+                  </label>
+                </div>
+
+                <main class="thread" id="thread" aria-live="polite" aria-label="Transcript"></main>
+
+                <footer class="app-foot">
+                  <div class="foot-end" id="footEnd" hidden>
+                    <button class="ghost-btn" type="button" id="endCall">
+                      <span class="ghost-mark" aria-hidden="true"></span>
+                      End call
+                    </button>
+                  </div>
+
+                  <div class="chips" id="chips" role="group" aria-label="Quick replies"></div>
+
+                  <form class="composer" id="composer">
+                    <input
+                      class="composer-input"
+                      id="draft"
+                      placeholder="Type your reply…"
+                      aria-label="Type your reply"
+                      autocomplete="off"
+                      enterkeyhint="send"
+                    />
+                    <button class="btn-speak" type="submit">Speak</button>
+                  </form>
+
+                  <button class="btn-speak new-call" type="button" id="newCall" hidden>
+                    New call
+                  </button>
+                </footer>
+              </div>
+            </div>
+          </div>
+          <p class="frame-caption">
+            <b>430 px wide</b>
+            <span>one theme on camera</span>
+            <span>·</span>
+            <span>preview, not a build</span>
+          </p>
+        </section>
+
+        <aside class="panel" aria-label="Tweaks">
+          <div class="panel-top">
+            <h2 class="panel-title">Tweaks</h2>
+            <button class="panel-mini" type="button" id="reset">Reset</button>
+          </div>
+
+          <section class="block">
+            <h3 class="block-title">Variant</h3>
+            <div class="variants" id="variants" role="group" aria-label="Variant">
+              <button class="variant" type="button" data-variant="a" aria-pressed="false">
+                <span class="variant-glyph" data-glyph="a" aria-hidden="true"></span>
+                <span class="variant-name">A · Lattice</span>
+                <span class="variant-note">paper · lime-wash</span>
+              </button>
+              <button class="variant" type="button" data-variant="b" aria-pressed="true">
+                <span class="variant-glyph" data-glyph="b" aria-hidden="true"></span>
+                <span class="variant-name">B · Signal</span>
+                <span class="variant-note">dark · peacock matrix</span>
+              </button>
+              <button class="variant" type="button" data-variant="c" aria-pressed="false">
+                <span class="variant-glyph" data-glyph="c" aria-hidden="true"></span>
+                <span class="variant-name">C · Quiet</span>
+                <span class="variant-note">light · indigo resist</span>
+              </button>
+            </div>
+          </section>
+
+          <section class="block">
+            <h3 class="block-title">
+              Palette <span class="block-meta" id="paletteName">Lime</span>
+            </h3>
+            <div class="palettes" id="palettes" role="group" aria-label="Palette"></div>
+            <p class="block-note" id="paletteNote"></p>
+          </section>
+
+          <section class="block">
+            <h3 class="block-title">
+              Dot pitch <span class="block-meta" id="pitchOut">6 px</span>
+            </h3>
+            <input
+              class="range"
+              id="pitch"
+              type="range"
+              min="4"
+              max="10"
+              step="2"
+              value="6"
+              aria-label="Dot pitch in pixels"
+            />
+            <p class="block-note">
+              Lattice pitch. <b>4</b> is fine print, <b>10</b> is coarse newsprint.
+            </p>
+            <label class="inline-field">
+              <span>Lattice</span>
+              <select class="select" id="dots" aria-label="Lattice strength">
+                <option value="faint">Faint</option>
+                <option value="screen" selected>Screen</option>
+                <option value="bold">Bold</option>
+              </select>
+            </label>
+          </section>
+
+          <div class="block-row">
+            <section class="block">
+              <h3 class="block-title">Background</h3>
+              <select class="select" id="bg" aria-label="Background">
+                <option value="peacock">Dot peacock</option>
+                <option value="lattice">Lattice only</option>
+                <option value="wash">Dithered wash</option>
+                <option value="off">Off</option>
+              </select>
+            </section>
+            <section class="block">
+              <h3 class="block-title">Bubbles</h3>
+              <select class="select" id="bubbles" aria-label="Bubble treatment">
+                <option value="stair">Stepped</option>
+                <option value="dissolve">Dissolve</option>
+                <option value="stamp">Stamp</option>
+                <option value="ledger">Ledger</option>
+              </select>
+            </section>
+          </div>
+
+          <div class="block-row">
+            <section class="block">
+              <h3 class="block-title">Motion</h3>
+              <label class="check">
+                <input type="checkbox" id="motion" checked />
+                <span>Animate states</span>
+              </label>
+            </section>
+            <section class="block">
+              <h3 class="block-title">Frame</h3>
+              <select class="select" id="frameSel" aria-label="Frame width">
+                <option value="phone">Phone 430</option>
+                <option value="wide">Wide 780</option>
+              </select>
+            </section>
+          </div>
+
+          <section class="block">
+            <h3 class="block-title">Preview state</h3>
+            <div class="seg" id="seg" role="group" aria-label="Preview state">
+              <button type="button" data-preview="transcript" aria-pressed="true">
+                Live
+              </button>
+              <button type="button" data-preview="empty" aria-pressed="false">
+                Empty
+              </button>
+              <button type="button" data-preview="missed" aria-pressed="false">
+                Missed
+              </button>
+              <button type="button" data-preview="summary" aria-pressed="false">
+                Summary
+              </button>
+            </div>
+          </section>
+
+          <section class="block notes">
+            <h3 class="block-title">Reading the study</h3>
+            <ul class="notes-list">
+              <li>
+                The mascot is rasterised from <code>peacock.ts</code> — same traced
+                geometry, stamped dot by dot. Nothing is redrawn.
+              </li>
+              <li>
+                Caller text <b>23px / 1.42</b> · reply <b>22px</b> · metadata
+                <b>9px</b> pixel caps. Tap targets stay at <b>44px</b>.
+              </li>
+              <li>
+                Every ratio is measured: text on its own ground clears <b>8.6:1</b>;
+                reply text on the accent block clears <b>7.3:1</b>.
+              </li>
+              <li>
+                Drop-in mapping: <code>--field→--paper</code>,
+                <code>--panel→--surface</code>, <code>--accent→--primary</code>,
+                <code>--signal→--line</code>.
+              </li>
+            </ul>
+          </section>
+        </aside>
+      </div>
+    </div>
+
+    <script src="peacock-data.js"></script>
+    <script src="chat-lab.js"></script>
+  </body>
+</html>

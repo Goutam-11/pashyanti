@@ -1,0 +1,1803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="dark" />
+<meta name="description" content="Pashyanti — six dot-screen palette directions with measured contrast, live chat fragments, a light/dark flip and the CSS drop-in for the recommended pair." />
+<title>Pashyanti — palette directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&amp;family=Karla:wght@400;500;600;700&amp;family=Mukta:wght@400;500;600&amp;family=Silkscreen:wght@400;700&amp;display=swap" rel="stylesheet" />
+<style>
+  /* ---------------------------------------------------------------
+     The sheet's own chrome borrows family 04 (Peacock Matrix), so the
+     document around the specimens is already printed on the dot world.
+     --------------------------------------------------------------- */
+  :root {
+    --sheet-field: #0C0F0B;
+    --sheet-panel: #151A12;
+    --sheet-ink: #F1EBD9;
+    --sheet-ink-2: #BFBEA4;
+    --sheet-line: #606D52;
+    --sheet-acid: #D9F03F;
+    --sheet-hot: #D4682F;
+    --sheet-cool: #57C3AE;
+
+    --font-sans: "Karla", "Mukta", ui-sans-serif, system-ui, sans-serif;
+    --font-deva: "Mukta", "Karla", ui-sans-serif, system-ui, sans-serif;
+    --font-display: "Fraunces", "Mukta", Georgia, serif;
+    --font-micro: "Silkscreen", "Mukta", ui-monospace, monospace;
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--sheet-field);
+    color: var(--sheet-ink);
+    font-family: var(--font-sans);
+    font-size: 18px;
+    line-height: 1.6;
+    font-kerning: normal;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  p,
+  ul,
+  ol,
+  dl,
+  dt,
+  dd,
+  pre,
+  figure {
+    margin: 0;
+    padding: 0;
+  }
+
+  ul,
+  ol {
+    list-style: none;
+  }
+
+  ::selection {
+    background: var(--sheet-acid);
+    color: #0C0F0B;
+  }
+
+  .wrap {
+    width: 100%;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 clamp(16px, 4vw, 40px);
+  }
+
+  .micro {
+    font-family: var(--font-micro);
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1.5;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--sheet-ink-2);
+  }
+
+  .dotrule {
+    height: 14px;
+    margin: clamp(18px, 3vw, 34px) 0;
+    background-image: radial-gradient(var(--sheet-line) 1.5px, transparent 1.6px);
+    background-size: 8px 8px;
+  }
+
+  /* ---------------------------------------------------------------
+     Header
+     --------------------------------------------------------------- */
+  .page-head {
+    padding: clamp(36px, 6vw, 80px) 0 clamp(22px, 3vw, 34px);
+  }
+
+  .head-top {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 10px 24px;
+    padding-bottom: 13px;
+    border-bottom: 1px solid var(--sheet-line);
+  }
+
+  .page-title {
+    margin-top: clamp(18px, 3vw, 30px);
+    font-family: var(--font-display);
+    font-size: clamp(44px, 7.6vw, 92px);
+    font-weight: 600;
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+    color: var(--sheet-ink);
+    max-width: 13ch;
+  }
+
+  .head-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 342px);
+    gap: clamp(20px, 4vw, 56px);
+    align-items: start;
+    margin-top: clamp(20px, 3vw, 32px);
+  }
+
+  .lede {
+    max-width: 62ch;
+    font-size: clamp(19px, 1.9vw, 22px);
+    line-height: 1.55;
+    color: var(--sheet-ink);
+  }
+
+  .head-facts {
+    display: grid;
+    gap: 0;
+    border-top: 1px solid var(--sheet-line);
+  }
+
+  .head-facts > div {
+    display: grid;
+    grid-template-columns: 92px minmax(0, 1fr);
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--sheet-line);
+  }
+
+  .head-facts dt {
+    font-family: var(--font-micro);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--sheet-ink-2);
+    padding-top: 3px;
+  }
+
+  .head-facts dd {
+    font-size: 17px;
+    line-height: 1.45;
+    color: var(--sheet-ink);
+  }
+
+  /* ---------------------------------------------------------------
+     Families
+     --------------------------------------------------------------- */
+  .families-intro {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 342px);
+    gap: clamp(16px, 3vw, 48px);
+    align-items: end;
+    margin-bottom: clamp(18px, 3vw, 28px);
+  }
+
+  .families-lede {
+    max-width: 84ch;
+    font-size: 19px;
+    line-height: 1.55;
+    color: var(--sheet-ink-2);
+  }
+
+  .families {
+    display: grid;
+    gap: clamp(24px, 3.5vw, 44px);
+    padding-bottom: clamp(36px, 6vw, 72px);
+  }
+
+  /* The article is the printed plate: field + lattice + hard edge. */
+  .family {
+    display: block;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    background-color: var(--field);
+    background-image: radial-gradient(var(--signal) 1.6px, transparent 1.7px);
+    background-size: 8px 8px;
+    color: var(--ink);
+  }
+
+  .fam-head {
+    padding: clamp(18px, 3vw, 30px);
+    background: var(--panel);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .family .micro {
+    color: var(--ink-2);
+  }
+
+  .fam-index {
+    color: var(--ink-2);
+  }
+
+  .fam-name {
+    margin-top: 10px;
+    font-family: var(--font-display);
+    font-size: clamp(30px, 4.4vw, 50px);
+    font-weight: 600;
+    line-height: 1.02;
+    letter-spacing: -0.015em;
+    color: var(--ink);
+  }
+
+  .fam-why {
+    margin-top: 12px;
+    max-width: 70ch;
+    font-size: clamp(18px, 1.6vw, 20px);
+    line-height: 1.55;
+    color: var(--ink);
+  }
+
+  .fam-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+    min-width: 0;
+  }
+
+  .frag {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: clamp(16px, 3vw, 26px);
+    border-right: 1px solid var(--line);
+  }
+
+  .frag-inner {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    width: 100%;
+    max-width: 430px;
+    min-width: 0;
+    min-height: 400px;
+  }
+
+  .frag-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 34px;
+    padding: 0 12px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--panel);
+    color: var(--ink-2);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+
+  .pill-dot {
+    width: 9px;
+    height: 9px;
+    flex: none;
+    border-radius: 999px;
+    background: var(--cool);
+    animation: listen 1.9s ease-in-out infinite;
+  }
+
+  @keyframes listen {
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.45;
+      transform: scale(0.78);
+    }
+  }
+
+  .bubbles {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: auto;
+    padding-top: 28px;
+  }
+
+  .bubble {
+    max-width: 100%;
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--ink);
+  }
+
+  .bubble-they {
+    align-self: flex-start;
+  }
+
+  /* Your reply is the action: an acid hole, keylined in ink. */
+  .bubble-me {
+    align-self: flex-end;
+    background: var(--accent);
+    border-color: var(--ink);
+    color: var(--accent-ink);
+  }
+
+  .deva {
+    margin: 0;
+    font-family: var(--font-deva);
+    font-size: clamp(21px, 2vw, 24px);
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+  }
+
+  .composer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 18px;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 16px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--panel);
+    color: var(--ink);
+    font-family: var(--font-deva);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .chip:hover {
+    border-color: var(--ink);
+  }
+
+  .send {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    min-width: 76px;
+    padding: 0 18px;
+    border: 1px solid var(--ink);
+    border-radius: 0;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-family: var(--font-sans);
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+  }
+
+  .send:hover {
+    filter: brightness(0.94);
+  }
+
+  .family :focus-visible {
+    outline: 3px solid var(--cool);
+    outline-offset: 2px;
+  }
+
+  /* ---------------------------------------------------------------
+     Specs: tokens, measured ratios, flip
+     --------------------------------------------------------------- */
+  .specs {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+    padding: clamp(18px, 3vw, 26px);
+    background: var(--panel);
+  }
+
+  .swatches {
+    margin-top: 8px;
+    display: grid;
+  }
+
+  .sw {
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .sw:last-child {
+    border-bottom: 1px solid var(--line);
+  }
+
+  .sw-chip {
+    width: 18px;
+    height: 18px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+  }
+
+  .sw-role {
+    font-family: var(--font-micro);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+
+  .sw-hex {
+    font-family: var(--font-micro);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .metrics {
+    margin-top: 8px;
+    display: grid;
+  }
+
+  .metric {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 40px 52px 46px;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .metric:last-of-type {
+    border-bottom: 1px solid var(--line);
+  }
+
+  .metric-head {
+    font-family: var(--font-micro);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .m-pair {
+    font-family: var(--font-sans);
+    font-size: 16px;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .m-floor {
+    font-family: var(--font-micro);
+    font-size: 10px;
+    color: var(--ink-2);
+  }
+
+  .m-val {
+    font-family: var(--font-sans);
+    font-size: 19px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    color: var(--ink);
+  }
+
+  .m-badge {
+    padding: 3px 4px;
+    border: 1px solid var(--line);
+    font-family: var(--font-micro);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: center;
+    color: var(--ink-2);
+  }
+
+  .m-badge.is-pass {
+    border-color: var(--ink-2);
+    color: var(--ink);
+  }
+
+  .m-badge.is-fail {
+    border-color: var(--ink);
+    background: var(--hot);
+    color: var(--field);
+  }
+
+  .verdict {
+    margin-top: 10px;
+    font-size: 18px;
+    line-height: 1.5;
+    color: var(--ink-2);
+  }
+
+  .verdict.is-good {
+    color: var(--ink-2);
+  }
+
+  /* A failure is spelled out, never hidden: ink text, hot underrule. */
+  .verdict.is-bad {
+    color: var(--ink);
+    text-decoration: underline;
+    text-decoration-color: var(--hot);
+    text-decoration-thickness: 3px;
+    text-underline-offset: 4px;
+  }
+
+  .flip-wrap {
+    display: grid;
+    gap: 8px;
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+  }
+
+  .flip {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 48px;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  /* Native checkbox, never a hand-rolled switch. */
+  .flip-input {
+    width: 44px;
+    height: 44px;
+    flex: none;
+    margin: 0;
+    accent-color: var(--accent);
+    color-scheme: light;
+    cursor: pointer;
+  }
+
+  .flip-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .flip-title {
+    font-family: var(--font-sans);
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--ink);
+  }
+
+  .flip-state {
+    font-family: var(--font-micro);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .flip-note {
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--ink-2);
+  }
+
+  /* ---------------------------------------------------------------
+     Recommendation, legend, developer note
+     --------------------------------------------------------------- */
+  .block {
+    padding: clamp(34px, 6vw, 66px) 0;
+    border-top: 1px solid var(--sheet-line);
+  }
+
+  .block-title {
+    max-width: 26ch;
+    margin-top: 12px;
+    font-family: var(--font-display);
+    font-size: clamp(30px, 4.4vw, 50px);
+    font-weight: 600;
+    line-height: 1.05;
+    letter-spacing: -0.015em;
+    color: var(--sheet-ink);
+  }
+
+  .block-lede {
+    max-width: 70ch;
+    margin-top: 14px;
+    font-size: 19px;
+    line-height: 1.6;
+    color: var(--sheet-ink-2);
+  }
+
+  .picks {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(18px, 3vw, 30px);
+    margin-top: clamp(22px, 4vw, 36px);
+  }
+
+  .pick {
+    border: 1px solid var(--sheet-line);
+    background: var(--sheet-panel);
+    padding: clamp(18px, 2.6vw, 28px);
+  }
+
+  .pick-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px 14px;
+  }
+
+  .pick-name {
+    font-family: var(--font-display);
+    font-size: clamp(24px, 2.8vw, 32px);
+    font-weight: 600;
+    line-height: 1.1;
+    color: var(--sheet-ink);
+  }
+
+  .pick-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--font-micro);
+    font-size: 9.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--sheet-ink-2);
+  }
+
+  .pick-tag::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    background: var(--sheet-acid);
+  }
+
+  .pick p {
+    margin-top: 12px;
+    font-size: 18px;
+    line-height: 1.6;
+    color: var(--sheet-ink);
+  }
+
+  .pick-metrics {
+    margin-top: 18px;
+    border-top: 1px solid var(--sheet-line);
+  }
+
+  .pick-metrics li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: 12px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--sheet-line);
+    font-size: 17px;
+    line-height: 1.4;
+    color: var(--sheet-ink-2);
+  }
+
+  .pick-metrics b {
+    font-size: 20px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--sheet-ink);
+  }
+
+  .rec-note {
+    max-width: 88ch;
+    margin-top: clamp(18px, 3vw, 26px);
+    padding-top: 14px;
+    border-top: 1px solid var(--sheet-line);
+    font-size: 18px;
+    line-height: 1.6;
+    color: var(--sheet-ink-2);
+  }
+
+  .legend {
+    margin-top: clamp(22px, 3.5vw, 34px);
+    border-top: 1px solid var(--sheet-line);
+  }
+
+  .legend-row {
+    display: grid;
+    grid-template-columns: 118px minmax(0, 1.25fr) minmax(0, 1fr) 86px;
+    gap: clamp(10px, 2vw, 24px);
+    align-items: start;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--sheet-line);
+  }
+
+  .legend-token {
+    font-family: var(--font-micro);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--sheet-ink);
+    padding-top: 2px;
+  }
+
+  .legend-what {
+    font-size: 18px;
+    line-height: 1.5;
+    color: var(--sheet-ink);
+  }
+
+  .legend-use {
+    font-size: 18px;
+    line-height: 1.5;
+    color: var(--sheet-ink-2);
+  }
+
+  .legend-floor {
+    font-family: var(--font-micro);
+    font-size: 10px;
+    line-height: 1.6;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--sheet-ink-2);
+  }
+
+  .legend-note {
+    max-width: 80ch;
+    margin-top: 18px;
+    font-size: 18px;
+    line-height: 1.6;
+    color: var(--sheet-ink-2);
+  }
+
+  .code {
+    margin-top: 22px;
+    padding: 18px;
+    border: 1px solid var(--sheet-line);
+    background: var(--sheet-field);
+    overflow-x: auto;
+  }
+
+  .code code {
+    display: block;
+    min-width: max-content;
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--sheet-ink);
+    white-space: pre;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .block-lede code,
+  .legend-note code,
+  .callouts code {
+    padding: 0 4px;
+    border: 1px solid var(--sheet-line);
+    background: var(--sheet-panel);
+    font-family: var(--font-sans);
+    font-size: 0.95em;
+    color: var(--sheet-ink);
+  }
+
+  .callouts {
+    display: grid;
+    gap: 12px;
+    max-width: 82ch;
+    margin-top: 22px;
+  }
+
+  .callouts li {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: 10px;
+    font-size: 18px;
+    line-height: 1.55;
+    color: var(--sheet-ink-2);
+  }
+
+  .callout-num {
+    font-family: var(--font-micro);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--sheet-ink-2);
+    padding-top: 5px;
+  }
+
+  .callout-strong {
+    color: var(--sheet-ink);
+  }
+
+  .page-foot {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 12px 32px;
+    padding: clamp(22px, 3vw, 32px) 0 clamp(38px, 5vw, 56px);
+    border-top: 1px solid var(--sheet-line);
+  }
+
+  .page-foot p {
+    max-width: 72ch;
+    font-size: 16px;
+    line-height: 1.55;
+    color: var(--sheet-ink-2);
+  }
+
+  /* ---------------------------------------------------------------
+     Responsive: 430 px single column, 1200 px two column
+     --------------------------------------------------------------- */
+  @media (max-width: 900px) {
+    .head-grid,
+    .families-intro {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .head-facts {
+      max-width: 460px;
+    }
+
+    .fam-body {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .frag {
+      border-right: 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .picks {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .legend-row {
+      grid-template-columns: 104px minmax(0, 1fr);
+    }
+
+    .legend-use,
+    .legend-floor {
+      grid-column: 2;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .legend-row {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 5px;
+      padding: 13px 0;
+    }
+
+    .legend-use,
+    .legend-floor {
+      grid-column: 1;
+    }
+
+    .legend-token {
+      padding-top: 0;
+    }
+
+    .metric {
+      grid-template-columns: minmax(0, 1fr) 34px 48px 42px;
+      gap: 6px;
+    }
+
+    .m-pair {
+      font-size: 15px;
+    }
+
+    .m-val {
+      font-size: 18px;
+    }
+  }
+
+  @media (max-width: 380px) {
+    .family .micro {
+      letter-spacing: 0.1em;
+    }
+
+    .sw-role {
+      font-size: 10px;
+    }
+
+    .sw-hex {
+      font-size: 10px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pill-dot {
+      animation: none;
+    }
+
+    .send,
+    .chip {
+      transition: none;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="page-head">
+    <div class="head-top">
+      <p class="micro">Pashyanti / colour / six directions</p>
+      <p class="micro">Dot screen / 8 px lattice / v1</p>
+    </div>
+    <h1 class="page-title">Palette directions</h1>
+    <div class="head-grid">
+      <p class="lede">Read in daylight, one-handed, at 430 px: body at least 18 px, text at 7:1 measured rather than eyeballed, and every panel a flat hole punched in a lattice of round dots. These six families are the cloth-and-wall references that survive that floor; each is measured in the file and each can be flipped to its opposite ground.</p>
+      <dl class="head-facts">
+        <div>
+          <dt>Ground</dt>
+          <dd>An 8 px lattice of round dots; panels are flat holes.</dd>
+        </div>
+        <div>
+          <dt>Reader</dt>
+          <dd>Deaf and hard-of-hearing users; daylight, one hand, 430 px.</dd>
+        </div>
+        <div>
+          <dt>Floor</dt>
+          <dd>18 px body, 7:1 text, 44 px targets, visible focus.</dd>
+        </div>
+        <div>
+          <dt>Numbers</dt>
+          <dd>WCAG 2.x relative luminance, computed here, 2 decimals.</dd>
+        </div>
+      </dl>
+    </div>
+  </header>
+
+  <div class="dotrule" aria-hidden="true"></div>
+
+  <main id="main">
+  <section aria-labelledby="families-heading">
+    <div class="families-intro">
+      <div>
+        <p class="micro" id="families-index">01–06 / six families</p>
+        <h2 class="block-title" id="families-heading">One ground, six materials.</h2>
+      </div>
+      <p class="families-lede">Each family is one light or dark ground with the same ten tokens and the same chat fragment, so the only variable is colour. The fragment is a specimen: its controls are real 44 px targets and they do nothing. The checkbox under each family is a native input and re-measures the pair after it flips.</p>
+    </div>
+
+    <ol class="families">
+      <li>
+        <article class="family" id="fam-indigo" data-family="indigo" data-ground-base="light" aria-labelledby="fam-indigo-name"
+          style="--field:#F2EBDC;--panel:#FBF6E8;--ink:#191F33;--ink-2:#343B58;--line:#8A8770;--signal:#313A5C;--accent:#CFE23A;--accent-ink:#161A0B;--hot:#A63B23;--cool:#23506B;"
+          data-flip="--field:#0D101B;--panel:#161A26;--ink:#EDE9DC;--ink-2:#B4B8C8;--line:#5F6A8F;--signal:#6B7BA9;--accent:#D3E93C;--accent-ink:#10130A;--hot:#E07A4E;--cool:#7FB4D6;">
+          <header class="fam-head">
+            <p class="micro"><span class="fam-index">01</span> / <span data-ground>Light ground</span> / 8 px lattice</p>
+            <h2 class="fam-name" id="fam-indigo-name">Indigo Resist</h2>
+            <p class="fam-why">Ajrakh and Bagru print a bone-white resist into a fermenting indigo vat: the field is the undyed cloth, and the lattice is the indigo the mud paste kept out.</p>
+          </header>
+          <div class="fam-body">
+            <div class="frag" role="group" aria-label="Chat specimen: Indigo Resist, light ground">
+              <div class="frag-inner">
+                <div class="frag-top">
+                  <span class="pill">
+                    <span class="pill-dot" aria-hidden="true"></span>
+                    <span class="pill-label">Listening</span>
+                  </span>
+                </div>
+                <div class="bubbles">
+                  <div class="bubble bubble-they">
+                    <p class="deva" lang="hi">नमस्ते, मैं आपकी बात समझ गया।</p>
+                  </div>
+                  <div class="bubble bubble-me">
+                    <p class="deva" lang="hi">ठीक है, एक मिनट रुकिए।</p>
+                  </div>
+                </div>
+                <div class="composer">
+                  <button class="chip" type="button"><span lang="hi">फिर से बोलिए</span></button>
+                  <button class="send" type="button">Speak</button>
+                </div>
+              </div>
+            </div>
+            <aside class="specs" aria-label="Tokens and measurements: Indigo Resist">
+              <div>
+                <p class="micro">Tokens</p>
+                <ul class="swatches">
+                  <li class="sw"><span class="sw-chip" style="background:var(--field)"></span><span class="sw-role">field</span><span class="sw-hex" data-hex="field">#F2EBDC</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--panel)"></span><span class="sw-role">panel</span><span class="sw-hex" data-hex="panel">#FBF6E8</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--ink)"></span><span class="sw-role">ink</span><span class="sw-hex" data-hex="ink">#191F33</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--ink-2)"></span><span class="sw-role">ink-2</span><span class="sw-hex" data-hex="ink-2">#343B58</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--line)"></span><span class="sw-role">line</span><span class="sw-hex" data-hex="line">#8A8770</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--signal)"></span><span class="sw-role">signal</span><span class="sw-hex" data-hex="signal">#313A5C</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--accent)"></span><span class="sw-role">accent</span><span class="sw-hex" data-hex="accent">#CFE23A</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--accent-ink)"></span><span class="sw-role">accent-ink</span><span class="sw-hex" data-hex="accent-ink">#161A0B</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--hot)"></span><span class="sw-role">hot</span><span class="sw-hex" data-hex="hot">#A63B23</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--cool)"></span><span class="sw-role">cool</span><span class="sw-hex" data-hex="cool">#23506B</span></li>
+                </ul>
+              </div>
+              <div>
+                <p class="micro">Measured contrast</p>
+                <ul class="metrics">
+                  <li class="metric metric-head"><span>Pair</span><span>Floor</span><span>Ratio</span><span>State</span></li>
+                  <li class="metric"><span class="m-pair">ink / field</span><span class="m-floor">7</span><span class="m-val" data-ratio="ink-field">13.77</span><span class="m-badge is-pass" data-badge="ink-field">PASS</span></li>
+                  <li class="metric"><span class="m-pair">ink-2 / field</span><span class="m-floor">7</span><span class="m-val" data-ratio="ink2-field">9.25</span><span class="m-badge is-pass" data-badge="ink2-field">PASS</span></li>
+                  <li class="metric"><span class="m-pair">accent-ink / accent</span><span class="m-floor">7</span><span class="m-val" data-ratio="accentin-accent">12.30</span><span class="m-badge is-pass" data-badge="accentin-accent">PASS</span></li>
+                  <li class="metric"><span class="m-pair">ink / panel</span><span class="m-floor">7</span><span class="m-val" data-ratio="ink-panel">15.13</span><span class="m-badge is-pass" data-badge="ink-panel">PASS</span></li>
+                  <li class="metric"><span class="m-pair">ink-2 / panel</span><span class="m-floor">7</span><span class="m-val" data-ratio="ink2-panel">10.17</span><span class="m-badge is-pass" data-badge="ink2-panel">PASS</span></li>
+                  <li class="metric"><span class="m-pair">signal / field</span><span class="m-floor">2.5</span><span class="m-val" data-ratio="signal-field">9.36</span><span class="m-badge is-pass" data-badge="signal-field">PASS</span></li>
+                  <li class="metric"><span class="m-pair">hot / field</span><span class="m-floor">3</span><span class="m-val" data-ratio="hot-field">5.41</span><span class="m-badge is-pass" data-badge="hot-field">PASS</span></li>
+                  <li class="metric"><span class="m-pair">cool / field</span><span class="m-floor">3</span><span class="m-val" data-ratio="cool-field">7.28</span><span class="m-badge is-pass" data-badge="cool-field">PASS</span></li>
+                </ul>
+                <p class="verdict is-good" data-verdict aria-live="polite">All five text pairs clear 7:1 in this pair. The dot, hot and cool rows are non-text and are held to 2.5–3:1.</p>
+              </div>
+              <div class="flip-wrap">
+                <label class="flip" for="flip-indigo">
+                  <input class="flip-input" type="checkbox" id="flip-indigo" />
+                  <span class="flip-text">
+                    <span class="flip-title">Flip ground</span>
+                    <span class="flip-state" data-flip-state>Light pair shown</span>
+                  </span>
+                </label>
+                <p class="flip-note">A native checkbox at 44 px; the label row is 48 px. Flipping rewrites the field, panel, inks, lattice, acid and states, and every ratio above re-computes from the new hexes.</p>
+              </div>
+            </aside>
+          </div>
+        </article>
+      </li>
+      <li>
+        <article class="family" id="fam-madder" data-family="madder" data-ground-base="light" aria-labelledby="fam-madder-name"
+          style="--field:#F4E5DC;--panel:#FFF7F0;--ink:#2B1410;--ink-2:#4F241B;--line:#967866;--signal:#8A3A2B;--accent:#D8E84B;--accent-ink:#171A08;--hot:#B4551F;--cool:#23405E;"
+          data-flip="--field:#170F0B;--panel:#211710;--ink:#F3EADC;--ink-2:#C4AE9F;--line:#7D6550;--signal:#B06A52;--accent:#D8E84E;--accent-ink:#161A08;--hot:#E07C43;--cool:#86AECB;">
+          <header class="fam-head">
+            <p class="micro"><span class="fam-index">02</span> / <span data-ground>Light ground</span> / 8 px lattice</p>
+            <h2 class="fam-name" id="fam-madder-name">Madder &amp; Bone</h2>
+            <p class="fam-why">Manjistha madder root on hand-spun khadi gives a rose-bone ground; the dots are the dye at its strongest, and the terracotta state is the same root boiled deeper.</p>
+          </header>
+          <div class="fam-body">
+            <div class="frag" role="group" aria-label="Chat specimen: Madder &amp; Bone, light ground">
+              <div class="frag-inner">
+                <div class="frag-top">
+                  <span class="pill">
+                    <span class="pill-dot" aria-hidden="true"></span>
+                    <span class="pill-label">Listening</span>
+                  </span>
+                </div>
+                <div class="bubbles">
+                  <div class="bubble bubble-they">
+                    <p class="deva" lang="hi">नमस्ते, मैं आपकी बात समझ गया।</p>
+                  </div>
+                  <div class="bubble bubble-me">
+                    <p class="deva" lang="hi">ठीक है, एक मिनट रुकिए।</p>
+                  </div>
+                </div>
+                <div class="composer">
+                  <button class="chip" type="button"><span lang="hi">फिर से बोलिए</span></button>
+                  <button class="send" type="button">Speak</button>
+                </div>
+              </div>
+            </div>
+            <aside class="specs" aria-label="Tokens and measurements: Madder &amp; Bone">
+              <div>
+                <p class="micro">Tokens</p>
+                <ul class="swatches">
+                  <li class="sw"><span class="sw-chip" style="background:var(--field)"></span><span class="sw-role">field</span><span class="sw-hex" data-hex="field">#F4E5DC</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--panel)"></span><span class="sw-role">panel</span><span class="sw-hex" data-hex="panel">#FFF7F0</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--ink)"></span><span class="sw-role">ink</span><span class="sw-hex" data-hex="ink">#2B1410</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--ink-2)"></span><span class="sw-role">ink-2</span><span class="sw-hex" data-hex="ink-2">#4F241B</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--line)"></span><span class="sw-role">line</span><span class="sw-hex" data-hex="line">#967866</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--signal)"></span><span class="sw-role">signal</span><span class="sw-hex" data-hex="signal">#8A3A2B</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--accent)"></span><span class="sw-role">accent</span><span class="sw-hex" data-hex="accent">#D8E84B</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--accent-ink)"></span><span class="sw-role">accent-ink</span><span class="sw-hex" data-hex="accent-ink">#171A08</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--hot)"></span><span class="sw-role">hot</span><span class="sw-hex" data-hex="hot">#B4551F</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--cool)"></span><span class="sw-role">cool</span><span class="sw-hex" data-hex="cool">#23405E</span></li>
+                </ul>
+              </div>
+              <div>
+                <p class="micro">Measured contrast</p>
+                <ul class="metrics">
+                  <li class="metric metric-head"><span>Pair</span><span>Floor</span><span>Ratio</span><span>State</span></li>
+                  <li class="metric"><span class="m-pair">ink / field</span><span class="m-floor">7</span><span class="m-val" data-ratio="ink-field">14.12</span><span class="m-badge is-pass" data-badge="ink-field">PASS</span></li>
+                  <li class="metric"><span class="m-pair">ink-2 / field</span><span class="m-floor">7</span><span class="m-val" data-ratio="ink2-field">10.68</span><span class="m-badge is-pass" data-badge="ink2-field">PASS</span></li>
+                  <li class="metric"><span class="m-pair">accent-ink / accent</span><span class="m-floor">7</span><span class="m-val" data-ratio="accentin-accent">13.10</span><span class="m-badge is-pass" data-badge="accentin-accent">PASS</span></li>
+                  <li class="metric"><span class="m-pair">ink / panel</span><span class="m-floor">7</span><span class="m-val" data-ratio="ink-panel">16.37</span><span class="m-badge is-pass" data-badge="ink-panel">PASS</span></li>
+                  <li class="metric"><span class="m-pair">ink-2 / panel</span><span class="m-floor">7</span><span class="m-val" data-ratio="ink2-panel">12.38</span><span class="m-badge is-pass" data-badge="ink2-panel">PASS</span></li>
+                  <li class="metric"><span class="m-pair">signal / field</span><span class="m-floor">2.5</span><span class="m-val" data-ratio="signal-field">6.28</span><span class="m-badge is-pass" data-badge="signal-field">PASS</span></li>
+                  <li class="metric"><span class="m-pair">hot / field</span><span class="m-floor">3</span><span class="m-val" data-ratio="hot-field">4.01</span><span class="m-badge is-pass" data-badge="hot-field">PASS</span></li>
+                  <li class="metric"><span class="m-pair">cool / field</span><span class="m-floor">3</span><span class="m-val" data-ratio="cool-field">8.69</span><span class="m-badge is-pass" data-badge="cool-field">PASS</span></li>
+                </ul>
+                <p class="verdict is-good" data-verdict aria-live="polite">All five text pairs clear 7:1 in this pair. The dot, hot and cool rows are non-text and are held to 2.5–3:1.</p>
+              </div>
+              <div class="flip-wrap">
+                <label class="flip" for="flip-madder">
+                  <input class="flip-input" type="checkbox" id="flip-madder" />
+                  <span class="flip-text">
+                    <span class="flip-title">Flip ground</span>
+                    <span class="flip-state" data-flip-state>Light pair shown</span>
+                  </span>
+                </label>
+                <p class="flip-note">A native checkbox at 44 px; the label row is 48 px. Flipping rewrites the field, panel, inks, lattice, acid and states, and every ratio above re-computes from the new hexes.</p>
+              </div>
+            </aside>
+          </div>
+        </article>
+      </li>
+      <li>
+        <article class="family" id="fam-chuna" data-family="chuna" data-ground-base="light" aria-labelledby="fam-chuna-name"
+          style="--field:#E7EBE9;--panel:#F7FAF8;--ink:#1B211C;--ink-2:#3B463D;--line:#77837B;--signal:#7C8A80;--accent:#C3DD32;--accent-ink:#10140A;--hot:#B4512F;--cool:#2F5A57;"
+          data-flip="--field:#0F1310;--panel:#181D1A;--ink:#EEECE2;--ink-2:#B6BCB0;--line:#5B6F60;--signal:#6E7568;--accent:#CDE73F;--accent-ink:#10140A;--hot:#DE7B4A;--cool:#6FC0B4;">
+          <header class="fam-head">
+            <p class="micro"><span class="fam-index">03</span> / <span data-ground>Light ground</span> / 8 px lattice</p>
+            <h2 class="fam-name" id="fam-chuna-name">Chuna Lime-Wash</h2>
+            <p class="fam-why">A chuna lime-washed wall with its indigo plinth line: chalky neutral field, green-slate ink, and a dot texture like whitewash catching the sun.</p>
+          </header>
+          <div class="fam-body">
+            <div class="frag" role="group" aria-label="Chat specimen: Chuna Lime-Wash, light ground">
+              <div class="frag-inner">
+                <div class="frag-top">
+                  <span class="pill">
+                    <span class="pill-dot" aria-hidden="true"></span>
+                    <span class="pill-label">Listening</span>
+                  </span>
+                </div>
+                <div class="bubbles">
+                  <div class="bubble bubble-they">
+                    <p class="deva" lang="hi">नमस्ते, मैं आपकी बात समझ गया।</p>
+                  </div>
+                  <div class="bubble bubble-me">
+                    <p class="deva" lang="hi">ठीक है, एक मिनट रुकिए।</p>
+                  </div>
+                </div>
+                <div class="composer">
+                  <button class="chip" type="button"><span lang="hi">फिर से बोलिए</span></button>
+                  <button class="send" type="button">Speak</button>
+                </div>
+              </div>
+            </div>
+            <aside class="specs" aria-label="Tokens and measurements: Chuna Lime-Wash">
+              <div>
+                <p class="micro">Tokens</p>
+                <ul class="swatches">
+                  <li class="sw"><span class="sw-chip" style="background:var(--field)"></span><span class="sw-role">field</span><span class="sw-hex" data-hex="field">#E7EBE9</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--panel)"></span><span class="sw-role">panel</span><span class="sw-hex" data-hex="panel">#F7FAF8</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--ink)"></span><span class="sw-role">ink</span><span class="sw-hex" data-hex="ink">#1B211C</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--ink-2)"></span><span class="sw-role">ink-2</span><span class="sw-hex" data-hex="ink-2">#3B463D</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--line)"></span><span class="sw-role">line</span><span class="sw-hex" data-hex="line">#77837B</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--signal)"></span><span class="sw-role">signal</span><span class="sw-hex" data-hex="signal">#7C8A80</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--accent)"></span><span class="sw-role">accent</span><span class="sw-hex" data-hex="accent">#C3DD32</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--accent-ink)"></span><span class="sw-role">accent-ink</span><span class="sw-hex" data-hex="accent-ink">#10140A</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--hot)"></span><span class="sw-role">hot</span><span class="sw-hex" data-hex="hot">#B4512F</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--cool)"></span><span class="sw-role">cool</span><span class="sw-hex" data-hex="cool">#2F5A57</span></li>
+                </ul>
+              </div>
+              <div>
+                <p class="micro">Measured contrast</p>
+                <ul class="metrics">
+                  <li class="metric metric-head"><span>Pair</span><span>Floor</span><span>Ratio</span><span>State</span></li>
+                  <li class="metric"><span class="m-pair">ink / field</span><span class="m-floor">7</span><span class="m-val" data-ratio="ink-field">13.63</span><span class="m-badge is-pass" data-badge="ink-field">PASS</span></li>
+                  <li class="metric"><span class="m-pair">ink-2 / field</span><span class="m-floor">7</span><span class="m-val" data-ratio="ink2-field">8.20</span><span class="m-badge is-pass" data-badge="ink2-field">PASS</span></li>
+                  <li class="metric"><span class="m-pair">accent-ink / accent</span><span class="m-floor">7</span><span class="m-val" data-ratio="accentin-accent">12.17</span><span class="m-badge is-pass" data-badge="accentin-accent">PASS</span></li>
+                  <li class="metric"><span class="m-pair">ink / panel</span><span class="m-floor">7</span><span class="m-val" data-ratio="ink-panel">15.60</span><span class="m-badge is-pass" data-badge="ink-panel">PASS</span></li>
+                  <li class="metric"><span class="m-pair">ink-2 / panel</span><span class="m-floor">7</span><span class="m-val" data-ratio="ink2-panel">9.39</span><span class="m-badge is-pass" data-badge="ink2-panel">PASS</span></li>
+                  <li class="metric"><span class="m-pair">signal / field</span><span class="m-floor">2.5</span><span class="m-val" data-ratio="signal-field">3.01</span><span class="m-badge is-pass" data-badge="signal-field">PASS</span></li>
+                  <li class="metric"><span class="m-pair">hot / field</span><span class="m-floor">3</span><span class="m-val" data-ratio="hot-field">4.20</span><span class="m-badge is-pass" data-badge="hot-field">PASS</span></li>
+                  <li class="metric"><span class="m-pair">cool / field</span><span class="m-floor">3</span><span class="m-val" data-ratio="cool-field">6.42</span><span class="m-badge is-pass" data-badge="cool-field">PASS</span></li>
+                </ul>
+                <p class="verdict is-good" data-verdict aria-live="polite">All five text pairs clear 7:1 in this pair. The dot, hot and cool rows are non-text and are held to 2.5–3:1.</p>
+              </div>
+              <div class="flip-wrap">
+                <label class="flip" for="flip-chuna">
+                  <input class="flip-input" type="checkbox" id="flip-chuna" />
+                  <span class="flip-text">
+                    <span class="flip-title">Flip ground</span>
+                    <span class="flip-state" data-flip-state>Light pair shown</span>
+                  </span>
+                </label>
+                <p class="flip-note">A native checkbox at 44 px; the label row is 48 px. Flipping rewrites the field, panel, inks, lattice, acid and states, and every ratio above re-computes from the new hexes.</p>
+              </div>
+            </aside>
+          </div>
+        </article>
+      </li>
+      <li>
+        <article class="family" id="fam-peacock" data-family="peacock" data-ground-base="dark" aria-labelledby="fam-peacock-name"
+          style="--field:#0C0F0B;--panel:#161B13;--ink:#F1EBD9;--ink-2:#BFBEA4;--line:#606D52;--signal:#9DB32C;--accent:#D9F03F;--accent-ink:#101405;--hot:#D4682F;--cool:#57C3AE;"
+          data-flip="--field:#F1EDDD;--panel:#FBF8EC;--ink:#141A10;--ink-2:#3D4636;--line:#8D8166;--signal:#8F9C34;--accent:#C4DA33;--accent-ink:#131707;--hot:#B4472B;--cool:#2C5C6B;">
+          <header class="fam-head">
+            <p class="micro"><span class="fam-index">04</span> / <span data-ground>Dark ground</span> / 8 px lattice</p>
+            <h2 class="fam-name" id="fam-peacock-name">Peacock Matrix</h2>
+            <p class="fam-why">The reference itself: a halftone peacock head in acid-lime dots on near-black, terracotta in the beak, bone-white in the eye cluster. Hard dot edges, no soft light, no gradient wash.</p>
+          </header>
+          <div class="fam-body">
+            <div class="frag" role="group" aria-label="Chat specimen: Peacock Matrix, dark ground">
+              <div class="frag-inner">
+                <div class="frag-top">
+                  <span class="pill">
+                    <span class="pill-dot" aria-hidden="true"></span>
+                    <span class="pill-label">Listening</span>
+                  </span>
+                </div>
+                <div class="bubbles">
+                  <div class="bubble bubble-they">
+                    <p class="deva" lang="hi">नमस्ते, मैं आपकी बात समझ गया।</p>
+                  </div>
+                  <div class="bubble bubble-me">
+                    <p class="deva" lang="hi">ठीक है, एक मिनट रुकिए।</p>
+                  </div>
+                </div>
+                <div class="composer">
+                  <button class="chip" type="button"><span lang="hi">फिर से बोलिए</span></button>
+                  <button class="send" type="button">Speak</button>
+                </div>
+              </div>
+            </div>
+            <aside class="specs" aria-label="Tokens and measurements: Peacock Matrix">
+              <div>
+                <p class="micro">Tokens</p>
+                <ul class="swatches">
+                  <li class="sw"><span class="sw-chip" style="background:var(--field)"></span><span class="sw-role">field</span><span class="sw-hex" data-hex="field">#0C0F0B</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--panel)"></span><span class="sw-role">panel</span><span class="sw-hex" data-hex="panel">#161B13</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--ink)"></span><span class="sw-role">ink</span><span class="sw-hex" data-hex="ink">#F1EBD9</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--ink-2)"></span><span class="sw-role">ink-2</span><span class="sw-hex" data-hex="ink-2">#BFBEA4</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--line)"></span><span class="sw-role">line</span><span class="sw-hex" data-hex="line">#606D52</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--signal)"></span><span class="sw-role">signal</span><span class="sw-hex" data-hex="signal">#9DB32C</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--accent)"></span><span class="sw-role">accent</span><span class="sw-hex" data-hex="accent">#D9F03F</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--accent-ink)"></span><span class="sw-role">accent-ink</span><span class="sw-hex" data-hex="accent-ink">#101405</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--hot)"></span><span class="sw-role">hot</span><span class="sw-hex" data-hex="hot">#D4682F</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--cool)"></span><span class="sw-role">cool</span><span class="sw-hex" data-hex="cool">#57C3AE</span></li>
+                </ul>
+              </div>
+              <div>
+                <p class="micro">Measured contrast</p>
+                <ul class="metrics">
+                  <li class="metric metric-head"><span>Pair</span><span>Floor</span><span>Ratio</span><span>State</span></li>
+                  <li class="metric"><span class="m-pair">ink / field</span><span class="m-floor">7</span><span class="m-val" data-ratio="ink-field">16.19</span><span class="m-badge is-pass" data-badge="ink-field">PASS</span></li>
+                  <li class="metric"><span class="m-pair">ink-2 / field</span><span class="m-floor">7</span><span class="m-val" data-ratio="ink2-field">10.21</span><span class="m-badge is-pass" data-badge="ink2-field">PASS</span></li>
+                  <li class="metric"><span class="m-pair">accent-ink / accent</span><span class="m-floor">7</span><span class="m-val" data-ratio="accentin-accent">14.66</span><span class="m-badge is-pass" data-badge="accentin-accent">PASS</span></li>
+                  <li class="metric"><span class="m-pair">ink / panel</span><span class="m-floor">7</span><span class="m-val" data-ratio="ink-panel">14.68</span><span class="m-badge is-pass" data-badge="ink-panel">PASS</span></li>
+                  <li class="metric"><span class="m-pair">ink-2 / panel</span><span class="m-floor">7</span><span class="m-val" data-ratio="ink2-panel">9.26</span><span class="m-badge is-pass" data-badge="ink2-panel">PASS</span></li>
+                  <li class="metric"><span class="m-pair">signal / field</span><span class="m-floor">2.5</span><span class="m-val" data-ratio="signal-field">8.19</span><span class="m-badge is-pass" data-badge="signal-field">PASS</span></li>
+                  <li class="metric"><span class="m-pair">hot / field</span><span class="m-floor">3</span><span class="m-val" data-ratio="hot-field">5.35</span><span class="m-badge is-pass" data-badge="hot-field">PASS</span></li>
+                  <li class="metric"><span class="m-pair">cool / field</span><span class="m-floor">3</span><span class="m-val" data-ratio="cool-field">9.02</span><span class="m-badge is-pass" data-badge="cool-field">PASS</span></li>
+                </ul>
+                <p class="verdict is-good" data-verdict aria-live="polite">All five text pairs clear 7:1 in this pair. The dot, hot and cool rows are non-text and are held to 2.5–3:1.</p>
+              </div>
+              <div class="flip-wrap">
+                <label class="flip" for="flip-peacock">
+                  <input class="flip-input" type="checkbox" id="flip-peacock" />
+                  <span class="flip-text">
+                    <span class="flip-title">Flip ground</span>
+                    <span class="flip-state" data-flip-state>Dark pair shown</span>
+                  </span>
+                </label>
+                <p class="flip-note">A native checkbox at 44 px; the label row is 48 px. Flipping rewrites the field, panel, inks, lattice, acid and states, and every ratio above re-computes from the new hexes.</p>
+              </div>
+            </aside>
+          </div>
+        </article>
+      </li>
+      <li>
+        <article class="family" id="fam-monsoon" data-family="monsoon" data-ground-base="dark" aria-labelledby="fam-monsoon-name"
+          style="--field:#0F1418;--panel:#171E24;--ink:#E9E8E1;--ink-2:#B0B7BC;--line:#5E6C78;--signal:#55636F;--accent:#C6E042;--accent-ink:#10140A;--hot:#D98A3F;--cool:#78A7BE;"
+          data-flip="--field:#EDF0F0;--panel:#F9FBFB;--ink:#141A1E;--ink-2:#3C474E;--line:#7A8A80;--signal:#8B9AA4;--accent:#B9D62E;--accent-ink:#10140A;--hot:#B75B2D;--cool:#3B7C94;">
+          <header class="fam-head">
+            <p class="micro"><span class="fam-index">05</span> / <span data-ground>Dark ground</span> / 8 px lattice</p>
+            <h2 class="fam-name" id="fam-monsoon-name">Monsoon Slate</h2>
+            <p class="fam-why">Wet slate roofs under monsoon light: a cool blue-grey ground, moss acid for the action, and marigold kept warm for the voice.</p>
+          </header>
+          <div class="fam-body">
+            <div class="frag" role="group" aria-label="Chat specimen: Monsoon Slate, dark ground">
+              <div class="frag-inner">
+                <div class="frag-top">
+                  <span class="pill">
+                    <span class="pill-dot" aria-hidden="true"></span>
+                    <span class="pill-label">Listening</span>
+                  </span>
+                </div>
+                <div class="bubbles">
+                  <div class="bubble bubble-they">
+                    <p class="deva" lang="hi">नमस्ते, मैं आपकी बात समझ गया।</p>
+                  </div>
+                  <div class="bubble bubble-me">
+                    <p class="deva" lang="hi">ठीक है, एक मिनट रुकिए।</p>
+                  </div>
+                </div>
+                <div class="composer">
+                  <button class="chip" type="button"><span lang="hi">फिर से बोलिए</span></button>
+                  <button class="send" type="button">Speak</button>
+                </div>
+              </div>
+            </div>
+            <aside class="specs" aria-label="Tokens and measurements: Monsoon Slate">
+              <div>
+                <p class="micro">Tokens</p>
+                <ul class="swatches">
+                  <li class="sw"><span class="sw-chip" style="background:var(--field)"></span><span class="sw-role">field</span><span class="sw-hex" data-hex="field">#0F1418</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--panel)"></span><span class="sw-role">panel</span><span class="sw-hex" data-hex="panel">#171E24</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--ink)"></span><span class="sw-role">ink</span><span class="sw-hex" data-hex="ink">#E9E8E1</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--ink-2)"></span><span class="sw-role">ink-2</span><span class="sw-hex" data-hex="ink-2">#B0B7BC</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--line)"></span><span class="sw-role">line</span><span class="sw-hex" data-hex="line">#5E6C78</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--signal)"></span><span class="sw-role">signal</span><span class="sw-hex" data-hex="signal">#55636F</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--accent)"></span><span class="sw-role">accent</span><span class="sw-hex" data-hex="accent">#C6E042</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--accent-ink)"></span><span class="sw-role">accent-ink</span><span class="sw-hex" data-hex="accent-ink">#10140A</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--hot)"></span><span class="sw-role">hot</span><span class="sw-hex" data-hex="hot">#D98A3F</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--cool)"></span><span class="sw-role">cool</span><span class="sw-hex" data-hex="cool">#78A7BE</span></li>
+                </ul>
+              </div>
+              <div>
+                <p class="micro">Measured contrast</p>
+                <ul class="metrics">
+                  <li class="metric metric-head"><span>Pair</span><span>Floor</span><span>Ratio</span><span>State</span></li>
+                  <li class="metric"><span class="m-pair">ink / field</span><span class="m-floor">7</span><span class="m-val" data-ratio="ink-field">15.08</span><span class="m-badge is-pass" data-badge="ink-field">PASS</span></li>
+                  <li class="metric"><span class="m-pair">ink-2 / field</span><span class="m-floor">7</span><span class="m-val" data-ratio="ink2-field">9.13</span><span class="m-badge is-pass" data-badge="ink2-field">PASS</span></li>
+                  <li class="metric"><span class="m-pair">accent-ink / accent</span><span class="m-floor">7</span><span class="m-val" data-ratio="accentin-accent">12.55</span><span class="m-badge is-pass" data-badge="accentin-accent">PASS</span></li>
+                  <li class="metric"><span class="m-pair">ink / panel</span><span class="m-floor">7</span><span class="m-val" data-ratio="ink-panel">13.70</span><span class="m-badge is-pass" data-badge="ink-panel">PASS</span></li>
+                  <li class="metric"><span class="m-pair">ink-2 / panel</span><span class="m-floor">7</span><span class="m-val" data-ratio="ink2-panel">8.29</span><span class="m-badge is-pass" data-badge="ink2-panel">PASS</span></li>
+                  <li class="metric"><span class="m-pair">signal / field</span><span class="m-floor">2.5</span><span class="m-val" data-ratio="signal-field">3.00</span><span class="m-badge is-pass" data-badge="signal-field">PASS</span></li>
+                  <li class="metric"><span class="m-pair">hot / field</span><span class="m-floor">3</span><span class="m-val" data-ratio="hot-field">6.76</span><span class="m-badge is-pass" data-badge="hot-field">PASS</span></li>
+                  <li class="metric"><span class="m-pair">cool / field</span><span class="m-floor">3</span><span class="m-val" data-ratio="cool-field">7.12</span><span class="m-badge is-pass" data-badge="cool-field">PASS</span></li>
+                </ul>
+                <p class="verdict is-good" data-verdict aria-live="polite">All five text pairs clear 7:1 in this pair. The dot, hot and cool rows are non-text and are held to 2.5–3:1.</p>
+              </div>
+              <div class="flip-wrap">
+                <label class="flip" for="flip-monsoon">
+                  <input class="flip-input" type="checkbox" id="flip-monsoon" />
+                  <span class="flip-text">
+                    <span class="flip-title">Flip ground</span>
+                    <span class="flip-state" data-flip-state>Dark pair shown</span>
+                  </span>
+                </label>
+                <p class="flip-note">A native checkbox at 44 px; the label row is 48 px. Flipping rewrites the field, panel, inks, lattice, acid and states, and every ratio above re-computes from the new hexes.</p>
+              </div>
+            </aside>
+          </div>
+        </article>
+      </li>
+      <li>
+        <article class="family" id="fam-marigold" data-family="marigold" data-ground-base="dark" aria-labelledby="fam-marigold-name"
+          style="--field:#100D08;--panel:#19150D;--ink:#F2E9D5;--ink-2:#C2B18F;--line:#71623E;--signal:#A87C24;--accent:#D3E540;--accent-ink:#12140A;--hot:#E9A33A;--cool:#5FA8A0;"
+          data-flip="--field:#F4EEE1;--panel:#FCF8EE;--ink:#1D1710;--ink-2:#463A29;--line:#9C7F62;--signal:#B98C34;--accent:#C9DC35;--accent-ink:#141705;--hot:#B25A1F;--cool:#35696B;">
+          <header class="fam-head">
+            <p class="micro"><span class="fam-index">06</span> / <span data-ground>Dark ground</span> / 8 px lattice</p>
+            <h2 class="fam-name" id="fam-marigold-name">Marigold Night</h2>
+            <p class="fam-why">Genda garlands at a night market: a warm near-black field where marigold dots carry the texture and the acid stays reserved for the send button.</p>
+          </header>
+          <div class="fam-body">
+            <div class="frag" role="group" aria-label="Chat specimen: Marigold Night, dark ground">
+              <div class="frag-inner">
+                <div class="frag-top">
+                  <span class="pill">
+                    <span class="pill-dot" aria-hidden="true"></span>
+                    <span class="pill-label">Listening</span>
+                  </span>
+                </div>
+                <div class="bubbles">
+                  <div class="bubble bubble-they">
+                    <p class="deva" lang="hi">नमस्ते, मैं आपकी बात समझ गया।</p>
+                  </div>
+                  <div class="bubble bubble-me">
+                    <p class="deva" lang="hi">ठीक है, एक मिनट रुकिए।</p>
+                  </div>
+                </div>
+                <div class="composer">
+                  <button class="chip" type="button"><span lang="hi">फिर से बोलिए</span></button>
+                  <button class="send" type="button">Speak</button>
+                </div>
+              </div>
+            </div>
+            <aside class="specs" aria-label="Tokens and measurements: Marigold Night">
+              <div>
+                <p class="micro">Tokens</p>
+                <ul class="swatches">
+                  <li class="sw"><span class="sw-chip" style="background:var(--field)"></span><span class="sw-role">field</span><span class="sw-hex" data-hex="field">#100D08</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--panel)"></span><span class="sw-role">panel</span><span class="sw-hex" data-hex="panel">#19150D</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--ink)"></span><span class="sw-role">ink</span><span class="sw-hex" data-hex="ink">#F2E9D5</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--ink-2)"></span><span class="sw-role">ink-2</span><span class="sw-hex" data-hex="ink-2">#C2B18F</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--line)"></span><span class="sw-role">line</span><span class="sw-hex" data-hex="line">#71623E</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--signal)"></span><span class="sw-role">signal</span><span class="sw-hex" data-hex="signal">#A87C24</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--accent)"></span><span class="sw-role">accent</span><span class="sw-hex" data-hex="accent">#D3E540</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--accent-ink)"></span><span class="sw-role">accent-ink</span><span class="sw-hex" data-hex="accent-ink">#12140A</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--hot)"></span><span class="sw-role">hot</span><span class="sw-hex" data-hex="hot">#E9A33A</span></li>
+                  <li class="sw"><span class="sw-chip" style="background:var(--cool)"></span><span class="sw-role">cool</span><span class="sw-hex" data-hex="cool">#5FA8A0</span></li>
+                </ul>
+              </div>
+              <div>
+                <p class="micro">Measured contrast</p>
+                <ul class="metrics">
+                  <li class="metric metric-head"><span>Pair</span><span>Floor</span><span>Ratio</span><span>State</span></li>
+                  <li class="metric"><span class="m-pair">ink / field</span><span class="m-floor">7</span><span class="m-val" data-ratio="ink-field">16.06</span><span class="m-badge is-pass" data-badge="ink-field">PASS</span></li>
+                  <li class="metric"><span class="m-pair">ink-2 / field</span><span class="m-floor">7</span><span class="m-val" data-ratio="ink2-field">9.21</span><span class="m-badge is-pass" data-badge="ink2-field">PASS</span></li>
+                  <li class="metric"><span class="m-pair">accent-ink / accent</span><span class="m-floor">7</span><span class="m-val" data-ratio="accentin-accent">13.32</span><span class="m-badge is-pass" data-badge="accentin-accent">PASS</span></li>
+                  <li class="metric"><span class="m-pair">ink / panel</span><span class="m-floor">7</span><span class="m-val" data-ratio="ink-panel">15.07</span><span class="m-badge is-pass" data-badge="ink-panel">PASS</span></li>
+                  <li class="metric"><span class="m-pair">ink-2 / panel</span><span class="m-floor">7</span><span class="m-val" data-ratio="ink2-panel">8.64</span><span class="m-badge is-pass" data-badge="ink2-panel">PASS</span></li>
+                  <li class="metric"><span class="m-pair">signal / field</span><span class="m-floor">2.5</span><span class="m-val" data-ratio="signal-field">5.15</span><span class="m-badge is-pass" data-badge="signal-field">PASS</span></li>
+                  <li class="metric"><span class="m-pair">hot / field</span><span class="m-floor">3</span><span class="m-val" data-ratio="hot-field">9.02</span><span class="m-badge is-pass" data-badge="hot-field">PASS</span></li>
+                  <li class="metric"><span class="m-pair">cool / field</span><span class="m-floor">3</span><span class="m-val" data-ratio="cool-field">7.01</span><span class="m-badge is-pass" data-badge="cool-field">PASS</span></li>
+                </ul>
+                <p class="verdict is-good" data-verdict aria-live="polite">All five text pairs clear 7:1 in this pair. The dot, hot and cool rows are non-text and are held to 2.5–3:1.</p>
+              </div>
+              <div class="flip-wrap">
+                <label class="flip" for="flip-marigold">
+                  <input class="flip-input" type="checkbox" id="flip-marigold" />
+                  <span class="flip-text">
+                    <span class="flip-title">Flip ground</span>
+                    <span class="flip-state" data-flip-state>Dark pair shown</span>
+                  </span>
+                </label>
+                <p class="flip-note">A native checkbox at 44 px; the label row is 48 px. Flipping rewrites the field, panel, inks, lattice, acid and states, and every ratio above re-computes from the new hexes.</p>
+              </div>
+            </aside>
+          </div>
+        </article>
+      </li>
+    </ol>
+  </section>
+
+  <section class="block" id="recommendation" aria-labelledby="rec-heading">
+    <p class="micro">07 / recommendation</p>
+    <h2 class="block-title" id="rec-heading">Indigo Resist for daylight, Peacock Matrix for the dark.</h2>
+    <p class="block-lede">One pair, two grounds: the light family ships as <code>:root</code> and is the default on camera; the dark family is the reference the art direction came from and ships as <code>.dark</code>. Both are measured again in the drop-in block at the end.</p>
+    <div class="picks">
+      <article class="pick">
+        <div class="pick-head">
+          <h3 class="pick-name">01 Indigo Resist</h3>
+          <span class="pick-tag">ship as :root</span>
+        </div>
+        <p>Bone cloth under indigo is the daylight default: ink measures 13.77:1 and ink-2 9.25:1, so a 23 px Devanagari line stays legible after video compression, and the indigo dot lattice reads as woven cloth rather than noise.</p>
+        <p>Acid lime is held to one job, your reply leaving the phone, at 12.30:1 for the label riding on it; because the acid itself is only 1.21:1 against the bone field, every acid object carries a 1 px ink keyline, and that keyline is a rule, not a styling option.</p>
+        <ul class="pick-metrics">
+          <li><span>ink / field</span><b>13.77</b></li>
+          <li><span>ink-2 / field</span><b>9.25</b></li>
+          <li><span>accent-ink / accent</span><b>12.30</b></li>
+          <li><span>signal / field, dots</span><b>9.36</b></li>
+          <li><span>hot / field, speaking</span><b>5.41</b></li>
+          <li><span>cool / field, listening</span><b>7.28</b></li>
+        </ul>
+      </article>
+      <article class="pick">
+        <div class="pick-head">
+          <h3 class="pick-name">04 Peacock Matrix</h3>
+          <span class="pick-tag">ship as .dark</span>
+        </div>
+        <p>The reference halftone, delivered without compromise: acid-lime dots at 8 px pitch on near-black, terracotta for outgoing audio and bone-white for reading, with ink/field at 16.19:1 and ink-2/field at 10.21:1, the highest of the dark grounds.</p>
+        <p>Keep it as the dark mode, not the daylight default: on a 430 px phone filmed in daylight the near-black field blooms and the lattice dissolves into noise, which is exactly the failure D-010 was written to avoid.</p>
+        <ul class="pick-metrics">
+          <li><span>ink / field</span><b>16.19</b></li>
+          <li><span>ink-2 / field</span><b>10.21</b></li>
+          <li><span>accent-ink / accent</span><b>14.66</b></li>
+          <li><span>signal / field, dots</span><b>8.19</b></li>
+          <li><span>hot / field, speaking</span><b>5.35</b></li>
+          <li><span>cool / field, listening</span><b>9.02</b></li>
+        </ul>
+      </article>
+    </div>
+    <p class="rec-note">Twelve ground pairs were measured: six families, each flipped once. The lowest text ratio anywhere on the sheet is 8.20:1 (03 Chuna Lime-Wash, ink-2 on field), so no family hides a failure behind a pleasing swatch. The two lowest values among the non-text rows are the dot lattice on the two light flips (2.53 and 2.57), which is deliberate: the dots are texture and must never carry meaning.</p>
+  </section>
+
+  <section class="block" id="roles" aria-labelledby="roles-heading">
+    <p class="micro">08 / role legend</p>
+    <h2 class="block-title" id="roles-heading">Ten tokens, ten jobs.</h2>
+    <p class="block-lede">One warm colour for audio leaving, one acid for action, one cool for listening. Everything else is ink and holes; a token that is not doing one of those jobs is not in the palette.</p>
+    <ol class="legend">
+      <li class="legend-row">
+        <span class="legend-token">--field</span>
+        <span class="legend-what">The page ground the lattice is printed on. The reference colour for every other ratio.</span>
+        <span class="legend-use">App background, the transcript well, the cavity behind every hole.</span>
+        <span class="legend-floor">ground</span>
+      </li>
+      <li class="legend-row">
+        <span class="legend-token">--panel</span>
+        <span class="legend-what">A flat hole punched in the lattice: a surface where no dot moves under the words.</span>
+        <span class="legend-use">Caller bubble, chips, status pill, composer, sheets, this specimen card.</span>
+        <span class="legend-floor">ink at 7:1</span>
+      </li>
+      <li class="legend-row">
+        <span class="legend-token">--ink</span>
+        <span class="legend-what">The other person's words, and every primary label that has to be read at a glance.</span>
+        <span class="legend-use">Live transcript at 23 px, bubble text, headings, the send label.</span>
+        <span class="legend-floor">7:1 on field and panel</span>
+      </li>
+      <li class="legend-row">
+        <span class="legend-token">--ink-2</span>
+        <span class="legend-what">Secondary words: state, time, placeholders, captions. Never the transcript itself.</span>
+        <span class="legend-use">Listening pill, timestamps, input placeholder, helper text.</span>
+        <span class="legend-floor">7:1 on field and panel</span>
+      </li>
+      <li class="legend-row">
+        <span class="legend-token">--line</span>
+        <span class="legend-what">The 1 px rule: edges of holes, dividers, the keyline around an acid object.</span>
+        <span class="legend-use">Bubble outline, chip outline, table rules, section edges.</span>
+        <span class="legend-floor">3:1, non-text</span>
+      </li>
+      <li class="legend-row">
+        <span class="legend-token">--signal</span>
+        <span class="legend-what">The dot lattice itself. Texture, never meaning: it may be quiet, it may never be confusable with text.</span>
+        <span class="legend-use">8 px pitch ground behind the transcript and around every panel.</span>
+        <span class="legend-floor">2.5:1, non-text</span>
+      </li>
+      <li class="legend-row">
+        <span class="legend-token">--accent</span>
+        <span class="legend-what">The one acid, reserved for your reply leaving the phone. Fill only; never a text colour.</span>
+        <span class="legend-use">Send button, reply bubble, the checked state of the flip control.</span>
+        <span class="legend-floor">fill only</span>
+      </li>
+      <li class="legend-row">
+        <span class="legend-token">--accent-ink</span>
+        <span class="legend-what">The words that ride on acid. Never used on the field or a panel.</span>
+        <span class="legend-use">Send label, reply text, the check mark inside an acid control.</span>
+        <span class="legend-floor">7:1 on accent</span>
+      </li>
+      <li class="legend-row">
+        <span class="legend-token">--hot</span>
+        <span class="legend-what">One warm colour for audio in flight, outgoing: the voice is being spoken or played.</span>
+        <span class="legend-use">Speaking dot, open beak, the live edge of the transcript. Never body text.</span>
+        <span class="legend-floor">3:1, non-text</span>
+      </li>
+      <li class="legend-row">
+        <span class="legend-token">--cool</span>
+        <span class="legend-what">One cool colour for listening: the phone is open and the room is being heard.</span>
+        <span class="legend-use">Listening pulse, live edge, focus ring; in the shipped pair it is also --accent-text.</span>
+        <span class="legend-floor">3:1, non-text; 7:1 as text</span>
+      </li>
+    </ol>
+    <p class="legend-note">Two hues carry state because state is geometry elsewhere (D-011, D-013): the ring pulses for listening, the beak opens for speaking. Nothing in this palette is a gradient, a shadow or a third accent, so a colour on screen always means one of these ten things.</p>
+  </section>
+
+  <section class="block" id="developer" aria-labelledby="dev-heading">
+    <p class="micro">09 / developer note</p>
+    <h2 class="block-title" id="dev-heading">The tokens to drop in.</h2>
+    <p class="block-lede">Replace <code>:root</code> and <code>.dark</code> in <code>pashyanti/web/src/index.css</code> with the two blocks below, and add the new colour aliases to the existing <code>@theme inline</code> — do not replace that block: it carries the app's font stacks and the <code>--color-*</code> aliases. <code>:root</code> is 01 Indigo Resist, <code>.dark</code> is 04 Peacock Matrix.</p>
+    <pre class="code"><code>/*
+ * Pixel-matrix tokens. :root = 01 Indigo Resist (light, daylight default).
+ * .dark = 04 Peacock Matrix (the reference halftone).
+ * Measured in palettes.html —
+ * light: ink/field 13.77, ink-2/field 9.25, accent-ink/accent 12.30
+ * dark:  ink/field 16.19, ink-2/field 10.21, accent-ink/accent 14.66
+ */
+
+:root {
+  /* the ten dot-matrix tokens */
+  --field: #F2EBDC;
+  --panel: #FBF6E8;
+  --ink: #191F33;
+  --ink-2: #343B58;
+  --line: #8A8770;
+  --signal: #313A5C;
+  --accent: #CFE23A;
+  --accent-ink: #161A0B;
+  --hot: #A63B23;
+  --cool: #23506B;
+
+  /* existing names, remapped so nothing in the app goes unstyled */
+  --paper: var(--field);
+  --surface: var(--panel);
+  --surface-2: #EDE4D0;
+  --muted: var(--ink-2);
+  --accent-text: var(--cool);
+  --accent-soft: #E9EEC6;
+  --primary: var(--accent);
+  --primary-ink: var(--accent-ink);
+  --on-primary-muted: #2A300D;
+  --on-ink-muted: #C9CCD8;
+  --ok: var(--signal);
+  --warn: var(--hot);
+  --warn-ink: var(--field);
+  --warn-soft: #F3DFD4;
+  --shadow-pop: 4px 4px 0 0 var(--line);
+}
+
+.dark {
+  --field: #0C0F0B;
+  --panel: #161B13;
+  --ink: #F1EBD9;
+  --ink-2: #BFBEA4;
+  --line: #606D52;
+  --signal: #9DB32C;
+  --accent: #D9F03F;
+  --accent-ink: #101405;
+  --hot: #D4682F;
+  --cool: #57C3AE;
+
+  --paper: var(--field);
+  --surface: var(--panel);
+  --surface-2: #1D2419;
+  --muted: var(--ink-2);
+  --accent-text: var(--cool);
+  --accent-soft: #2F3A12;
+  --primary: var(--accent);
+  --primary-ink: var(--accent-ink);
+  --on-primary-muted: #2A300D;
+  --on-ink-muted: #4E4C3E;
+  --ok: var(--signal);
+  --warn: var(--hot);
+  --warn-ink: var(--field);
+  --warn-soft: #2A1C13;
+  --shadow-pop: 4px 4px 0 0 #000000;
+}
+
+/* let Tailwind utilities reach the four new semantic colours */
+@theme inline {
+  --color-field: var(--field);
+  --color-panel: var(--panel);
+  --color-signal: var(--signal);
+  --color-hot: var(--hot);
+  --color-cool: var(--cool);
+}</code></pre>
+    <ol class="callouts">
+      <li>
+        <span class="callout-num">01</span>
+        <span><span class="callout-strong">Paint the lattice once, behind everything.</span> <code>body::before</code> gets <code>radial-gradient(var(--signal) 1.6px, transparent 1.7px)</code> at <code>8px 8px</code>, fixed, <code>z-index: -1</code>. Panels stay opaque, so a hole reads because the dots stop, not because of a shadow.</span>
+      </li>
+      <li>
+        <span class="callout-num">02</span>
+        <span><span class="callout-strong">Square the shapes.</span> <code>.bubble</code>, <code>.btn-primary</code>, <code>.composer-input</code> and <code>.summary-card</code> go to <code>border-radius: 0</code>; only the pill and chip keep <code>999px</code>. <code>--shadow-pop</code> is now a hard 4 px offset: the language popover is the only thing that may use it.</span>
+      </li>
+      <li>
+        <span class="callout-num">03</span>
+        <span><span class="callout-strong">Fix the two legacy pairings the remap exposes.</span> <code>.retry-badge</code> must switch its text to <code>var(--warn-ink)</code>, because <code>--primary-ink</code> is now dark-on-acid and measures 2.76:1 on <code>--warn</code>. <code>.status-dot[data-state="speaking"]</code> should paint <code>var(--hot)</code>; listening already follows <code>--accent-text</code> to <code>--cool</code>.</span>
+      </li>
+      <li>
+        <span class="callout-num">04</span>
+        <span><span class="callout-strong">Sakhi needs a keyline.</span> The mascot fills with <code>--color-accent</code>, which is now acid: the trace measures 1.21:1 on the bone field, so give it a 1.5 px <code>var(--ink)</code> keyline or it disappears at 30 px.</span>
+      </li>
+    </ol>
+  </section>
+
+  </main>
+
+  <footer class="page-foot">
+    <p>Pashyanti colour directions. Every ratio on this page is computed from the hex values in the page, with the WCAG 2.x relative-luminance formula; nothing is estimated. Type is Fraunces, Karla, Mukta and Silkscreen from Google Fonts. No images, no icon library, no emoji.</p>
+    <p>Open this file directly or through the OpenDesign viewer. The flip works in both.</p>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var ROWS = [
+    { id: "ink-field", a: "ink", b: "field", floor: 7 },
+    { id: "ink2-field", a: "ink-2", b: "field", floor: 7 },
+    { id: "accentin-accent", a: "accent-ink", b: "accent", floor: 7 },
+    { id: "ink-panel", a: "ink", b: "panel", floor: 7 },
+    { id: "ink2-panel", a: "ink-2", b: "panel", floor: 7 },
+    { id: "signal-field", a: "signal", b: "field", floor: 2.5 },
+    { id: "hot-field", a: "hot", b: "field", floor: 3 },
+    { id: "cool-field", a: "cool", b: "field", floor: 3 }
+  ];
+
+  var TOKENS = ["field", "panel", "ink", "ink-2", "line", "signal", "accent", "accent-ink", "hot", "cool"];
+
+  function channel(value) {
+    var v = value / 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  }
+
+  function luminance(hex) {
+    var match = String(hex).trim().match(/^#?([0-9a-f]{6})$/i);
+    if (!match) {
+      return null;
+    }
+    var n = parseInt(match[1], 16);
+    return 0.2126 * channel((n >> 16) & 255) + 0.7152 * channel((n >> 8) & 255) + 0.0722 * channel(n & 255);
+  }
+
+  function contrast(hexA, hexB) {
+    var a = luminance(hexA);
+    var b = luminance(hexB);
+    if (a === null || b === null) {
+      return null;
+    }
+    var high = Math.max(a, b);
+    var low = Math.min(a, b);
+    return (high + 0.05) / (low + 0.05);
+  }
+
+  function each(list, fn) {
+    Array.prototype.forEach.call(list, fn);
+  }
+
+  each(document.querySelectorAll("[data-family]"), function (fam) {
+    var baseStyle = fam.getAttribute("style") || "";
+    var flipStyle = fam.getAttribute("data-flip") || "";
+    var groundBase = fam.getAttribute("data-ground-base") || "light";
+    var input = fam.querySelector(".flip-input");
+    var groundEl = fam.querySelector("[data-ground]");
+    var stateEl = fam.querySelector("[data-flip-state]");
+    var verdictEl = fam.querySelector("[data-verdict]");
+    var hexLabels = fam.querySelectorAll("[data-hex]");
+
+    function shownGround() {
+      if (!input) {
+        return groundBase;
+      }
+      if (!input.checked) {
+        return groundBase;
+      }
+      return groundBase === "light" ? "dark" : "light";
+    }
+
+    function render() {
+      var computed = window.getComputedStyle(fam);
+      var values = {};
+      each(TOKENS, function (token) {
+        values[token] = computed.getPropertyValue("--" + token).trim();
+      });
+
+      each(hexLabels, function (label) {
+        var token = label.getAttribute("data-hex");
+        label.textContent = values[token] ? values[token].toUpperCase() : "MISSING";
+      });
+
+      var textFails = 0;
+      each(ROWS, function (row) {
+        var valueEl = fam.querySelector('[data-ratio="' + row.id + '"]');
+        var badgeEl = fam.querySelector('[data-badge="' + row.id + '"]');
+        if (!valueEl || !badgeEl) {
+          return;
+        }
+        var ratio = contrast(values[row.a], values[row.b]);
+        if (ratio === null) {
+          valueEl.textContent = "—";
+          badgeEl.textContent = "NO HEX";
+          badgeEl.className = "m-badge is-fail";
+          if (row.floor === 7) {
+            textFails += 1;
+          }
+          return;
+        }
+        valueEl.textContent = ratio.toFixed(2);
+        var pass = ratio >= row.floor;
+        badgeEl.textContent = pass ? "PASS" : "FAIL";
+        badgeEl.className = "m-badge " + (pass ? "is-pass" : "is-fail");
+        if (row.floor === 7 && !pass) {
+          textFails += 1;
+        }
+      });
+
+      if (groundEl) {
+        groundEl.textContent = shownGround() === "light" ? "Light ground" : "Dark ground";
+      }
+      if (stateEl) {
+        stateEl.textContent = shownGround() === "light" ? "Light pair shown" : "Dark pair shown";
+      }
+      if (verdictEl) {
+        if (textFails === 0) {
+          verdictEl.textContent = "All five text pairs clear 7:1 in this pair. The dot, hot and cool rows are non-text and are held to 2.5–3:1.";
+          verdictEl.className = "verdict is-good";
+        } else {
+          verdictEl.textContent = String(textFails) + (textFails === 1 ? " text pair is" : " text pairs are") + " below 7:1 in this pair. Change the hex before it ships.";
+          verdictEl.className = "verdict is-bad";
+        }
+      }
+    }
+
+    function apply() {
+      if (input && input.checked) {
+        fam.setAttribute("style", baseStyle + flipStyle);
+      } else {
+        fam.setAttribute("style", baseStyle);
+      }
+      render();
+    }
+
+    if (input) {
+      input.addEventListener("change", apply);
+    }
+    apply();
+  });
+})();
+</script>
+</body>
+</html>
