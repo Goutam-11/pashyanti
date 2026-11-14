@@ -321,3 +321,33 @@ later, start the Indian bundle on day one and measure the two WAN legs before
 quoting any latency. They are the only unknowns the spike left, and the 450 ms
 telephony VAD floor is part of the budget either way.
 
+---
+
+## D-015 — Bengali is reported unfolded until a speaker checks it
+
+**Context.** #34 added a `bn-IN` corpus and published a first Bengali number
+(3.7% clean, 8.7% at 10 dB). D-007 folds orthography out of WER so the metric
+measures the recogniser, not the writer — but `wer.normalize` folds Devanagari
+only (`\u093c` nukta, `\u0901` candrabindu, Devanagari digits). Bengali has its
+own nukta (`\u09bc`) and candrabindu (`\u0981`), and neither is folded, so the
+Bengali number is not comparable with the Hindi one.
+
+**Decision.** Keep `wer.normalize` as it is for Bengali, report the number as
+measured, and pin that with `tests/test_wer.py::BengaliMetricTest`. The folding
+decision waits for the native-speaker check in #12. The Bengali number does not
+go into `README.md` until then.
+
+**Why.** The two clean Bengali misses are `পাঁচশো/পাঁচশ` and `এখনো/এখনও` — final
+vowel-sign variants, not the nukta/candrabindu class D-007 folds. A generic
+Bengali fold would change neither, so it would add an unvalidated normaliser
+and move no number; writing rules aimed at those two strings is exactly tuning
+to the result, which D-007 exists to avoid. Without a speaker, there is no way
+to tell a spelling variant from a different word.
+
+**Consequence.** The Bengali clean figure is not comparable to the Hindi clean
+figure and must never be presented side by side without saying so. When a
+speaker confirms the variants, add the Bengali fold, update D-015 and the pinned
+tests in the same PR, and re-run the sweep — transcripts and audio are cached by
+hash, so unchanged clips cost nothing.
+
+
