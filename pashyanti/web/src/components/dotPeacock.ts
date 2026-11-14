@@ -71,23 +71,26 @@ const arcsCoverage = (n: number): Float32Array =>
     for (const d of PEACOCK_ARCS) ctx.fill(new Path2D(d));
   });
 
+/* At header size the traced ? disc is ~3 dots wide and the mark disappears.
+   Below a 32-cell raster the whole badge is drawn 1.5x around its own centre,
+   so the state still reads; at 96 px+ the traced proportions are untouched. */
+function scaleBadge(ctx: Ctx, n: number): number {
+  const k = n < 32 ? 1.5 : 1;
+  if (k === 1) return k;
+  ctx.translate(PEACOCK_BADGE.cx, PEACOCK_BADGE.cy);
+  ctx.scale(k, k);
+  ctx.translate(-PEACOCK_BADGE.cx, -PEACOCK_BADGE.cy);
+  return k;
+}
+
 const badgeCoverage = (n: number): Float32Array =>
   coverage("badge", n, (ctx) => {
+    scaleBadge(ctx, n);
     ctx.beginPath();
     ctx.arc(PEACOCK_BADGE.cx, PEACOCK_BADGE.cy, PEACOCK_BADGE.r, 0, Math.PI * 2);
     ctx.fill();
   });
 
-const badgeMarkCoverage = (n: number): Float32Array =>
-  coverage("badge-mark", n, (ctx) => {
-    ctx.lineWidth = 1.9;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.stroke(new Path2D(PEACOCK_BADGE_MARK));
-    ctx.beginPath();
-    ctx.arc(PEACOCK_BADGE_DOT.cx, PEACOCK_BADGE_DOT.cy, PEACOCK_BADGE_DOT.r, 0, Math.PI * 2);
-    ctx.fill();
-  });
 
 /**
  * One dot per cell. `time` (ms) makes the listening arcs breathe; every dot
@@ -152,7 +155,34 @@ export function drawMascot(
   stampDots(ctx, bodyCoverage(state, n), n, pitch, colours.ink);
   if (state === "unsure") {
     stampDots(ctx, badgeCoverage(n), n, pitch, colours.accent);
-    stampDots(ctx, badgeMarkCoverage(n), n, pitch, colours.paper, 0, 0.7);
+    /* The disc is part of the dot screen; the `?` inside it is a state symbol
+       and is stroked crisply — a sub-dot stroke at 40 px read as a smudge,
+       and this is the one state whose cue must never be lost. */
+    const k = n < 32 ? 1.5 : 1;
+    ctx.save();
+    ctx.setTransform(px / 100, 0, 0, px / 100, 0, 0);
+    if (k !== 1) {
+      ctx.translate(PEACOCK_BADGE.cx, PEACOCK_BADGE.cy);
+      ctx.scale(k, k);
+      ctx.translate(-PEACOCK_BADGE.cx, -PEACOCK_BADGE.cy);
+    }
+    ctx.strokeStyle = colours.paper;
+    ctx.fillStyle = colours.paper;
+    ctx.lineWidth = 180 / (px * k);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.stroke(new Path2D(PEACOCK_BADGE_MARK));
+    ctx.beginPath();
+    ctx.arc(
+      PEACOCK_BADGE_DOT.cx,
+      PEACOCK_BADGE_DOT.cy,
+      230 / (px * k),
+      0,
+      Math.PI * 2,
+    );
+    ctx.fill();
+    ctx.restore();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
   }
 }
 

@@ -279,7 +279,7 @@ export default function App() {
 
       <header className="app-top">
         <span className="mascot-tile">
-          <Mascot state={missed ? "unsure" : face(state)} size={36} />
+          <Mascot state={missed ? "unsure" : face(state)} size={40} />
         </span>
         <div className="brand">
           <h1 className="wordmark" lang="hi">
