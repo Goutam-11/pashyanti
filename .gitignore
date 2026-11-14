@@ -39,3 +39,6 @@ pashyanti/backend/embedding.json
 
 # --- gh CLI cache (never commit) ---
 .ghcache/
+
+# --- scratch (agent working files, never commit) ---
+.scratch/
