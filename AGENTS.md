@@ -123,6 +123,11 @@ files.
   `scripts/check-tmp.sh`. Run anything heavy through
   `scripts/with-cache.sh <command>` so node, bun, uv and gh caches land in
   `.scratch/` instead. Never point `TMPDIR` or a tool cache at `/tmp`.
+- **Never call `firefox --headless` by hand.** Firefox puts its cache and profile
+  in `$TMPDIR`, and six hand-run screenshots filled `/tmp` and killed the shell.
+  Use `scripts/shoot.sh <name> [query] [size]`, which pins `TMPDIR` to
+  `.scratch/tmp`, uses a throwaway profile and deletes it. Screenshots are the
+  only way to see the UI in this environment — build first, then shoot.
 
 ## Code conventions
 
