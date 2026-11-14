@@ -133,3 +133,48 @@ managed by uv without touching the system interpreter, which matters on Fedora.
 
 **Consequence.** Commit `uv.lock` and `bun.lock`. Never hand-edit lock files; use
 `uv add` / `bun add`.
+
+---
+
+## D-009 — Tailwind for layout, CSS variables for theme
+
+**Context.** The original rule was hand-written CSS in one file, no framework.
+Adding a theme toggle, a mascot and an onboarding sheet meant duplicating every
+colour for light and dark by hand, and every layout tweak was a full edit-build-
+look cycle at a 430 px viewport.
+
+**Decision.** Adopt Tailwind 4 (`@tailwindcss/vite`), but keep the *theme* in CSS
+variables under `:root` / `.dark`, mapped in with `@theme inline`. Utilities are
+for layout, spacing and responsive work; any shape repeated three or more times
+gets a semantic class.
+
+**Why.** The slow part of styling this app was never selectors — it was layout at
+one fixed viewport and a second colour palette for dark mode. Tailwind fixes both
+without importing a component library. This **reverses the "hand-written CSS"
+clause** recorded in AGENTS.md; leaving that entry in place would have been the
+silent drift D-007-style amendments exist to prevent.
+
+**Consequence.** `web/src/styles.css` is gone; `web/src/index.css` holds the
+tokens. Class-soup is the real risk, so the rule is explicit: three repetitions
+→ a class. A component library (shadcn, MUI, Radix) is still banned.
+
+---
+
+## D-010 — Paper & Ink, light by default
+
+**Context.** The first build was a dark dashboard with a mint accent — the
+default look of every hackathon entry. The actual reader is often older, reads
+Devanagari at 23–28 px, and is filmed vertically in daylight on a phone.
+
+**Decision.** Light "Paper & Ink" theme as the default: warm off-white paper,
+near-black ink, one deep-teal accent, no gradients. Dark mode exists behind a
+toggle in the header.
+
+**Why.** Contrast holds in daylight and on video compression, where dark themes
+bloom and lose definition. It also looks like a document rather than a toy,
+which matters for a product whose audience is not buying software.
+
+**Consequence.** One theme appears on camera — the video never shows the toggle.
+Accessibility floor is now a constraint, not a preference: body ≥ 18 px,
+contrast ≥ 7:1, tap targets ≥ 44 px, visible focus, `prefers-reduced-motion`
+respected. If a later screen fails those, the screen is wrong, not the rule.

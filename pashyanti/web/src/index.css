@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+/* Class-based dark mode, so the toggle can override the OS setting. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * "Paper & Ink" — warm paper, near-black ink, one deep-teal accent.
+ *
+ * Chosen because the reader is often older and the demo is filmed vertically in
+ * daylight: maximum contrast for Devanagari at display sizes, no gradients, no
+ * decoration competing with the words. Every colour is a token so the whole
+ * theme moves by editing this block.
+ */
+:root {
+  --paper: #faf7f2;
+  --surface: #ffffff;
+  --line: #e7e1d8;
+  --ink: #16130f;
+  --muted: #6e665c;
+  --accent: #0f766e;
+  --accent-ink: #f0fdfa;
+  --accent-soft: #e3f0ee;
+  --warn: #b45309;
+  --warn-soft: #fdf3e3;
+}
+
+.dark {
+  --paper: #121110;
+  --surface: #1b1917;
+  --line: #2c2925;
+  --ink: #f6f1e8;
+  --muted: #a69c8f;
+  --accent: #2dd4bf;
+  --accent-ink: #06201d;
+  --accent-soft: #11312e;
+  --warn: #f5b544;
+  --warn-soft: #2a2113;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-deva: "Noto Sans Devanagari", "Inter", ui-sans-serif, sans-serif;
+}
+
+@layer base {
+  html {
+    background: var(--paper);
+    color: var(--ink);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background: var(--accent-soft);
+  }
+
+  /* Visible focus for keyboard and switch users. */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+}
+
+/* Mascot motion. Small, slow, and switched off for reduced-motion users. */
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+@keyframes ear-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.09); opacity: 0.85; }
+}
+@keyframes mouth-talk {
+  from { transform: scaleY(0.35); }
+  to { transform: scaleY(1); }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@layer utilities {
+  .anim-bob { animation: bob 3.4s ease-in-out infinite; }
+  .anim-ear { animation: ear-pulse 1.5s ease-in-out infinite; transform-origin: center; }
+  .anim-talk { animation: mouth-talk 0.28s ease-in-out infinite alternate; transform-origin: center; }
+  .anim-in { animation: fade-up 0.22s ease-out both; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-bob, .anim-ear, .anim-talk, .anim-in { animation: none !important; }
+}
