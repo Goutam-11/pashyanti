@@ -115,6 +115,12 @@ files.
 - PortAudio is usually present; `sounddevice` needs it at runtime only.
 - `websockets` renamed `extra_headers` → `additional_headers` in v14; `stt.py`
   tries both. Keep that compatibility shim.
+- **`/tmp` is a 3.6 GB tmpfs, and filling it breaks the shell.** Every command
+  then fails with `Error: UNKNOWN: unknown error, write` — including `df`, so
+  the symptom looks like a broken toolchain rather than a full disk. Check with
+  `scripts/check-tmp.sh`. Run anything heavy through
+  `scripts/with-cache.sh <command>` so node, bun, uv and gh caches land in
+  `.scratch/` instead. Never point `TMPDIR` or a tool cache at `/tmp`.
 
 ## Code conventions
 
