@@ -111,6 +111,16 @@ def start_fields(event: dict) -> dict:
     }
 
 
+def api_host(subdomain: str) -> str:
+    """`api` and `api.exotel.com` both mean the same host.
+
+    The console shows the subdomain; pasting the whole hostname is the obvious
+    mistake, and the doubled-domain URL is a 404 that looks like a bad key.
+    """
+    value = (subdomain or "").strip().rstrip("/")
+    return value if "." in value else f"{value}.exotel.com"
+
+
 def hangup_request(sid: str) -> tuple[str, dict] | None:
     """Best-effort Exotel hangup: URL + form body, or None when unconfigured.
 
@@ -124,7 +134,7 @@ def hangup_request(sid: str) -> tuple[str, dict] | None:
                           "/v1/Accounts/{account}/Calls/{sid}")
     if not (sid and account and subdomain):
         return None
-    return (f"https://{subdomain}.exotel.com"
+    return (f"https://{api_host(subdomain)}"
             + path.format(account=account, sid=sid)), {"Status": "completed"}
 
 

@@ -122,6 +122,17 @@ class HangupTest(unittest.TestCase):
                 os.environ.pop(key, None)
             self.assertIsNone(exotel.hangup_request("s1"))
 
+    def test_a_bare_subdomain_and_a_full_host_both_work(self):
+        env = {"EXOTEL_ACCOUNT_SID": "acct", "EXOTEL_API_KEY": "k",
+               "EXOTEL_API_TOKEN": "t"}
+        for value, expected in (("api", "https://api.exotel.com/v1/x"),
+                                ("api.exotel.com", "https://api.exotel.com/v1/x"),
+                                ("api.exotel.com/", "https://api.exotel.com/v1/x")):
+            with patch.dict(os.environ, {**env, "EXOTEL_SUBDOMAIN": value,
+                                        "EXOTEL_HANGUP_PATH": "/v1/x"}):
+                url, _ = exotel.hangup_request("s1")
+            self.assertEqual(url, expected)
+
     def test_the_request_ends_the_call_by_status(self):
         env = {"EXOTEL_ACCOUNT_SID": "acct", "EXOTEL_SUBDOMAIN": "api",
                "EXOTEL_HANGUP_PATH": "/v1/Accounts/{account}/Calls/{sid}"}
