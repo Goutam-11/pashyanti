@@ -75,3 +75,21 @@ class ComposeTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AcknowledgementTest(unittest.TestCase):
+    """The word the caller hears while a reply is still being synthesised."""
+
+    def test_every_shipped_language_has_a_short_acknowledgement(self):
+        for code in chips.FIXED:
+            phrase = chips.ack(code)
+            self.assertTrue(phrase.strip(), code)
+            self.assertLessEqual(len(phrase), 12, code)
+
+    def test_an_unknown_language_gets_the_fallback_not_the_wrong_script(self):
+        self.assertEqual(chips.ack("xx-YY"), chips.ACK[chips.FALLBACK])
+        self.assertEqual(chips.ack(None), chips.ACK[chips.FALLBACK])
+
+    def test_the_acknowledgement_is_one_line(self):
+        for code in chips.FIXED:
+            self.assertNotIn("\n", chips.ack(code), code)

@@ -229,6 +229,10 @@ class BridgeCallTest(unittest.IsolatedAsyncioTestCase):
             patch.object(exotel, "BrowserMic", FakeCarrierMic),
             patch.object(llm, "available", return_value=False),
             patch.object(tts, "stream_pcm", fake_stream_pcm),
+            # The clip cache is real on this machine and would make the
+            # acknowledgement appear in unrelated tests after the first run.
+            patch.object(tts, "is_cached", return_value=True),
+            patch.object(tts, "warm", unittest.mock.AsyncMock()),
             patch.dict(os.environ, {"EXOTEL_WS_TOKEN": TOKEN}),
         ]
         for p in self._patches:
@@ -353,6 +357,42 @@ class BridgeCallTest(unittest.IsolatedAsyncioTestCase):
         spoken = await self.page.receive_json()
         self.assertEqual(spoken["type"], "speak")
         self.assertEqual(FakeCarrierMic.instances[-1].muted, False)
+        await ws.close()
+
+    async def test_a_cached_acknowledgement_goes_out_before_the_reply(self):
+        # The caller hears a word in ~0.3 s instead of silence while Timbre
+        # synthesises. It must be first, and the reply must follow intact.
+        ack_pcm = b"\x07\x00" * 1600                 # one 3200-byte chunk
+        with tempfile.TemporaryDirectory() as tmp:
+            ack_path = Path(tmp) / "ack.pcm"
+            ack_path.write_bytes(ack_pcm)
+            with patch.object(tts, "is_cached", return_value=False), \
+                 patch.object(tts, "cached_path", return_value=str(ack_path)):
+                ws = await self._carrier()
+                await self.page.receive_json()        # carrier live
+                await self.page.send_json({"type": "reply", "text": "ok"})
+                self.assertEqual((await self.page.receive_json())["state"],
+                                 "speaking")
+                first = base64.b64decode(
+                    (await ws.receive_json())["media"]["payload"])
+                second = base64.b64decode(
+                    (await ws.receive_json())["media"]["payload"])
+        self.assertEqual(first, ack_pcm,
+                         "the acknowledgement is the first thing heard")
+        self.assertEqual(second, b"\x02\x00" * 1600, "then the reply audio")
+        await ws.close()
+
+    async def test_a_cached_reply_gets_no_acknowledgement(self):
+        # A cached reply is already instant; adding a word would delay it.
+        with patch.object(tts, "is_cached", return_value=True):
+            ws = await self._carrier()
+            await self.page.receive_json()            # carrier live
+            await self.page.send_json({"type": "reply", "text": "ok"})
+            await self.page.receive_json()            # speaking
+            first = base64.b64decode(
+                (await ws.receive_json())["media"]["payload"])
+        self.assertEqual(first, b"\x02\x00" * 1600,
+                         "the reply starts immediately, with no acknowledgement")
         await ws.close()
 
     async def test_a_streamed_reply_has_no_silence_between_its_chunks(self):
