@@ -17,13 +17,12 @@ accounts: the most recently connected page is the user whose call it is. A
 second simultaneous carrier call is refused rather than mixed into the first.
 
 What is verified: the protocol below was tested against a **real Indian trial
-call on 14 Nov** by the spike this module comes from (see EXOTEL-SPIKE.md), and
-the framing/parsing is covered by tests with a simulated Exotel client. The
-hangup **route and auth** were probed live on 15 Nov (`POST .../Calls/{sid}` is
-a 403, `.../Calls/{sid}/Hangup` answers 200), though a bogus SID answers 200
-too, so the endpoint alone does not prove a handset dropped. What is **not**
-verified: a live caller hearing a gapless reply on this module, multi-user
-routing, and the two WAN latency legs.
+call on 14 Nov** by the spike this module comes from (see EXOTEL-SPIKE.md), the
+framing/parsing is covered by tests with a simulated Exotel client, and this
+module itself ran a live call on 15 Nov: the masked caller reached the page, the
+`start` event carried a call SID, the reply was heard without gaps, and the
+hangup answered `200` with the handset dropping. What is **not** verified:
+multi-user routing, and the two WAN latency legs.
 """
 from __future__ import annotations
 

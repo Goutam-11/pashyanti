@@ -346,10 +346,9 @@ acceptable, and neither is loosening a threshold to make a PR pass.
 - **The carrier pilot is one page, one call.** There are no accounts, so a real
   call attaches to the latest open page and a second call is refused. "End
   call" posts Exotel's `/Hangup` resource with the **call SID** (`POST
-  .../Calls/{sid}` is a `403 Method not allowed`, measured 15 Nov); the route
-  and auth are confirmed, but a real handset dropping on the `200` is not — a
-  bogus SID answers `200` too, so the `stop` event is the proof. The ExoPhone
-  is a trial number, not judge-dialable — the demo must not claim it.
+  .../Calls/{sid}` is a `403 Method not allowed`); a live call on 15 Nov
+  answered `200` and the handset dropped. The ExoPhone is a trial number, not
+  judge-dialable — the demo must not claim it.
 - Reply chips are only as right as `msg.lang`: a Bengali clip was detected
   `bn-IN` once and `mr-IN` once, and the chips followed the reported language.
   The model can also be blunt or use the wrong grammatical gender, because the
