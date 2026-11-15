@@ -108,7 +108,15 @@ export default function App() {
           if (!msg.final) talk.current?.play(msg.data, msg.rate);
           break;
         case "capture":
-          setCapture(msg.state);
+          // `stopped` is the server closing the call: release the phone's
+          // microphone, not just the socket.
+          if (msg.state === "stopped") {
+            talk.current?.stop();
+            talk.current = null;
+            setCapture("idle");
+          } else {
+            setCapture(msg.state);
+          }
           break;
         case "transcript":
           setRetry(false);
@@ -210,6 +218,11 @@ export default function App() {
 
   const endCall = () => {
     if (ended) return;
+    // End it here too: the phone's microphone goes off on the tap, not after a
+    // round trip. The server stops its own session on `end_call`.
+    talk.current?.stop();
+    talk.current = null;
+    setCapture("idle");
     send({ type: "end_call", lang: locale });
     setEnded(true);
     setRetry(false);
@@ -228,6 +241,7 @@ export default function App() {
     setLines([]);
     setSuggestions([]);
     callerLang.current = null;
+    setCapture("idle");
     setSummary(null);
     setEnded(false);
     setSummaryMissing(false);

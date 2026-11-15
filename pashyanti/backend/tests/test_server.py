@@ -481,6 +481,62 @@ class ServerIntegrationTest(SocketTestBase):
         self.assertEqual(following["type"], "voice")
         await ws.close()
 
+    async def test_end_call_stops_the_server_microphone(self):
+        ws = await self.client.ws_connect("/ws")
+        await ws.receive_json()
+        for _ in range(200):
+            if len(FakeMic.instances) >= 2:
+                break
+            await asyncio.sleep(0.01)
+        mic = FakeMic.instances[-1]
+
+        with tempfile.TemporaryDirectory() as tmp, \
+             patch.object(server, "CACHE", Path(tmp) / "cache"):
+            await ws.send_json({"type": "end_call"})
+            summary = await ws.receive_json()
+
+        self.assertEqual(summary["type"], "summary")
+        self.assertTrue(mic.stopped, "ending the call must close the microphone")
+        await ws.close()
+
+    async def test_new_call_starts_a_fresh_session(self):
+        ws = await self.client.ws_connect("/ws")
+        await ws.receive_json()
+        for _ in range(200):
+            if len(FakeMic.instances) >= 2:
+                break
+            await asyncio.sleep(0.01)
+        first = FakeMic.instances[-1]
+        await first.on_text("first call", "hi-IN", 40, 900)
+        await ws.receive_json()                      # transcript
+
+        with tempfile.TemporaryDirectory() as tmp, \
+             patch.object(server, "CACHE", Path(tmp) / "cache"):
+            await ws.send_json({"type": "end_call"})
+            await ws.receive_json()                  # summary (extractive)
+            await ws.send_json({"type": "new_call"})
+
+            for _ in range(200):                     # the microphone reopens
+                if len(FakeMic.instances) >= 3:
+                    break
+                await asyncio.sleep(0.01)
+            second = FakeMic.instances[-1]
+            self.assertIsNot(second, first)
+            self.assertTrue(second.started)
+            self.assertFalse(second.stopped)
+
+            await second.on_text("second call", "hi-IN", 40, 900)
+            transcript = await ws.receive_json()
+            self.assertEqual(transcript["text"], "second call")
+
+            await ws.send_json({"type": "end_call"})
+            summary = await ws.receive_json()
+
+        # The new card counts the new call only: lines were not carried over.
+        self.assertEqual(summary["turns"], 1)
+        self.assertEqual(summary["who"], "second call")
+        await ws.close()
+
     async def test_hallucinated_transcript_asks_to_repeat(self):
         ws = await self.client.ws_connect("/ws")
         await ws.receive_json()                      # hello
@@ -618,12 +674,54 @@ class TalkModeTest(SocketTestBase):
 
     async def test_a_reply_can_be_ended_by_the_phone(self):
         ws, _ = await self._talk()
+        mic = await self._ready(ws)
+        with tempfile.TemporaryDirectory() as tmp, \
+             patch.object(server, "CACHE", Path(tmp) / "cache"):
+            await ws.send_json({"type": "end_call"})
+            # The page is told first, so it can release the microphone...
+            self.assertEqual(await ws.receive_json(),
+                             {"type": "capture", "state": "stopped"})
+            summary = await ws.receive_json()
+            self.assertEqual(summary["type"], "summary")
+        # ...and the server's session is gone with it.
+        self.assertTrue(mic.stopped)
+        await ws.close()
+
+    async def test_nothing_is_transcribed_after_the_call_ends(self):
+        ws, _ = await self._talk()
+        mic = await self._ready(ws)
+        with tempfile.TemporaryDirectory() as tmp, \
+             patch.object(server, "CACHE", Path(tmp) / "cache"):
+            await ws.send_json({"type": "end_call"})
+            await ws.receive_json()                  # capture stopped
+            await ws.receive_json()                  # summary
+            await mic.on_text("a new sentence", "hi-IN", 40, 900)
+            await ws.send_bytes(b"\x01" * 1024)      # a frame after the end
+            await ws.send_json({"type": "set_voice", "mode": "default"})
+            following = await ws.receive_json()
+        self.assertEqual(following["type"], "voice",
+                         "the ended session must not transcribe or reply")
+        await ws.close()
+
+    async def test_new_call_in_talk_mode_waits_for_the_gesture(self):
+        ws, _ = await self._talk()
         await self._ready(ws)
         with tempfile.TemporaryDirectory() as tmp, \
              patch.object(server, "CACHE", Path(tmp) / "cache"):
             await ws.send_json({"type": "end_call"})
-            summary = await ws.receive_json()
-            self.assertEqual(summary["type"], "summary")
+            await ws.receive_json()                  # capture stopped
+            await ws.receive_json()                  # summary
+
+            before = len(FakeBrowserMic.instances)
+            await ws.send_json({"type": "new_call"})
+            self.assertEqual(await ws.receive_json(),
+                             {"type": "capture", "state": "stopped"})
+            self.assertEqual(len(FakeBrowserMic.instances), before,
+                             "a new call needs a fresh tap, not a silent open")
+            await ws.send_json({"type": "start_capture"})
+            self.assertEqual(await ws.receive_json(),
+                             {"type": "capture", "state": "ready"})
+            self.assertEqual(len(FakeBrowserMic.instances), before + 1)
         await ws.close()
 
 
