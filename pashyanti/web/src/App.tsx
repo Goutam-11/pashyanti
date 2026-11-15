@@ -68,6 +68,7 @@ export default function App() {
     () => new URLSearchParams(location.search).has("tour"),
   );
   const summaryTimer = useRef<number | null>(null);
+  const pendingEcho = useRef<string | null>(null);
 
   const clearSummaryTimer = useCallback(() => {
     if (summaryTimer.current !== null) {
@@ -145,12 +146,22 @@ export default function App() {
           // these arrive; a failed call leaves it in place.
           setSuggestions(msg.chips);
           break;
-        case "speak":
-          setLines((prev) => [
-            ...prev,
-            { id: prev.length + 1, who: "me", text: msg.text },
-          ]);
+        case "speak": {
+          // The tap already put this line on screen (`reply` below); `speak`
+          // arrives after the audio has been synthesised and played out, which
+          // can be seconds. Only append when the server speaks something the
+          // page did not echo — a chip reply, or a stale one.
+          const echo = pendingEcho.current;
+          pendingEcho.current = null;
+          setLines((prev) => {
+            const last = prev[prev.length - 1];
+            if (echo !== null && last?.who === "me" && last.text === msg.text) {
+              return prev;
+            }
+            return [...prev, { id: prev.length + 1, who: "me", text: msg.text }];
+          });
           break;
+        }
         case "retry":
           setRetry(true);
           break;
@@ -219,6 +230,11 @@ export default function App() {
     if (!t) return;
     send({ type: "reply", text: t });
     setDraft("");
+    // Show it now. `speak` comes back only after Timbre has synthesised and the
+    // reply has played, so waiting for it makes the composer look like it ate
+    // the message.
+    pendingEcho.current = t;
+    setLines((prev) => [...prev, { id: prev.length + 1, who: "me", text: t }]);
   };
 
   const endCall = () => {

@@ -5,6 +5,8 @@ network, no credits) and the clone fetch, and assert the three properties the
 call depends on: chunks arrive as they are produced, a complete clip is cached
 under the same key `speak` uses, and a failed stream is never cached.
 """
+import base64
+import json
 import os
 import shutil
 import tempfile
@@ -121,6 +123,41 @@ class StreamPcmTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.emitted, [PCM])       # what arrived did play
         self.assertFalse(os.path.exists(self.cached_path("hello")))
 
+    async def test_a_stream_that_produces_no_audio_is_retried_once(self):
+        # Timbre intermittently answers 200 with a stream that carries no audio.
+        # The caller must still hear the reply, so one silent attempt is retried.
+        calls = []
+
+        def flaky(text, voice, model, rate, lang):
+            calls.append(1)
+            if len(calls) == 1:
+                raise RuntimeError("TTS produced no audio")
+            yield PCM
+
+        with patch.object(tts, "_sse_stream", flaky):
+            await tts.stream_pcm("retry me", self.emit)
+
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(self.emitted, [PCM])
+        self.assertTrue(os.path.exists(self.cached_path("retry me")))
+
+    async def test_a_stream_that_dies_after_audio_is_not_retried(self):
+        # Once audio has left, a retry would repeat the sentence out loud.
+        calls = []
+
+        def dying(text, voice, model, rate, lang):
+            calls.append(1)
+            yield PCM
+            raise RuntimeError("connection reset")
+
+        with patch.object(tts, "_sse_stream", dying):
+            with self.assertRaises(RuntimeError):
+                await tts.stream_pcm("partial", self.emit)
+
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(self.emitted, [PCM])
+        self.assertFalse(os.path.exists(self.cached_path("partial")))
+
     async def test_the_clone_endpoint_path_emits_the_whole_clip(self):
         tts.EMBEDDING = {"embedding": "stub"}
 
@@ -160,3 +197,44 @@ class StreamPcmTest(unittest.IsolatedAsyncioTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def _sse_lines(*events):
+    out = []
+    for event in events:
+        out.append(b"event: chunk")
+        out.append(b"data: " + json.dumps(event).encode())
+        out.append(b"")
+    return out
+
+
+class ParseSseTest(unittest.TestCase):
+    """Completeness, not just arrival: a stream that stops early is not a reply."""
+
+    def test_a_finished_stream_yields_its_audio(self):
+        encoded = base64.b64encode(PCM).decode()
+        chunks = list(tts.parse_sse_lines(_sse_lines(
+            {"chunk_index": 0, "audio": encoded},
+            {"chunk_index": 1, "audio": "", "is_final": True})))
+        self.assertEqual(b"".join(chunks), PCM)
+
+    def test_a_stream_that_stops_without_is_final_raises(self):
+        encoded = base64.b64encode(PCM).decode()
+        with self.assertRaises(RuntimeError) as caught:
+            list(tts.parse_sse_lines(_sse_lines({"chunk_index": 0,
+                                                 "audio": encoded})))
+        self.assertIn("is_final", str(caught.exception))
+
+    def test_a_stream_with_no_audio_raises(self):
+        with self.assertRaises(RuntimeError) as caught:
+            list(tts.parse_sse_lines(_sse_lines(
+                {"chunk_index": 0, "audio": "", "is_final": True})))
+        self.assertIn("no audio", str(caught.exception))
+
+    def test_noise_lines_are_ignored(self):
+        encoded = base64.b64encode(PCM).decode()
+        lines = [b": keep-alive", b"event: chunk", b"",
+                 b"data: " + json.dumps({"audio": encoded}).encode(), b"",
+                 b"data: {not json", b"",
+                 b"data: " + json.dumps({"is_final": True}).encode()]
+        self.assertEqual(b"".join(tts.parse_sse_lines(lines)), PCM)
