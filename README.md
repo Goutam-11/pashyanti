@@ -48,8 +48,9 @@ just gives them a screen.
   Hindi/code-mixed turns, and Timbre v3.0's reply was heard on the handset. It
   is not in the video: a trial number is not judge-dialable (limited inbound,
   unknown callers may hit a PIN). The protocol is now merged as an **opt-in
-  pilot** — `/exotel/ws`, off without `EXOTEL_WS_TOKEN`, one page, one call,
-  with a best-effort carrier hangup on End call
+  pilot** — `/exotel/ws/<token>`, off without `EXOTEL_WS_TOKEN`, one page, one
+  call, with End call posting Exotel's `/Hangup` resource with the call SID
+  before the card arrives
   ([`EXOTEL-BRIDGE.md`](pashyanti/docs/EXOTEL-BRIDGE.md)); the trial call that
   proved it is in [`EXOTEL-SPIKE.md`](pashyanti/docs/EXOTEL-SPIKE.md). The
   Twilio spike remains a no-go for this deadline

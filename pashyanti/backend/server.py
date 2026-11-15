@@ -506,6 +506,9 @@ def make_app() -> web.Application:
     app.router.add_get("/ws", ws_handler)
     # Carrier pilot: 503 unless EXOTEL_WS_TOKEN is set, so it is opt-in.
     app.router.add_get("/exotel/ws", exotel.ws_handler)
+    # The same gate, with the token in the path: some consoles drop a query
+    # string when the applet is saved (see `exotel.request_token`).
+    app.router.add_get("/exotel/ws/{token}", exotel.ws_handler)
     app.router.add_get("/", index)
     if WEB.exists():
         app.router.add_static("/assets", WEB / "assets", show_index=False)

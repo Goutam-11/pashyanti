@@ -295,6 +295,16 @@
     clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 0 100%);
   }
 
+  /* Who is calling, masked to its last four digits by the server. It keeps its
+     place when the pill gives up its word on a 360 px phone: the dots say the
+     state, this says who. */
+  .status-caller {
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   .status-dots {
     display: inline-flex;
     gap: 3px;

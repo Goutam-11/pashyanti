@@ -22,7 +22,18 @@ Exotel's **Voicebot applet** opens one websocket per inbound call:
 
 ```
 wss://<public-host>/exotel/ws?token=<EXOTEL_WS_TOKEN>&sample-rate=8000
+wss://<public-host>/exotel/ws/<EXOTEL_WS_TOKEN>          (or the path form)
 ```
+
+The token may ride in the query string or in the path. **Use the path form if
+the console will take it**: on 15 Nov the live applet dropped the query string
+when it was saved, so 100 consecutive calls arrived as a bare `GET /exotel/ws`
+and the gate answered `403` — which on the handset is indistinguishable from a
+dead bridge. Every one of those requests was visible in the ngrok inspector
+(`/api/requests/http`) as `/exotel/ws` with no query, which is how the cause was
+pinned down rather than guessed. The path survives that console; the comparison
+is the same `hmac.compare_digest` either way, and a wrong token in either place
+is still `403`.
 
 - Inbound: `connected`, `start`, `media`, `mark`, `dtmf`, `stop`; audio is
   base64 raw PCM, 16-bit signed little-endian, mono, **8 kHz**.
@@ -58,23 +69,47 @@ page's "New call" re-arms it.
 
 ## Ending the real line
 
-`Call.end_call` calls `CarrierCall.hangup()` **before** the card. That attempts
-Exotel's documented hangup — a POST to the call resource with
-`Status=completed` — using:
+`Call.end_call` calls `CarrierCall.hangup()` **before** the card. That is a
+`POST` to Exotel's **hangup resource**, authenticated with HTTP basic:
+
+```
+POST https://<subdomain>/v1/Accounts/<account_sid>/Calls/<call_sid>/Hangup
+Authorization: Basic <api_key>:<api_token>
+Status=completed
+```
 
 | Variable | For |
 |---|---|
 | `EXOTEL_WS_TOKEN` | the bridge itself; **the route is off without it** |
-| `EXOTEL_ACCOUNT_SID` | the account in the hangup URL |
+| `EXOTEL_ACCOUNT_SID` | the account in the hangup URL (the stream's `start.account_sid` wins if present) |
 | `EXOTEL_SUBDOMAIN` | `https://<subdomain>.exotel.com` |
 | `EXOTEL_API_KEY`, `EXOTEL_API_TOKEN` | HTTP basic auth for that POST |
-| `EXOTEL_HANGUP_PATH` | optional override, default `/v1/Accounts/{account}/Calls/{sid}` |
+| `EXOTEL_HANGUP_PATH` | optional override, default `/v1/Accounts/{account}/Calls/{sid}/Hangup` |
 
-With those unset the bridge still ends the **media leg** by closing the
-websocket, but it cannot guarantee the carrier drops the call — the app's End
-call then ends the session, not the PSTN call. This is the one part that was
-**not** exercised against Exotel's live API today; the request shape is tested,
-the HTTP call is best-effort, and the result is advisory.
+The id in that path is the **call SID** from the stream's `start` event, not the
+stream SID — they are different ids and only one of them ends the line.
+
+Two faults made "End call" a no-op until 15 Nov, both measured against the live
+API rather than guessed:
+
+| Probe | Answer |
+|---|---|
+| `GET .../Calls/<sid>` | `404 No matching results` — host, path and basic auth are right |
+| `POST .../Calls/<sid>` (what the code used to do) | **`403 Method not allowed`** |
+| `PUT .../Calls/<sid>` | `405 Method not available` |
+| **`POST .../Calls/<sid>/Hangup`** | **`200 Hangup Successful`** |
+
+So the old code posted the wrong method to the wrong resource, passed the
+stream SID instead of the call SID, and swallowed the failure. `hangup()` now
+prints one line with the status (`carrier hangup: call ***<4> -> HTTP 200`) and
+never the key; the app's End call still ends the media leg by closing the
+websocket if the REST call fails.
+
+**Verified:** the route and auth, by those probes; the request shape, by tests.
+**Not verified:** that a live handset actually drops on the `200` — that needs a
+real call, and a bogus SID also answers `200`, so the status code alone does not
+prove the line went down. Watch for the `stop` event from Exotel after End call:
+that is the real proof, and it is the last thing to confirm on a live call.
 
 If the trial number has expired, rotating the token and re-pointing the applet
 is a five-minute console change; nothing in the repo stores the number or the
@@ -90,6 +125,7 @@ uv run python server.py
 
 # 2. a public WSS URL for Exotel
 ngrok http 8080
+#    wss://<id>.ngrok-free.dev/exotel/ws/<token>        <- path form, prefer it
 #    wss://<id>.ngrok-free.dev/exotel/ws?token=<token>&sample-rate=8000
 
 # 3. Exotel console: App Bazaar → Voicebot applet → that URL, on the ExoPhone
@@ -124,8 +160,10 @@ microphone restored when the caller hangs up). The 14 Nov trial call proved the
 same protocol against a real Indian mobile number — on the spike's code, of
 which this module is a port.
 
-**Not verified:** this exact module against a live call; Exotel's hangup POST
-(the URL and form are tests, the HTTP call is best-effort); two calls at once
+**Not verified:** this exact module against a live call (calls did connect on 15
+Nov, but the caller-side audio and the hangup taillights were not confirmed);
+that Exotel drops a real handset on the hangup `200` (a bogus SID also answers
+`200`, so the status alone proves nothing — watch for `stop`); two calls at once
 (refused by design); multi-user routing beyond "the latest page"; the two WAN
 latency legs; a production number or KYC.
 
