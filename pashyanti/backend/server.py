@@ -544,5 +544,7 @@ if __name__ == "__main__":
     print(f"microphone mode: {mode}")
     print(f"talk mode: {scheme}://<host>:{PORT}/?mode=talk "
           "(needs a secure context on the phone)")
+    print(f"carrier bridge: {scheme}://<host>:{PORT}/exotel/ws "
+          + ("(token set)" if exotel.enabled() else "(off: set EXOTEL_WS_TOKEN)"))
     web.run_app(make_app(), host="0.0.0.0", port=PORT, print=None,
                 ssl_context=ctx)
