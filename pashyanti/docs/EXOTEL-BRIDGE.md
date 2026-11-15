@@ -105,11 +105,12 @@ prints one line with the status (`carrier hangup: call ***<4> -> HTTP 200`) and
 never the key; the app's End call still ends the media leg by closing the
 websocket if the REST call fails.
 
-**Verified:** the route and auth, by those probes; the request shape, by tests.
-**Not verified:** that a live handset actually drops on the `200` — that needs a
-real call, and a bogus SID also answers `200`, so the status code alone does not
-prove the line went down. Watch for the `stop` event from Exotel after End call:
-that is the real proof, and it is the last thing to confirm on a live call.
+**Verified on a live call, 15 Nov:** the log shows
+`carrier call live: from=••••0255 call_sid=yes` followed by
+`carrier hangup: call ***1abf -> HTTP 200`, and the owner's handset dropped
+when End call was pressed. The route and auth were pinned first by the
+probes above; a `200` on its own proves nothing (a bogus SID answers `200`
+too), so the handset dropping is the evidence that counts.
 
 If the trial number has expired, rotating the token and re-pointing the applet
 is a five-minute console change; nothing in the repo stores the number or the
@@ -160,12 +161,25 @@ microphone restored when the caller hangs up). The 14 Nov trial call proved the
 same protocol against a real Indian mobile number — on the spike's code, of
 which this module is a port.
 
-**Not verified:** this exact module against a live call (calls did connect on 15
-Nov, but the caller-side audio and the hangup taillights were not confirmed);
-that Exotel drops a real handset on the hangup `200` (a bogus SID also answers
-`200`, so the status alone proves nothing — watch for `stop`); two calls at once
-(refused by design); multi-user routing beyond "the latest page"; the two WAN
-latency legs; a production number or KYC.
+**Not verified:** two calls at once (refused by design); multi-user routing
+beyond "the latest page"; the two WAN latency legs (no latency figure has
+been measured on a real call, so none is quoted); a production number or
+KYC.
+
+**Verified on a live call, 15 Nov — this module.** One inbound call on the
+trial line produced, in the server log:
+
+```
+carrier call live: from=••••0255 call_sid=yes
+carrier hangup: call ***1abf -> HTTP 200
+```
+
+The caller's masked number reached the page, the `start` event carried a
+call SID (so the hangup could address the call), the reply was heard on the
+handset without the gaps the old per-chunk padding caused, and **End call
+dropped the handset**. The earlier build had connected calls at 11:56 and
+11:57 and failed all three of those; this is the same module after the
+15 Nov fixes.
 
 **Never claim** in the video or the post that there is a production number, that
 a judge can call it, or that the demo's call is real. The demo's line is still

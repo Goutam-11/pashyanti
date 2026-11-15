@@ -387,8 +387,9 @@ video still shows the simulated line and must not claim a real number. The
 hangup route was probed against the live API on 15 Nov: `POST .../Calls/{sid}`
 answers `403 Method not allowed` and only `.../Calls/{sid}/Hangup` answers
 `200`, so `end_call` posts that with the call SID from the stream's `start`
-event. Whether a handset actually drops on that `200` is still unconfirmed — a
-bogus SID answers `200` too, so the `stop` event is the proof. The
+event. A live call on 15 Nov answered `200` and the handset dropped, and the
+reply was heard on the handset without the gaps the earlier per-chunk padding
+caused. The
 "go only with a US number" Twilio decision stands; this pilot uses an Indian
 trial number under the same limits as the 14 Nov trial call.
 

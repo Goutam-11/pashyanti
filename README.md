@@ -50,9 +50,11 @@ just gives them a screen.
   unknown callers may hit a PIN). The protocol is now merged as an **opt-in
   pilot** — `/exotel/ws/<token>`, off without `EXOTEL_WS_TOKEN`, one page, one
   call, with End call posting Exotel's `/Hangup` resource with the call SID
-  before the card arrives
+  before the card arrives. The merged pilot then completed its own live call on
+  15 Nov — masked caller on the page, reply heard without gaps, and End call
+  dropping the handset
   ([`EXOTEL-BRIDGE.md`](pashyanti/docs/EXOTEL-BRIDGE.md)); the trial call that
-  proved it is in [`EXOTEL-SPIKE.md`](pashyanti/docs/EXOTEL-SPIKE.md). The
+  first proved the path is in [`EXOTEL-SPIKE.md`](pashyanti/docs/EXOTEL-SPIKE.md). The
   Twilio spike remains a no-go for this deadline
   ([`TWILIO-SPIKE.md`](pashyanti/docs/TWILIO-SPIKE.md)).
 - Realtime STT takes **raw PCM s16le, mono, exactly 1024-byte frames**, at
