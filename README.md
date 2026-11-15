@@ -23,6 +23,17 @@ next. The card is computed from the transcript and appears instantly; a model
 then rewrites those three lines from the same text, in the interface language,
 about two seconds later — the first card is the fallback.
 
+## Watch it
+
+[![Pashyanti — the phone speaks in text](https://i.ytimg.com/vi/L0zWxVY1mY0/hqdefault.jpg)](https://www.youtube.com/watch?v=L0zWxVY1mY0)
+
+A five-minute walkthrough (**5:20**) — **[watch on YouTube](https://www.youtube.com/watch?v=L0zWxVY1mY0)**.
+The phone-call path first: the caller's speech as large live text, the user's
+reply spoken back down the line by Timbre v3.0 — in the caller's language, or in
+the user's own cloned voice — ending in the summary card. Then the rest of the
+build: talk mode, where the phone itself is the microphone and the speaker, and
+the opt-in Exotel carrier bridge that puts a real inbound call on the line.
+
 ## Why the name
 
 Sanskrit grammar describes speech in four stages — *para → pashyanti → madhyama → vaikhari*.
