@@ -47,9 +47,12 @@ just gives them a screen.
   real mobile call reached the server, Prisma v3.0 transcribed two
   Hindi/code-mixed turns, and Timbre v3.0's reply was heard on the handset. It
   is not in the video: a trial number is not judge-dialable (limited inbound,
-  unknown callers may hit a PIN) and the app page is not wired to it
-  ([`EXOTEL-SPIKE.md`](pashyanti/docs/EXOTEL-SPIKE.md)). The Twilio spike remains
-  a no-go for this deadline
+  unknown callers may hit a PIN). The protocol is now merged as an **opt-in
+  pilot** — `/exotel/ws`, off without `EXOTEL_WS_TOKEN`, one page, one call,
+  with a best-effort carrier hangup on End call
+  ([`EXOTEL-BRIDGE.md`](pashyanti/docs/EXOTEL-BRIDGE.md)); the trial call that
+  proved it is in [`EXOTEL-SPIKE.md`](pashyanti/docs/EXOTEL-SPIKE.md). The
+  Twilio spike remains a no-go for this deadline
   ([`TWILIO-SPIKE.md`](pashyanti/docs/TWILIO-SPIKE.md)).
 - Realtime STT takes **raw PCM s16le, mono, exactly 1024-byte frames**, at
   real-time cadence. It returns one transcript per closed VAD segment — there are
@@ -159,6 +162,7 @@ that was **not** verified (no physical phone, no room acoustics, no iOS) are in
 | `pashyanti/backend/stt.py` | Mic (or the page's frames) → Prisma v3.0 streaming → one callback per sentence |
 | `pashyanti/backend/tts.py` | Text → Timbre v3.0 SSE → speaker or the page, in the caller's language, cached by hash |
 | `pashyanti/backend/llm.py` | One contextual reply chip per transcript, best-effort |
+| `pashyanti/backend/exotel.py` | A real inbound call (Exotel AgentStream) → Prisma/Timbre, opt-in pilot |
 | `pashyanti/backend/audio.py` | 1024-byte frame maths, G.711 µ-law in numpy |
 | `pashyanti/backend/probe.py` | What a credit is worth: one 1,000-char TTS + one 10 s STT call |
 | `pashyanti/backend/stream_mic.py` | Standalone mic → transcript, for testing the socket |
@@ -215,6 +219,7 @@ a non-Hindi reply uses the default Timbre voice.
 | [`pashyanti/docs/DEMO.md`](pashyanti/docs/DEMO.md) | The 60-second shoot script: beat sheet, shot list, the numbers and their provenance, post copy |
 | [`pashyanti/docs/TWILIO-SPIKE.md`](pashyanti/docs/TWILIO-SPIKE.md) | The Twilio Media Streams spike: what a real phone call would take, and why it is not in the demo |
 | [`pashyanti/docs/EXOTEL-SPIKE.md`](pashyanti/docs/EXOTEL-SPIKE.md) | The Exotel trial-call spike: one real Indian call that worked, and why it is still not the video |
+| [`pashyanti/docs/EXOTEL-BRIDGE.md`](pashyanti/docs/EXOTEL-BRIDGE.md) | The merged carrier pilot: how a real call reaches the app, the token gate, the hangup, what is unverified |
 | [`pashyanti/docs/TALK-MODE.md`](pashyanti/docs/TALK-MODE.md) | Conversation mode: the phone as microphone and speaker, the HTTPS requirement, the measured evidence and its limits |
 
 ## Status
@@ -222,9 +227,10 @@ a non-Hindi reply uses the default Timbre voice.
 Hackathon build — *The Great Indian AI Internship Challenge*, November 2026.
 Working: live transcription, spoken replies in the caller's language,
 contextual reply chips, voice cloning, phone-line accuracy measurement,
-installable frontend, an interface in English, Hindi, Bengali and Marathi, and
+installable frontend, an interface in English, Hindi, Bengali and Marathi,
 conversation mode with the phone as the microphone and speaker (`?mode=talk`,
-over HTTPS). The end-of-call summary card (#4), the repeat notice (#3) and both demo
+over HTTPS), and an opt-in carrier pilot for real inbound calls
+(`/exotel/ws`, trial number, not judge-dialable). The end-of-call summary card (#4), the repeat notice (#3) and both demo
 switches — *फ़ोन लाइन* / Phone line (#5) and *मेरी आवाज़* / My voice (#6) — are
 live end to end. Not built: a real phone number — the Twilio spike is a
 documented no-go for this deadline.

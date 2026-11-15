@@ -17,6 +17,9 @@ uv run python server.py   # http://localhost:8080
 | `tts.py` | text → Timbre v3.0 SSE → speaker, or to the page in talk mode; cached by hash |
 | `audio.py` | 1024-byte frame maths, G.711 µ-law (numpy; `audioop` is gone in 3.13+) |
 | `gnani.py` | low-level REST client: `stt_file`, `tts`, `clone_embedding`, `tts_cloned` |
+| `llm.py` | the chip/card model over OpenCode Go (non-Gnani): one reply, one card, or None |
+| `chips.py` | caller-language "please repeat" / "a little slower" table |
+| `exotel.py` | carrier pilot: Exotel AgentStream in, Prisma/Timbre in the middle, opt-in |
 | `probe.py` | one 1,000-char TTS + one 10 s STT call, to read the credit rate |
 | `stream_mic.py` | standalone mic → transcript terminal test |
 | `test_stream_file.py` | replay a wav into the STT socket (no microphone needed) |

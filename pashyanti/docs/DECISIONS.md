@@ -374,6 +374,20 @@ is not wired to the bridge, and the run's timing includes a 2.2 s Prisma
 handshake and a 400 ms jitter buffer. See [`EXOTEL-SPIKE.md`](EXOTEL-SPIKE.md).
 The Twilio decision above stands.
 
+**Amended 2026-11-15 (`feat/exotel-bridge`).** The owner asked to ship the
+carrier leg rather than keep it in `.scratch/`, so the spike's protocol is now
+product code: `backend/exotel.py` plus `/exotel/ws`, **opt-in behind
+`EXOTEL_WS_TOKEN`** (503 without it), bound to the most recently opened page,
+one call at a time, with the caller's last four digits as the only number that
+crosses the wire. `Call.end_call` now hangs up the carrier first, best-effort.
+
+What this does **not** change: Gnani's API still has no PSTN, no SIP and no
+number provisioning; the trial line is still not judge-dialable; the 60-second
+video still shows the simulated line and must not claim a real number. The
+hangup POST is the one piece not exercised against Exotel's live API. The
+"go only with a US number" Twilio decision stands; this pilot uses an Indian
+trial number under the same limits as the 14 Nov trial call.
+
 ---
 
 ## D-015 — Bengali is reported unfolded until a speaker checks it

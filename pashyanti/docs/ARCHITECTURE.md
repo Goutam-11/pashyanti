@@ -57,6 +57,22 @@ needs no HTTPS, no microphone permission and no tunnel — plain
 > opened, so a headless box or a remote VM works. The page needs a **secure
 > context** (`https://` or `localhost`) for `getUserMedia`.
 
+## Topology — the carrier pilot (a real phone line, opt-in)
+
+```
+   mobile ──PSTN──► Exotel ──wss /exotel/ws──► CarrierCall ──► Prisma v3.0
+                      ▲                            │
+                      └──── base64 8 kHz PCM ◄── Timbre v3.0 (the page's reply)
+                                                   │
+   PHONE / BROWSER: one page ◄── `carrier`, `transcript`, `speak`, `summary` ──┘
+```
+
+This leg is **off unless `EXOTEL_WS_TOKEN` is set**; without it `/exotel/ws`
+answers 503. It exists because the owner wants to ship the real-call pilot, and
+it cannot touch the demo path: the demo uses the server microphone, the carrier
+bridge binds only to the latest open page and refuses a second call. See
+[`EXOTEL-BRIDGE.md`](EXOTEL-BRIDGE.md) and D-014's second amendment.
+
 ## Request path, in order
 2. `stt.MicSession` pushes them to the asyncio loop and sends them at real-time
    cadence (32 ms at 16 kHz) to `wss://api.vachana.ai/stt/v3/stream`.
@@ -80,6 +96,7 @@ needs no HTTPS, no microphone permission and no tunnel — plain
 | `server.py` | HTTP + `/ws`, call state, half-duplex muting, the talk-mode handshake | do audio DSP |
 | `stt.py` | microphone, frame cadence, Prisma socket, `FrameParser`/`BrowserMic` for talk mode | know about TTS |
 | `llm.py` | the chip and card model calls (OpenCode Go), the stable session header, JSON parsing | ever raise into `Call`, or log the key |
+| `exotel.py` | the carrier leg: Exotel AgentStream framing, the page binding, the hangup attempt | log a phone number or a call SID, or run without the token |
 | `chips.py` | the caller-language table for "please repeat" / "a little slower", the 3-chip cap | call the network |
 | `web/src/talk.ts` | AudioWorklet capture (16 kHz, 1024-byte frames) and Web Audio playback | call Gnani, or hold API state |
 | `tts.py` | Timbre SSE, speaker playback, cache | know about the microphone |
@@ -108,6 +125,7 @@ One socket at `/ws`, JSON both ways. `web/src/types.ts` is the source of truth.
 | server | `phone_line` | the microphone transform switched on or off; the page socket stays up (#32) |
 | server | `summary` | end-of-call artefact: who called, what was agreed, what happens next; also written to `cache/summary.json`. The first one is extractive and instant; a second with the same shape may follow with `who/agreed/next` rewritten (same facts, UI language) |
 | server | `audio` | talk mode: one base64 s16le chunk of the reply (16 kHz mono); `final: true` with empty data marks the end of the stream |
+| server | `carrier` | a real inbound call is live on this page (`from` is the masked last four digits) or has ended; while live, its audio is the capture source and the room microphone is closed |
 | server | `capture` | talk mode: `ready` once the Prisma session is open and the page may send frames; `stopped` after the call ends, so the page releases the microphone; `error` if Prisma could not open |
 | server | `error` | human-readable failure, shown in a pill |
 | client | `reply` | speak this text down the line |
@@ -252,4 +270,8 @@ These are the only numbers that belong in a demo. Anything else is an adjective.
 | talk mode, browser without AudioWorklet | page says the browser cannot capture; nothing is sent |
 | chip model slow, dead or no key | no `suggest` message; the static locale chips stay on screen and the reply still works |
 | card model slow, dead or no key | the extractive card is already on screen and is the one the user keeps |
+| carrier bridge, no `EXOTEL_WS_TOKEN` | `/exotel/ws` answers 503; the app is exactly the demo build |
+| carrier call, no page open / page has ended | 409, no Prisma session opened, no credits spent |
+| carrier call while one is live | 409; one call, one page (no accounts in this build) |
+| carrier hangup POST fails or is unconfigured | the media socket still closes (the session ends); the PSTN call is not guaranteed to drop — the UI never claims it did |
 | cloned voice, non-Hindi reply | a `speak` with `lang: bn-IN` (say) uses the default Timbre voice, because the clone has no language parameter |

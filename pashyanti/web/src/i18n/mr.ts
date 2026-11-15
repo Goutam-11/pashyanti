@@ -87,6 +87,9 @@ export const mr: Messages = {
     speaking: "बोलत आहे",
     unsure: "समजले नाही",
   },
+  carrier: {
+    live: "फोन कॉलवर",
+  },
   talk: {
     start: "ऐकणे सुरू करा",
     starting: "सुरू होत आहे…",

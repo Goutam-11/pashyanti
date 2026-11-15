@@ -87,6 +87,9 @@ export const en: Messages = {
     speaking: "speaking",
     unsure: "didn’t catch that",
   },
+  carrier: {
+    live: "On a phone call",
+  },
   talk: {
     start: "Start listening",
     starting: "Starting…",

@@ -26,6 +26,7 @@ from pathlib import Path
 from aiohttp import WSMsgType, web
 
 import chips
+import exotel
 import llm
 import tts
 from gnani import KEY  # noqa: F401  (import validates the key early)
@@ -146,6 +147,7 @@ class Call:
         self.summary_task: asyncio.Task | None = None
         self.ended = False
         self.call_seq = 0          # bumped by new_call, so a late card cannot land
+        self.carrier = None        # an inbound real call, when one is bound
 
     async def send(self, payload: dict):
         if not self.ws.closed:
@@ -239,6 +241,26 @@ class Call:
         except Exception:              # noqa: BLE001  (the page went away)
             pass
 
+    async def attach_carrier(self, carrier):
+        """A real call arrived: its audio is the source, not this room."""
+        self.carrier = carrier
+        await self.stop_mic()
+        self.mic = carrier.mic
+
+    async def detach_carrier(self, carrier):
+        """The carrier call ended: back to the room, unless this call is over.
+
+        In talk mode there is no local microphone to reopen, so the page just
+        takes the call ended and goes back to its own (gesture-started) capture.
+        """
+        if self.carrier is carrier:
+            self.carrier = None
+        if self.mic is carrier.mic:
+            self.mic = None
+        if self.mode == MODE_SERVER and not self.ended:
+            await self.start_mic()
+        await self.send({"type": "carrier", "state": "ended"})
+
     async def on_reply(self, text: str):
         if self.ended:
             return
@@ -249,7 +271,10 @@ class Call:
                 self.mic.muted = True
             lang = self.reply_lang
             try:
-                if self.mode == MODE_TALK:
+                if self.carrier is not None:
+                    # Down the real line, not the speaker and not the phone.
+                    ttfa, cached = await self.carrier.speak(text, lang)
+                elif self.mode == MODE_TALK:
                     ttfa, cached = await self.speak_to_page(text, lang)
                 else:
                     ttfa, cached = await tts.speak(text, mode=self.voice_mode,
@@ -323,6 +348,8 @@ class Call:
             return None
         self.ended = True
         seq = self.call_seq
+        if self.carrier is not None:
+            await self.carrier.hangup()      # the real line, best effort
         if self.mode == MODE_TALK:
             await self.send({"type": "capture", "state": "stopped"})
         await self.stop_mic()
@@ -397,6 +424,9 @@ class Call:
     async def close(self):
         if self.suggest_task and not self.suggest_task.done():
             self.suggest_task.cancel()
+        if self.carrier is not None:
+            # Nobody left to show the call to: do not leave a line open.
+            await self.carrier.hangup()
         mic = self.mic
         frames_in = getattr(mic, "frames_in", 0)
         await self.stop_mic()
@@ -411,6 +441,7 @@ async def ws_handler(request: web.Request):
 
     mode = MODE_TALK if request.query.get("mode") == MODE_TALK else MODE_SERVER
     call = Call(ws, mode)
+    exotel.bind_page(call)
     probe = MicSession(call.on_transcript, telephony=PHONE_LINE)
     await call.send({
         "type": "hello",
@@ -458,6 +489,7 @@ async def ws_handler(request: web.Request):
                 await call.set_voice(
                     tts.MODE_CLONED if data.get("enabled") else tts.MODE_DEFAULT)
     finally:
+        exotel.unbind_page(call)
         await call.close()
     return ws
 
@@ -472,6 +504,8 @@ async def index(_request: web.Request):
 def make_app() -> web.Application:
     app = web.Application()
     app.router.add_get("/ws", ws_handler)
+    # Carrier pilot: 503 unless EXOTEL_WS_TOKEN is set, so it is opt-in.
+    app.router.add_get("/exotel/ws", exotel.ws_handler)
     app.router.add_get("/", index)
     if WEB.exists():
         app.router.add_static("/assets", WEB / "assets", show_index=False)
