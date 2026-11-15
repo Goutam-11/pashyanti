@@ -144,6 +144,8 @@ class Call:
         self.last_lang: str | None = None
         self.suggest_task: asyncio.Task | None = None
         self.summary_task: asyncio.Task | None = None
+        self.ended = False
+        self.call_seq = 0          # bumped by new_call, so a late card cannot land
 
     async def send(self, payload: dict):
         if not self.ws.closed:
@@ -187,6 +189,8 @@ class Call:
         await self.send({"type": "phone_line", "enabled": enabled})
 
     async def on_transcript(self, text, lang, latency_ms, audio_ms):
+        if self.ended:
+            return
         if looks_unusable(text, audio_ms):
             await self.send({"type": "retry"})
             return
@@ -236,6 +240,8 @@ class Call:
             pass
 
     async def on_reply(self, text: str):
+        if self.ended:
+            return
         async with self.speaking:
             self.lines.append({"who": "me", "text": text})
             await self.send({"type": "status", "state": "speaking"})
@@ -279,6 +285,8 @@ class Call:
 
     async def on_audio(self, data: bytes):
         """A binary websocket frame is capture audio, in talk mode only."""
+        if self.ended:
+            return
         if self.mode == MODE_TALK and self.mic is not None:
             await self.mic.feed(data)
 
@@ -297,25 +305,70 @@ class Call:
                          "state": "ready" if self.mic else "error"})
 
     async def end_call(self, lang: str | None = None):
-        """The extractive card first, then the model's rewrite if it arrives.
+        """End the call for real, then send the card.
 
-        The first card is instant and is the fallback: `build_summary` is a pure
-        function over the transcript, so a slow or dead model cannot delay it or
-        make it worse. `lang` is the **UI** locale — the card is for the user,
-        not for the caller (D-012).
+        Ending means: the page stops capturing (talk mode is told first), this
+        machine's microphone closes, the Prisma socket closes, and nothing that
+        arrives afterwards is transcribed or spoken. The card is built from the
+        lines up to this moment.
+
+        The extractive card is instant and is the fallback: `build_summary` is a
+        pure function over the transcript, so a slow or dead model cannot delay
+        it or make it worse. `lang` is the **UI** locale — the card is for the
+        user, not for the caller (D-012). There is no telephone line to hang up
+        in this build; in talk mode "the call" is the phone's capture, and this
+        is what closes it.
         """
+        if self.ended:
+            return None
+        self.ended = True
+        seq = self.call_seq
+        if self.mode == MODE_TALK:
+            await self.send({"type": "capture", "state": "stopped"})
+        await self.stop_mic()
+        if self.suggest_task and not self.suggest_task.done():
+            self.suggest_task.cancel()
         base = build_summary(self.lines, self.started_at, time.time())
         await self.send({"type": "summary", **base})
         self._write_summary(base)
         if not (SUMMARY_LLM and llm.available()):
             return base
         better = await self.better_summary(lang)
+        if seq != self.call_seq:        # a new call started while we waited
+            return base
         merged = merge_summary(base, better)
         if merged == base:
             return base
         await self.send({"type": "summary", **merged})
         self._write_summary(merged)
         return merged
+
+    async def new_call(self):
+        """Drop this session and start a new one (the card's "New call").
+
+        In server mode the microphone reopens immediately. In talk mode the page
+        is told to stop capturing; it needs a fresh tap on "Start listening",
+        because `getUserMedia` needs a gesture.
+        """
+        if self.summary_task and not self.summary_task.done():
+            self.summary_task.cancel()
+        if self.suggest_task and not self.suggest_task.done():
+            self.suggest_task.cancel()
+        await self.stop_mic()
+        self.call_seq += 1
+        self.lines = []
+        self.started_at = time.time()
+        self.last_lang = None
+        self.ended = False
+        if self.mode == MODE_SERVER:
+            await self.start_mic()
+        else:
+            await self.send({"type": "capture", "state": "stopped"})
+
+    async def stop_mic(self):
+        if self.mic:
+            await self.mic.stop()
+            self.mic = None
 
     async def better_summary(self, lang: str | None):
         try:
@@ -344,12 +397,12 @@ class Call:
     async def close(self):
         if self.suggest_task and not self.suggest_task.done():
             self.suggest_task.cancel()
-        if self.mic:
-            await self.mic.stop()
-            frames_in = getattr(self.mic, "frames_in", 0)
-            if isinstance(self.mic, BrowserMic) and frames_in:
-                print(f"talk mode: {frames_in} frames in, "
-                      f"{self.mic.frames_out} to Prisma, {self.mic.gaps} gaps")
+        mic = self.mic
+        frames_in = getattr(mic, "frames_in", 0)
+        await self.stop_mic()
+        if isinstance(mic, BrowserMic) and frames_in:
+            print(f"talk mode: {frames_in} frames in, "
+                  f"{mic.frames_out} to Prisma, {mic.gaps} gaps")
 
 
 async def ws_handler(request: web.Request):
@@ -393,6 +446,8 @@ async def ws_handler(request: web.Request):
                 # out inside the task, and a second may follow.
                 call.summary_task = asyncio.create_task(
                     call.end_call(data.get("lang") or None))
+            elif data.get("type") == "new_call":
+                await call.new_call()
             elif data.get("type") == "start_capture":
                 await call.start_capture()
             elif data.get("type") == "set_voice":

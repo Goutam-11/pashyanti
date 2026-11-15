@@ -41,7 +41,7 @@ export type ServerMsg =
       rate: number;
       final?: boolean;
     }
-  | { type: "capture"; state: "ready" | "error" }
+  | { type: "capture"; state: "ready" | "stopped" | "error" }
   | ({ type: "summary" } & Summary)
   | { type: "retry" }
   | { type: "voice"; mode: VoiceMode }

@@ -43,7 +43,7 @@ def frames(path):
 
 
 async def main(wav, reply):
-    audio, transcripts, speaks = [], [], []
+    audio, transcripts, speaks, summaries = [], [], [], []
     sent = 0
 
     async with aiohttp.ClientSession() as session:
@@ -70,6 +70,10 @@ async def main(wav, reply):
                               f"ttfa={data.get('ttfa_ms')}")
                     if kind == "transcript":
                         transcripts.append(data)
+                    elif kind == "summary":
+                        summaries.append(data)
+                    elif kind == "capture":
+                        print(f"  <- capture: {data['state']}")
                     elif kind == "speak":
                         speaks.append(data)
                     elif kind == "audio" and data.get("data"):
@@ -102,6 +106,14 @@ async def main(wav, reply):
                 while not speaks and time.monotonic() < deadline:
                     await asyncio.sleep(0.1)
 
+            # Ending the call must close the session: capture stopped, then the
+            # card. A frame after that must not produce a transcript.
+            await ws.send_json({"type": "end_call", "lang": "en"})
+            deadline = time.monotonic() + 12
+            while time.monotonic() < deadline and not summaries:
+                await asyncio.sleep(0.1)
+            await ws.send_bytes(b"\x00" * FRAME)
+
             task.cancel()
             try:
                 await task
@@ -124,6 +136,9 @@ async def main(wav, reply):
               f"{size / 32000:.2f} s at 16 kHz")
     elif reply:
         print("reply: NO AUDIO MESSAGE")
+    if summaries:
+        print(f"card: who={summaries[-1]['who']!r} turns={summaries[-1]['turns']} "
+              f"duration={summaries[-1]['duration_s']}s")
 
 
 if __name__ == "__main__":

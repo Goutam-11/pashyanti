@@ -108,15 +108,15 @@ One socket at `/ws`, JSON both ways. `web/src/types.ts` is the source of truth.
 | server | `phone_line` | the microphone transform switched on or off; the page socket stays up (#32) |
 | server | `summary` | end-of-call artefact: who called, what was agreed, what happens next; also written to `cache/summary.json`. The first one is extractive and instant; a second with the same shape may follow with `who/agreed/next` rewritten (same facts, UI language) |
 | server | `audio` | talk mode: one base64 s16le chunk of the reply (16 kHz mono); `final: true` with empty data marks the end of the stream |
-| server | `capture` | talk mode: `ready` once the Prisma session is open and the page may send frames, else `error` |
+| server | `capture` | talk mode: `ready` once the Prisma session is open and the page may send frames; `stopped` after the call ends, so the page releases the microphone; `error` if Prisma could not open |
 | server | `error` | human-readable failure, shown in a pill |
 | client | `reply` | speak this text down the line |
 | client | `start_capture` | talk mode's "Start listening" gesture: open the Prisma session, then answer `capture` |
 | client | `set_voice` | switch this call between `default` and `cloned`; the server answers with `voice` and `cloned_voice` |
 | client | `set_cloned_voice` | the demo toggle's older shape (#21); equivalent to `set_voice` |
 | client | `set_phone_line` | switch the mic's phone-line transform for this call; answers `phone_line` |
-| client | `end_call` | end the call; the server answers with `summary` |
-| client | `new_call` | reserved |
+| client | `end_call` | end the call for real: tell the page to stop capturing (talk mode), close the microphone and the Prisma socket, then answer `summary`. Nothing that arrives afterwards is transcribed or spoken |
+| client | `new_call` | drop this session and start a fresh one with an empty transcript; server mode reopens the microphone, talk mode waits for a new `start_capture` gesture |
 
 Every server message is additive: the UI ignores unknown `type` values, so
 adding one does not require a coordinated deploy.
@@ -158,6 +158,29 @@ stored microphone permission) changes with it; iOS Safari needs the
 "Start listening" is a button and not an automatic start; and the first Prisma
 handshake is ~2 s, so frames sent during it are queued (up to
 `BROWSER_QUEUE_FRAMES` = 4 s) rather than dropped.
+
+## Multiple users
+
+State is per websocket, not per process: `ws_handler` builds one `Call` per
+connection, and nothing in it is broadcast, listed or looked up by anyone else.
+Two pages open two independent transcripts with two Prisma sessions — the
+product does not show one person's call to another.
+
+What *is* shared, deliberately:
+
+- **The machine's microphone**, in server mode. Two pages on the demo URL open
+  two capture sessions on the same device and hear the same room. That is the
+  demo's topology, not a distribution model; talk mode gives every phone its own
+  microphone.
+- **`cache/summary.json`**, the last card written. It is an artefact for the
+  demo; no page reads it and it is never sent to another page.
+- **The TTS cache**, keyed by (text, voice, model, rate, language), so a shared
+  clip is identical audio, not shared call data.
+
+There is no auth, no database and no call registry (AGENTS.md, "Do not add").
+A real multi-user deployment therefore runs one instance per user or room and
+puts the routing in front of it; it must not be built by adding a global call
+list to this process.
 
 ## Reply chips and the reply language
 
