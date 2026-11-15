@@ -171,16 +171,28 @@ that was **not** verified (no physical phone, no room acoustics, no iOS) are in
 
 | | |
 |---|---|
-| ![English is the default — empty state, mascot and controls](pashyanti/docs/screenshots/app-light.png) | ![Dark theme](pashyanti/docs/screenshots/app-dark.png) |
-| ![Language picker: English, हिंदी, বাংলা, मराठी](pashyanti/docs/screenshots/languages.png) | ![The three-step tour, behind the ? button](pashyanti/docs/screenshots/tour.png) |
+| ![Peacock, the default ground — a live transcript](pashyanti/docs/screenshots/theme-peacock.png) | ![Lime Wash, the daylight ground](pashyanti/docs/screenshots/theme-limewash.png) |
+| ![Slate, the quiet ground](pashyanti/docs/screenshots/theme-slate.png) | ![The empty state: dot-matrix Sakhi and the first instruction](pashyanti/docs/screenshots/state-empty.png) |
+| ![A missed segment: a notice, not a bubble](pashyanti/docs/screenshots/state-missed.png) | ![The end-of-call artefact](pashyanti/docs/screenshots/state-summary.png) |
+| ![Language picker: English, हिंदी, বাংলা, मराठी](pashyanti/docs/screenshots/language-menu.png) | ![The three-step tour, behind the ? button](pashyanti/docs/screenshots/tour.png) |
 
-Peacock, light by default: cream paper `#F2EADB`, pine green `#255035`, one
-clay signal for warnings. The mascot — Sakhi, a peacock — is an exact vector
-trace of the owner's reference tile: the three sound arcs stay still at idle and
-pulse while listening, the beak opens while speaking, and a green `?` disc
-appears when the words were missed. The app icon is the same bird on a cream
-tile; the mark, states, palette and type are in
-[`peacock-identity.png`](pashyanti/docs/screenshots/peacock-identity.png).
+The surface is a halftone dot screen, not a sheet of paper: a 6 px lattice is
+the ground, every panel is a flat hole punched in it, and a bubble's edge
+dissolves into ground-coloured dots instead of ending in a border. Three grounds
+ship and are selectable from the header (D-016): **Peacock** (default) —
+near-black `#0B110A`, bone ink `#F2F5E4`, acid signal `#C9F05C`, body text
+17.3:1; **Lime Wash** — bone `#F1EDDD`, green-black ink `#17231A`, lime signal
+`#B7DB4B`, 13.9:1; **Slate** — deep teal `#08201E`, mint ink `#E7F3EE`, gold
+signal `#E7A93F`, 14.9:1.
+
+The mascot — Sakhi, a peacock — is the traced mark from
+[`peacock-identity.png`](pashyanti/docs/screenshots/peacock-identity.png),
+rasterised from those exact paths into a dot-matrix sprite: the three sound arcs
+stay still at idle and pulse while listening, the beak opens while speaking, and
+a `?` disc appears when the words were missed. The same head is ghosted into the
+lower field on the field's own lattice — static, and hidden behind the empty
+state, because the mascot is the only state indicator. The app icon is the same
+bird.
 
 The interface ships in **English (default), हिंदी, বাংলা and मराठी**, with a
 globe picker in the header. The recogniser is multilingual (`indic-auto`: nine
