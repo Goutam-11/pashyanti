@@ -238,6 +238,37 @@ def _chunks(pcm, size=32 * 1024):
         yield pcm[i:i + size]
 
 
+def cached_path(text, lang=DEFAULT_LANG, rate=RATE):
+    """The file `stream_pcm` would keep this text in, on the default voice.
+
+    The carrier leg speaks with the default voice (`mode=MODE_DEFAULT`), so its
+    cache key is this one. A cloned reply uses a different key.
+    """
+    return _key(text, VOICE, MODEL, rate, MODE_DEFAULT, lang)
+
+
+def is_cached(text, lang=DEFAULT_LANG, rate=RATE):
+    return os.path.exists(cached_path(text, lang, rate))
+
+
+async def warm(text, lang=DEFAULT_LANG, rate=RATE):
+    """Synthesise `text` into the cache without playing it. -> the path.
+
+    Used for the acknowledgement the carrier leg speaks while the real reply is
+    still being generated: one synthesis buys an instant first word on every
+    later call, so the work is done off the critical path.
+    """
+    path = cached_path(text, lang, rate)
+    if os.path.exists(path):
+        return path
+
+    async def discard(_chunk):
+        pass
+
+    await stream_pcm(text, discard, rate=rate, lang=lang)
+    return path
+
+
 async def stream_pcm(text, emit, voice=VOICE, model=MODEL, rate=RATE,
                      mode=MODE_DEFAULT, lang=DEFAULT_LANG):
     """Say `text` into an async sink instead of the speaker. -> (ttfa_ms, cached).

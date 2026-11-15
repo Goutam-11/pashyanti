@@ -27,6 +27,30 @@ FIXED = {
 FALLBACK = "en"
 CHIP_MAX = 48          # a chip is one line on a 430 px screen
 
+# What the caller hears in the first ~0.3 s of a reply, while Timbre is still
+# synthesising it. Bar-comparable to the safety table: reviewed by a speaker,
+# never model output, and never shown as a transcript line — the caller hears
+# it, the user does not see it. Only the carrier leg uses it, and only when the
+# real reply is not already cached (a cached reply is instant by itself).
+ACK = {
+    "en": "Yes.",
+    "hi": "हाँ।",
+    "bn": "হ্যাঁ।",
+    "mr": "हो.",
+    "gu": "હા.",
+    "pa": "ਹਾਂ।",
+    "or": "ହଁ।",
+    "ta": "ஆம்.",
+    "te": "అవును.",
+    "kn": "ಹೌದು.",
+    "ml": "അതെ.",
+}
+
+
+def ack(lang: str | None) -> str:
+    """The one-word acknowledgement spoken before a reply is synthesised."""
+    return ACK[code(lang)]
+
 
 def code(lang: str | None) -> str:
     """`hi-IN` -> `hi`; anything unusable -> the fallback language."""

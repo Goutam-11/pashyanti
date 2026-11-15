@@ -44,7 +44,18 @@ is still `403`.
   `stt.BrowserMic` the talk mode uses (`rate=8000, telephony=True`).
 - The reply goes back down the line, not to a speaker and not to the phone:
   `tts.stream_pcm(..., rate=8000)` → 3200-byte chunks → `media`. The carrier
-  microphone is muted while it speaks (D-005, carrier version).
+  microphone is muted from the first audio until the last of it has played
+  (D-005, carrier version) — not during synthesis, so the caller is not cut off
+  while the model thinks.
+- **The reply is acknowledged, not just delayed.** Timbre's first audio measured
+  0.7–7.6 s across ten calls and does not track text length (a one-sentence
+  reply was no faster than three sentences), so before a reply that is not
+  already cached, a one-word acknowledgement from the reviewed table in
+  `chips.py` is queued and played while the reply is still being synthesised.
+  The caller hears a voice in ~0.3 s instead of silence; the reply follows on
+  the same pacer. Cached replies get no acknowledgement — they are instant by
+  themselves. The acknowledgement is spoken, never shown as a transcript line.
+
 
 ## Wiring it to a user
 

@@ -35,6 +35,7 @@ import time
 
 from aiohttp import WSMsgType, web
 
+import chips
 import tts
 from stt import BrowserMic, FrameParser
 
@@ -223,6 +224,13 @@ class CarrierCall:
             await self.mic.feed(frame)
 
     async def _on_transcript(self, text, lang, latency_ms, audio_ms):
+        # The caller's language is known from the first transcript, which is a
+        # few seconds before the user can type a reply: enough time to buy the
+        # acknowledgement, so the first reply already has an instant first word.
+        if lang:
+            phrase = chips.ack(lang)
+            if not tts.is_cached(phrase, lang):
+                asyncio.create_task(self._warm_ack(phrase, lang))
         target = page()
         if target is not None and not target.ended:
             await target.on_transcript(text, lang, latency_ms, audio_ms)
@@ -267,6 +275,32 @@ class CarrierCall:
                     self._drained.set()
             next_at += OUT_PERIOD
 
+    def _queue_ack(self, lang: str) -> int:
+        """Queue the cached acknowledgement; return the bytes queued (0 if none).
+
+        Reads straight from the clip cache — a synthesis here would defeat the
+        point. When the clip is missing this fires a background synthesis so the
+        *next* reply has one, and this reply goes out unchanged.
+        """
+        phrase = chips.ack(lang)
+        try:
+            with open(tts.cached_path(phrase, lang), "rb") as f:
+                pcm = f.read()
+        except OSError:
+            asyncio.create_task(self._warm_ack(phrase, lang))
+            return 0
+        queued_bytes = 0
+        for piece in out_chunks(pcm, OUT_CHUNK):
+            self._out.put_nowait(piece)
+            queued_bytes += len(piece)
+        return queued_bytes
+
+    async def _warm_ack(self, phrase: str, lang: str):
+        try:
+            await tts.warm(phrase, lang, rate=RATE)
+        except Exception:                 # noqa: BLE001 (an extra, never fatal)
+            pass
+
     async def speak(self, text: str, lang: str):
         """Speak the page's reply down the line. -> (ttfa_ms, cached).
 
@@ -303,6 +337,15 @@ class CarrierCall:
                     del buf[:OUT_CHUNK]
                     queued += OUT_CHUNK
 
+            # A one-word acknowledgement goes out first when it is already
+            # cached and the reply itself is not: the pacer plays it while the
+            # reply is still being synthesised, so the caller hears something in
+            # ~0.3 s instead of 1.5-7 s of silence.
+            acked = 0
+            if not tts.is_cached(text, lang):
+                acked = self._queue_ack(lang)
+                queued += acked
+
             try:
                 ttfa, cached = await tts.stream_pcm(text, emit, rate=RATE,
                                                     lang=lang)
@@ -325,6 +368,7 @@ class CarrierCall:
                 if self.mic:
                     self.mic.muted = False
             print(f"carrier reply: ttfa={ttfa}ms cached={cached} "
+                  f"ack={'yes' if acked else 'no'} "
                   f"audio={queued / (RATE * 2):.1f}s")
             return ttfa, cached
 
