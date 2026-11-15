@@ -3,6 +3,8 @@
 `sounddevice` is never touched because the blocking helpers are patched, and
 `gnani` is never called because the cloned helper is patched too.
 """
+import base64
+import json
 import os
 import shutil
 import tempfile
@@ -119,13 +121,18 @@ class LanguageTest(unittest.IsolatedAsyncioTestCase):
                 return False
 
             def iter_lines(self):
-                return iter([])
+                # A reply is only a reply if the stream finished: the payload
+                # test still has to look like a real one.
+                audio = base64.b64encode(b"\x01\x00" * 64).decode()
+                return iter([
+                    b"data: " + json.dumps({"audio": audio}).encode(),
+                    b"data: " + json.dumps({"is_final": True}).encode()])
 
         def fake_post(url, headers=None, json=None, stream=None, timeout=None):
             captured.update(json)
             return Response()
 
-        with patch.object(tts.requests, "post", fake_post):
+        with patch.object(tts._SESSION, "post", fake_post):
             list(tts._sse_stream("নমস্কার", tts.VOICE, tts.MODEL, tts.RATE,
                                  "bn-IN"))
 

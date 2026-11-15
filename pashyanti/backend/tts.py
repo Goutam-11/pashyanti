@@ -83,6 +83,42 @@ def _key(text, voice, model, rate, mode=MODE_DEFAULT, lang=DEFAULT_LANG):
     return os.path.join(CACHE_DIR, f"{h}.pcm")
 
 
+_SESSION = requests.Session()      # reuse the TLS connection between replies
+
+
+def parse_sse_lines(lines):
+    """Timbre's SSE lines -> raw s16le chunks.
+
+    A good stream closes with `{"is_final": true}`. One that stops without it is
+    a dropped connection, not a short sentence, and one that carries no audio at
+    all is a silent failure. Both are raised: a reply the caller never heard must
+    not be cached, and must not be reported as spoken either.
+    """
+    final = False
+    audio = False
+    for raw in lines:
+        if not raw or not raw.startswith(b"data:"):
+            continue
+        body = raw[5:].strip()
+        if not body:
+            continue
+        try:
+            d = json.loads(body)
+        except json.JSONDecodeError:
+            continue
+        chunk = d.get("audio")
+        if chunk:
+            audio = True
+            yield base64.b64decode(chunk)
+        if d.get("is_final"):
+            final = True
+            break
+    if not final:
+        raise RuntimeError("TTS stream ended without is_final (truncated)")
+    if not audio:
+        raise RuntimeError("TTS produced no audio")
+
+
 def _sse_stream(text, voice, model, rate, lang=DEFAULT_LANG):
     """Yield raw s16le chunks as the server produces them."""
     payload = {
@@ -99,25 +135,11 @@ def _sse_stream(text, voice, model, rate, lang=DEFAULT_LANG):
             "container": "raw",
         },
     }
-    with requests.post(f"{BASE}/api/v1/tts/sse", headers=HDR, json=payload,
+    with _SESSION.post(f"{BASE}/api/v1/tts/sse", headers=HDR, json=payload,
                        stream=True, timeout=120) as r:
         if r.status_code != 200:
             raise RuntimeError(f"TTS {r.status_code}: {r.text[:200]}")
-        for raw in r.iter_lines():
-            if not raw or not raw.startswith(b"data:"):
-                continue
-            body = raw[5:].strip()
-            if not body:
-                continue
-            try:
-                d = json.loads(body)
-            except json.JSONDecodeError:
-                continue
-            chunk = d.get("audio")
-            if chunk:
-                yield base64.b64decode(chunk)
-            if d.get("is_final"):
-                break
+        yield from parse_sse_lines(r.iter_lines())
 
 
 def _play_and_cache(text, voice, model, rate, mode=MODE_DEFAULT,
@@ -250,52 +272,68 @@ async def stream_pcm(text, emit, voice=VOICE, model=MODEL, rate=RATE,
 
 async def _stream_sse_to(text, emit, voice, model, rate, path,
                          lang=DEFAULT_LANG):
-    """Bridge the blocking SSE loop to the event loop without buffering it all."""
+    """Bridge the blocking SSE loop to the event loop without buffering it all.
+
+    Retried once when a stream dies before any audio reached the caller: Timbre
+    intermittently answers with a stream that carries no audio or stops early,
+    and a reply the caller never hears is worse than a second attempt. Once
+    audio has left, a retry would repeat the sentence, so the error is raised.
+    """
     loop = asyncio.get_running_loop()
-    queue: asyncio.Queue = asyncio.Queue()
-    done = object()
     t0 = time.time()
-    first: list[int] = []
-    pcm = bytearray()
 
-    def worker():
-        ok = False
+    for attempt in (1, 2):
+        queue: asyncio.Queue = asyncio.Queue()
+        done = object()
+        first: list[int] = []
+        pcm = bytearray()
+        delivered = False
+
+        def worker():
+            ok = False
+            try:
+                for chunk in _sse_stream(text, voice, model, rate, lang):
+                    if not first:
+                        first.append(int((time.time() - t0) * 1000))
+                    pcm.extend(chunk)
+                    loop.call_soon_threadsafe(queue.put_nowait, chunk)
+                ok = True
+            except Exception as exc:                 # noqa: BLE001
+                loop.call_soon_threadsafe(queue.put_nowait, exc)
+            finally:
+                # Only a complete stream is cached: a truncated clip would
+                # replay as a half sentence and report 0 ms.
+                if ok and pcm:
+                    try:
+                        os.makedirs(CACHE_DIR, exist_ok=True)
+                        with open(path, "wb") as f:
+                            f.write(bytes(pcm))
+                    except OSError:
+                        pass      # playback already happened; a miss is cheap
+                loop.call_soon_threadsafe(queue.put_nowait, done)
+
+        task = asyncio.create_task(asyncio.to_thread(worker))
         try:
-            for chunk in _sse_stream(text, voice, model, rate, lang):
-                if not first:
-                    first.append(int((time.time() - t0) * 1000))
-                pcm.extend(chunk)
-                loop.call_soon_threadsafe(queue.put_nowait, chunk)
-            ok = True
-        except Exception as exc:                     # noqa: BLE001
-            loop.call_soon_threadsafe(queue.put_nowait, exc)
+            while True:
+                item = await queue.get()
+                if item is done:
+                    break
+                if isinstance(item, Exception):
+                    raise item
+                delivered = True
+                await emit(item)
+        except Exception:
+            if not delivered and attempt == 1:
+                continue                    # nothing was heard: try once more
+            raise
         finally:
-            # Only a complete stream is cached: a truncated clip would replay
-            # as a half sentence and report 0 ms.
-            if ok and pcm:
-                try:
-                    os.makedirs(CACHE_DIR, exist_ok=True)
-                    with open(path, "wb") as f:
-                        f.write(bytes(pcm))
-                except OSError:
-                    pass          # playback already happened; a cache miss is cheap
-            loop.call_soon_threadsafe(queue.put_nowait, done)
+            if not task.done():
+                # The socket went away mid-sentence. Do not hold the call open
+                # for the rest of the stream; the worker finishes on its own.
+                task.cancel()
+        return int(first[0]) if first else 0, False
 
-    task = asyncio.create_task(asyncio.to_thread(worker))
-    try:
-        while True:
-            item = await queue.get()
-            if item is done:
-                break
-            if isinstance(item, Exception):
-                raise item
-            await emit(item)
-    finally:
-        if not task.done():
-            # The socket went away mid-sentence. Do not hold the call open for
-            # the rest of the stream; the worker finishes and caches on its own.
-            task.cancel()
-    return int(first[0]) if first else 0, False
+    raise RuntimeError("TTS produced no audio after a retry")
 
 
 

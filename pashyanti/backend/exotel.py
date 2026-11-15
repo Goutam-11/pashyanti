@@ -270,20 +270,29 @@ class CarrierCall:
     async def speak(self, text: str, lang: str):
         """Speak the page's reply down the line. -> (ttfa_ms, cached).
 
-        The carrier microphone is muted for the duration, so the caller's phone
-        echoing Timbre back is never transcribed (D-005, carrier version).
+        The carrier microphone is muted from the first audio until the last of
+        it has played, so the caller's phone echoing Timbre back is never
+        transcribed (D-005, carrier version). It is not muted during synthesis:
+        a reply can take seconds to start, and the caller should not go deaf
+        while the model thinks.
         """
         async with self._speaking:
-            emitted: list[int] = []
-            t0 = time.monotonic()
             # Clear before enqueuing: an `emit` can fill the whole queue without
             # yielding, so a pre-set event would claim the audio had played.
             self._drained.clear()
             buf = bytearray()
+            started = False
+            queued = 0
 
             async def emit(chunk: bytes):
-                if not emitted:
-                    emitted.append(int((time.monotonic() - t0) * 1000))
+                nonlocal started, queued
+                if not started:
+                    started = True
+                    # Mute when audio is actually queued, not before: Timbre can
+                    # take seconds, and muting through the whole generation cuts
+                    # off whatever the caller says while it thinks.
+                    if self.mic:
+                        self.mic.muted = True
                 # Carry the remainder across streamed chunks. Padding each one
                 # to 3200 bytes with `out_chunks` would insert a silence gap
                 # whenever the model's chunk size is not a multiple of it, and
@@ -292,15 +301,15 @@ class CarrierCall:
                 while len(buf) >= OUT_CHUNK:
                     self._out.put_nowait(bytes(buf[:OUT_CHUNK]))
                     del buf[:OUT_CHUNK]
+                    queued += OUT_CHUNK
 
-            if self.mic:
-                self.mic.muted = True
             try:
                 ttfa, cached = await tts.stream_pcm(text, emit, rate=RATE,
                                                     lang=lang)
                 if buf:                  # the only pad: at the true end
-                    self._out.put_nowait(
-                        bytes(buf) + b"\x00" * (OUT_CHUNK - len(buf)))
+                    tail = bytes(buf) + b"\x00" * (OUT_CHUNK - len(buf))
+                    self._out.put_nowait(tail)
+                    queued += OUT_CHUNK
                 if not self._out.empty():
                     self._drained.clear()    # a stale "drained" must not shortcut
                 # Let the pacer finish what is queued before unmuting.
@@ -308,9 +317,15 @@ class CarrierCall:
                     await asyncio.wait_for(self._drained.wait(), timeout=30)
                 except asyncio.TimeoutError:
                     pass
+            except Exception as exc:          # noqa: BLE001 (surfaced to caller)
+                print(f"carrier reply failed: {type(exc).__name__}: "
+                      f"{str(exc)[:120]}")
+                raise
             finally:
                 if self.mic:
                     self.mic.muted = False
+            print(f"carrier reply: ttfa={ttfa}ms cached={cached} "
+                  f"audio={queued / (RATE * 2):.1f}s")
             return ttfa, cached
 
     async def hangup(self) -> bool:
