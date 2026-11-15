@@ -60,6 +60,7 @@ export default function App() {
   const [clonedVoice, setClonedVoice] = useState(false);
   const [mode, setMode] = useState<CallMode>(TALK_REQUESTED ? "talk" : "server");
   const [capture, setCapture] = useState<CaptureState>("idle");
+  const [carrier, setCarrier] = useState<{ from?: string } | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const talk = useRef<Talk | null>(null);
   const callerLang = useRef<string | null>(null);
@@ -106,6 +107,10 @@ export default function App() {
           break;
         case "audio":
           if (!msg.final) talk.current?.play(msg.data, msg.rate);
+          break;
+        case "carrier":
+          // A real inbound call is the audio source; the local mic is idle.
+          setCarrier(msg.state === "live" ? { from: msg.from } : null);
           break;
         case "capture":
           // `stopped` is the server closing the call: release the phone's
@@ -253,7 +258,8 @@ export default function App() {
   const empty = lines.length === 0 && !ended;
   const errored = state.startsWith("error");
   const isTalk = mode === "talk";
-  const noMic = !isTalk && mic === false;
+  const isCarrier = carrier !== null;
+  const noMic = !isTalk && !isCarrier && mic === false;
   const missed = retry && !ended;
   const dotState = !connected || noMic || errored
     ? "error"
@@ -276,7 +282,9 @@ export default function App() {
   const statusKey = state as "listening" | "thinking" | "speaking";
   const statusLabel = !connected
     ? m.status.reconnecting
-    : noMic
+    : isCarrier
+      ? m.carrier.live
+      : noMic
       ? m.status.noMic
       : errored
         ? m.status.error
@@ -414,7 +422,7 @@ export default function App() {
           </div>
         ) : (
           <>
-            {lines.length > 0 && (
+            {(lines.length > 0 || isCarrier) && (
               <div className="foot-end">
                 <button type="button" className="footer-end" onClick={endCall}>
                   <svg

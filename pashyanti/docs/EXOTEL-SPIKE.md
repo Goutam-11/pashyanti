@@ -1,7 +1,9 @@
 # Exotel AgentStream — real-call spike
 
 **Status:** one real call placed and answered, 14 Nov 2026 ~20:42 IST. The
-throwaway bridge is not merged and is not in the 60-second video. This document
+throwaway bridge is not merged and is not in the 60-second video. (The protocol
+was later ported into the product as an opt-in pilot — `EXOTEL-BRIDGE.md`,
+2026-11-15 — but this document stays the record of the first real call.) This document
 is the output; the recommendation is at the end.
 
 It exists because the Twilio spike ([`TWILIO-SPIKE.md`](TWILIO-SPIKE.md)) closed

@@ -61,6 +61,9 @@ export type Messages = {
     speaking: string;
     unsure: string;
   };
+  carrier: {
+    live: string;
+  };
   talk: {
     start: string;
     starting: string;

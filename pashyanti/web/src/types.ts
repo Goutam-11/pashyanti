@@ -42,6 +42,13 @@ export type ServerMsg =
       final?: boolean;
     }
   | { type: "capture"; state: "ready" | "stopped" | "error" }
+  | {
+      type: "carrier";
+      /** A real inbound call is live on this page, or it has ended. */
+      state: "live" | "ended";
+      /** Masked to the last four digits; a full number never reaches the page. */
+      from?: string;
+    }
   | ({ type: "summary" } & Summary)
   | { type: "retry" }
   | { type: "voice"; mode: VoiceMode }

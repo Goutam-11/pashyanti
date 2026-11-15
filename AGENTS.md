@@ -47,6 +47,7 @@ pashyanti/
     audio.py               1024-byte frames, G.711 µ-law in numpy
     gnani.py               REST client: stt_file, tts, clone_embedding, tts_cloned
     llm.py                 the chip/card model (OpenCode Go): a reply, a card, or None
+    exotel.py              carrier leg (pilot): Exotel AgentStream -> Prisma, opt-in
     chips.py               caller-language "please repeat" / "a little slower" table
     harness/               phone-line accuracy measurement (degrade, wer, corpus, cli)
     probe.py stream_mic.py test_stream_file.py clone_voice.py   standalone tools
@@ -83,9 +84,12 @@ Violating any of these produces a demo that fails in front of a judge.
 3. **REST STT caps at 30 seconds.** Longer audio needs the Batch API
    (create → start → poll → files).
 4. **There is no PSTN, SIP or number provisioning in the Gnani API.** The API
-   cannot receive a call. Audio comes from the local microphone; a carrier
-   bridge is a spike, not a product path (an Exotel trial call worked on 14 Nov,
-   see `pashyanti/docs/EXOTEL-SPIKE.md`; the Twilio bridge is not built).
+   cannot receive a call. Audio comes from the local microphone, or from a
+   carrier leg: `exotel.py` + `/exotel/ws` is merged as an **opt-in pilot**
+   (`EXOTEL_WS_TOKEN`, 503 without it, one page, one call) — see
+   `pashyanti/docs/EXOTEL-BRIDGE.md`. An Exotel trial call worked on 14 Nov
+   (`EXOTEL-SPIKE.md`). The Twilio bridge is not built. A trial number is not
+   judge-dialable: never claim a production number or a real call in the demo.
 5. **No word-level timestamps, no live diarization, no translation.** Diarization
    exists only in the Batch API. `speaker_names` is a spelling hint, not
    diarization. Do not promise any of the three in UI or copy.
@@ -126,6 +130,10 @@ cd pashyanti/web
 bun install
 bun run dev                        # http://localhost:5173, proxies /ws to :8080
 bun run build                      # type-check + build to dist/ (backend serves it)
+
+# carrier pilot (a real phone call, opt-in; see docs/EXOTEL-BRIDGE.md)
+set -x EXOTEL_WS_TOKEN (openssl rand -hex 16)
+# Exotel Voicebot applet URL: wss://<host>/exotel/ws?token=<token>&sample-rate=8000
 
 # talk mode (phone as microphone and speaker) — needs a secure context
 ngrok http 8080                    # https://<random>.ngrok.app
@@ -239,6 +247,7 @@ Do not merge these layers — the split is what keeps CI free and fast.
 | `tests/test_tts_stream.py` | unit | nothing (SSE stubbed) | does the reply stream to the page, cache a complete clip, and refuse to cache a broken one? |
 | `tests/test_chips.py` | unit | nothing | do both safety options exist in every shipped language, and does the 3-chip cap hold? |
 | `tests/test_llm.py` | unit | nothing (no network) | is the prompt in the caller's language, and does every failure return None instead of raising? |
+| `tests/test_exotel.py` | unit + integration | nothing (simulated Exotel + stubbed Prisma) | does the carrier framing stay at 1024 bytes, is the token gate real, and does a reply go back down the line? |
 | `tests/test_live_api.py` | live | a real key, `RUN_LIVE=1` | do Timbre and Prisma actually round-trip? **Costs credits — never in CI.** |
 
 Rules:
@@ -327,10 +336,16 @@ acceptable, and neither is loosening a threshold to make a PR pass.
   and a trial number only accepts verified callers. See
   `pashyanti/docs/TWILIO-SPIKE.md` and `DECISIONS.md` D-014 before reopening it.
 - An Exotel trial bridge proved the audio path over a real Indian number on
-  14 Nov (`pashyanti/docs/EXOTEL-SPIKE.md`), but it is a throwaway: not merged,
-  not wired to the page, and a trial line is not judge-dialable. The D-014
-  amendment records the result; the Twilio no-go still stands.
+  14 Nov (`pashyanti/docs/EXOTEL-SPIKE.md`). Its protocol is now ported into the
+  product as the opt-in carrier pilot (`exotel.py`, `/exotel/ws`); the original
+  throwaway in `.scratch/` is still the record of that first call. The Twilio
+  no-go still stands.
 - Barge-in is impossible while muted: the user cannot interrupt the reply.
+- **The carrier pilot is one page, one call.** There are no accounts, so a real
+  call attaches to the latest open page and a second call is refused; the
+  hangup POST was not exercised against Exotel's live API, so "End call" ends
+  the session and only best-effort drops the PSTN leg. The ExoPhone is a trial
+  number, not judge-dialable — the demo must not claim it.
 - Reply chips are only as right as `msg.lang`: a Bengali clip was detected
   `bn-IN` once and `mr-IN` once, and the chips followed the reported language.
   The model can also be blunt or use the wrong grammatical gender, because the

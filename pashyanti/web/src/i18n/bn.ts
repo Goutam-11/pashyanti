@@ -87,6 +87,9 @@ export const bn: Messages = {
     speaking: "বলছে",
     unsure: "বুঝতে পারিনি",
   },
+  carrier: {
+    live: "ফোন কলে",
+  },
   talk: {
     start: "শোনা শুরু করুন",
     starting: "শুরু হচ্ছে…",

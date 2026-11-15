@@ -87,6 +87,9 @@ export const hi: Messages = {
     speaking: "बोल रही है",
     unsure: "समझ नहीं आया",
   },
+  carrier: {
+    live: "फ़ोन कॉल पर",
+  },
   talk: {
     start: "सुनना शुरू करें",
     starting: "शुरू हो रहा है…",
