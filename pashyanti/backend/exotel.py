@@ -7,6 +7,7 @@ route answers 503 and nothing changes, which is why the demo path and the
 Exotel's Voicebot applet opens one websocket per inbound call:
 
     wss://<public-host>/exotel/ws?token=<EXOTEL_WS_TOKEN>&sample-rate=8000
+    wss://<public-host>/exotel/ws/<EXOTEL_WS_TOKEN>          (or in the path)
 
 Events from Exotel: `connected`, `start`, `media`, `mark`, `dtmf`, `stop`.
 Audio both ways: base64 raw PCM, 16-bit signed little-endian, mono, 8 kHz.
@@ -17,8 +18,11 @@ second simultaneous carrier call is refused rather than mixed into the first.
 
 What is verified: the protocol below was tested against a **real Indian trial
 call on 14 Nov** by the spike this module comes from (see EXOTEL-SPIKE.md), and
-the framing/parsing is covered by tests with a simulated Exotel client. What is
-**not** verified: the hangup POST against Exotel's live API, multi-user
+the framing/parsing is covered by tests with a simulated Exotel client. The
+hangup **route and auth** were probed live on 15 Nov (`POST .../Calls/{sid}` is
+a 403, `.../Calls/{sid}/Hangup` answers 200), though a bogus SID answers 200
+too, so the endpoint alone does not prove a handset dropped. What is **not**
+verified: a live caller hearing a gapless reply on this module, multi-user
 routing, and the two WAN latency legs.
 """
 from __future__ import annotations
@@ -38,6 +42,7 @@ from stt import BrowserMic, FrameParser
 RATE = 8000                      # Exotel's sample rate for a voice call
 FRAME = 1024                     # what Prisma takes at 8 kHz: 64 ms
 OUT_CHUNK = 3200                 # 200 ms outbound, the shape the trial used
+OUT_PERIOD = OUT_CHUNK / (RATE * 2)   # 0.2 s: the play time of one chunk
 PREFILL = 6400                   # 400 ms of audio before the first frame
 MAX_BUFFERED = RATE            # 1 s of inbound audio; older chunks are dropped
 WS_TOKEN = "EXOTEL_WS_TOKEN"
@@ -106,6 +111,12 @@ def start_fields(event: dict) -> dict:
     return {
         "sid": (event.get("stream_sid") or event.get("streamSid")
                 or start.get("stream_sid") or start.get("streamSid") or ""),
+        # The REST API addresses the call by its call SID. Ending the line with
+        # the stream SID is a hard 403, so the two ids are kept apart.
+        "call_sid": (start.get("call_sid") or start.get("callSid")
+                     or event.get("call_sid") or ""),
+        "account_sid": (start.get("account_sid") or start.get("accountSid")
+                        or event.get("account_sid") or ""),
         "from": start.get("from") or "",
         "to": start.get("to") or "",
     }
@@ -121,21 +132,23 @@ def api_host(subdomain: str) -> str:
     return value if "." in value else f"{value}.exotel.com"
 
 
-def hangup_request(sid: str) -> tuple[str, dict] | None:
-    """Best-effort Exotel hangup: URL + form body, or None when unconfigured.
+def hangup_request(call_sid: str, account_sid: str = "") -> tuple[str, dict] | None:
+    """Exotel's hangup: POST the call resource's `/Hangup`, or None when unset.
 
-    Exotel's documented shape for ending a live call is a POST to the call
-    resource with `Status=completed`. It is configurable because it is the one
-    part of this module that was not exercised against the live API today.
+    Measured against the live API on 15 Nov: `POST .../Calls/{call_sid}` answers
+    `403 Method not allowed` and `PUT` answers `405 Method not available`, while
+    `POST .../Calls/{call_sid}/Hangup` answers `200 Hangup Successful`. The id is
+    the **call SID** from the stream's `start` event; the stream SID is a
+    different id and cannot end the line.
     """
-    account = os.environ.get("EXOTEL_ACCOUNT_SID")
+    account = account_sid or os.environ.get("EXOTEL_ACCOUNT_SID")
     subdomain = os.environ.get("EXOTEL_SUBDOMAIN")
     path = os.environ.get("EXOTEL_HANGUP_PATH",
-                          "/v1/Accounts/{account}/Calls/{sid}")
-    if not (sid and account and subdomain):
+                          "/v1/Accounts/{account}/Calls/{sid}/Hangup")
+    if not (call_sid and account and subdomain):
         return None
     return (f"https://{api_host(subdomain)}"
-            + path.format(account=account, sid=sid)), {"Status": "completed"}
+            + path.format(account=account, sid=call_sid)), {"Status": "completed"}
 
 
 class CarrierCall:
@@ -143,7 +156,9 @@ class CarrierCall:
 
     def __init__(self, ws: web.WebSocketResponse):
         self.ws = ws
-        self.sid = ""
+        self.sid = ""              # the stream SID: what outbound media carries
+        self.call_sid = ""         # the call SID: what the REST hangup needs
+        self.account_sid = ""
         self.started_at = time.monotonic()
         self.mic: BrowserMic | None = None
         self.parser = FrameParser()
@@ -184,6 +199,8 @@ class CarrierCall:
     async def on_start(self, event: dict):
         fields = start_fields(event)
         self.sid = fields["sid"]
+        self.call_sid = fields["call_sid"]
+        self.account_sid = fields["account_sid"]
         if self.mic is None:
             self.mic = BrowserMic(self._on_transcript, rate=RATE,
                                   telephony=True)
@@ -193,6 +210,10 @@ class CarrierCall:
             await target.attach_carrier(self)
             await target.send({"type": "carrier", "state": "live",
                                "from": mask_number(fields["from"])})
+        # Masked, never the number itself: this line is what says whether the
+        # start event carried a caller and a call SID at all.
+        print(f"carrier call live: from={mask_number(fields['from'])} "
+              f"call_sid={'yes' if self.call_sid else 'MISSING'}")
 
     async def on_media(self, event: dict):
         pcm = media_pcm((event.get("media") or {}).get("payload"))
@@ -220,19 +241,32 @@ class CarrierCall:
             return False
 
     async def _pacer(self):
-        """One 3200-byte chunk every 200 ms, as the trial call did."""
+        """One 3200-byte chunk every 200 ms, on a deadline, as the trial did.
+
+        Sleeping a fixed 200 ms *after* each send makes the real cadence
+        send-time + 200 ms, which slowly underruns the carrier's buffer and
+        makes the reply break up. The schedule is absolute instead: chunk *n*
+        goes at t0 + n*200 ms. A gap longer than one chunk (the latency before
+        the first audio) resyncs rather than bursting to catch up.
+        """
+        loop = asyncio.get_running_loop()
+        next_at: float | None = None
         while not self.closed:
             chunk = await self._out.get()
             if chunk is None:
                 return
             self._drained.clear()
+            now = loop.time()
+            if next_at is None or now - next_at > OUT_PERIOD:
+                next_at = now
+            await asyncio.sleep(max(0.0, next_at - now))
             try:
                 await self._send_media(base64.b64encode(chunk).decode("ascii"))
                 self.out_bytes += len(chunk)
             finally:
                 if self._out.empty():
                     self._drained.set()
-            await asyncio.sleep(OUT_CHUNK / (RATE * 2))
+            next_at += OUT_PERIOD
 
     async def speak(self, text: str, lang: str):
         """Speak the page's reply down the line. -> (ttfa_ms, cached).
@@ -246,18 +280,30 @@ class CarrierCall:
             # Clear before enqueuing: an `emit` can fill the whole queue without
             # yielding, so a pre-set event would claim the audio had played.
             self._drained.clear()
+            buf = bytearray()
 
             async def emit(chunk: bytes):
                 if not emitted:
                     emitted.append(int((time.monotonic() - t0) * 1000))
-                for piece in out_chunks(chunk):
-                    self._out.put_nowait(piece)
+                # Carry the remainder across streamed chunks. Padding each one
+                # to 3200 bytes with `out_chunks` would insert a silence gap
+                # whenever the model's chunk size is not a multiple of it, and
+                # that is what made the reply stutter on the handset.
+                buf.extend(chunk)
+                while len(buf) >= OUT_CHUNK:
+                    self._out.put_nowait(bytes(buf[:OUT_CHUNK]))
+                    del buf[:OUT_CHUNK]
 
             if self.mic:
                 self.mic.muted = True
             try:
                 ttfa, cached = await tts.stream_pcm(text, emit, rate=RATE,
                                                     lang=lang)
+                if buf:                  # the only pad: at the true end
+                    self._out.put_nowait(
+                        bytes(buf) + b"\x00" * (OUT_CHUNK - len(buf)))
+                if not self._out.empty():
+                    self._drained.clear()    # a stale "drained" must not shortcut
                 # Let the pacer finish what is queued before unmuting.
                 try:
                     await asyncio.wait_for(self._drained.wait(), timeout=30)
@@ -269,8 +315,14 @@ class CarrierCall:
             return ttfa, cached
 
     async def hangup(self) -> bool:
-        """End the call: best-effort carrier hangup, then close the socket."""
-        request = hangup_request(self.sid)
+        """End the call: Exotel REST hangup, then close the socket.
+
+        Returns whether the carrier acknowledged. A refusal is printed rather
+        than swallowed: "End call did nothing" was a silent 403 (wrong method,
+        wrong id) for a whole evening, and the log is the only way to see it on
+        a handset. The key never appears — only the status.
+        """
+        request = hangup_request(self.call_sid, self.account_sid)
         sent = False
         if request is not None:
             url, form = request
@@ -281,8 +333,12 @@ class CarrierCall:
                 r = await asyncio.to_thread(
                     requests.post, url, data=form, auth=(key, token), timeout=5)
                 sent = r.status_code in (200, 201, 202, 204)
-            except Exception:                 # noqa: BLE001  (best effort)
-                sent = False
+                print(f"carrier hangup: call {self.call_sid[-4:].rjust(4, '*')} "
+                      f"-> HTTP {r.status_code}")
+            except Exception as exc:          # noqa: BLE001  (best effort)
+                print(f"carrier hangup failed: {type(exc).__name__}")
+        else:
+            print("carrier hangup: no call_sid or credentials")
         await self.close()
         return sent
 
@@ -308,12 +364,24 @@ class CarrierCall:
             pass
 
 
+def request_token(request) -> str | None:
+    """The bridge secret, from the query string or the path.
+
+    Exotel's Voicebot applet stores one URL and some consoles drop its query
+    string when the applet is saved. The call then arrives as a bare
+    `/exotel/ws` and the gate refuses it, which looks exactly like a dead
+    bridge from the handset. The path form (`/exotel/ws/<token>`) survives that,
+    so both are accepted; the comparison is the same one either way.
+    """
+    return request.query.get("token") or request.match_info.get("token")
+
+
 async def ws_handler(request: web.Request):
     """`/exotel/ws` — Exotel only, and only when the token is configured."""
     if not enabled():
         return web.Response(status=503,
                             text="carrier bridge disabled: set EXOTEL_WS_TOKEN")
-    if not token_ok(request.query.get("token")):
+    if not token_ok(request_token(request)):
         return web.Response(status=403, text="bad carrier token")
     target = page()
     if busy() or target is None or target.ended:

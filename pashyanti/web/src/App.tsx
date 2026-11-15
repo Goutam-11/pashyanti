@@ -323,6 +323,9 @@ export default function App() {
               <i />
             </span>
             <span className="status-label">{statusLabel}</span>
+            {carrier?.from ? (
+              <span className="status-caller">{carrier.from}</span>
+            ) : null}
           </span>
           <LanguageMenu />
           <ThemeMenu />

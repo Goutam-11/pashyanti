@@ -122,6 +122,13 @@ class HangupTest(unittest.TestCase):
                 os.environ.pop(key, None)
             self.assertIsNone(exotel.hangup_request("s1"))
 
+    def test_a_missing_call_sid_means_no_rest_call(self):
+        # The stream SID cannot end the line; without the call SID there is
+        # nothing to post to and the route would be a 403 anyway.
+        env = {"EXOTEL_ACCOUNT_SID": "acct", "EXOTEL_SUBDOMAIN": "api"}
+        with patch.dict(os.environ, env):
+            self.assertIsNone(exotel.hangup_request(""))
+
     def test_a_bare_subdomain_and_a_full_host_both_work(self):
         env = {"EXOTEL_ACCOUNT_SID": "acct", "EXOTEL_API_KEY": "k",
                "EXOTEL_API_TOKEN": "t"}
@@ -130,17 +137,28 @@ class HangupTest(unittest.TestCase):
                                 ("api.exotel.com/", "https://api.exotel.com/v1/x")):
             with patch.dict(os.environ, {**env, "EXOTEL_SUBDOMAIN": value,
                                         "EXOTEL_HANGUP_PATH": "/v1/x"}):
-                url, _ = exotel.hangup_request("s1")
+                url, _ = exotel.hangup_request("CA1")
             self.assertEqual(url, expected)
 
-    def test_the_request_ends_the_call_by_status(self):
-        env = {"EXOTEL_ACCOUNT_SID": "acct", "EXOTEL_SUBDOMAIN": "api",
-               "EXOTEL_HANGUP_PATH": "/v1/Accounts/{account}/Calls/{sid}"}
+    def test_the_default_route_is_the_hangup_resource(self):
+        # Measured 15 Nov: POST .../Calls/{sid} is 403 "Method not allowed";
+        # only .../Calls/{sid}/Hangup answers 200 "Hangup Successful".
+        env = {"EXOTEL_ACCOUNT_SID": "acct", "EXOTEL_SUBDOMAIN": "api"}
         with patch.dict(os.environ, env):
-            url, form = exotel.hangup_request("s1")
-        self.assertEqual(url,
-                         "https://api.exotel.com/v1/Accounts/acct/Calls/s1")
+            url, form = exotel.hangup_request("CA1234")
+        self.assertEqual(
+            url, "https://api.exotel.com/v1/Accounts/acct/Calls/CA1234/Hangup")
         self.assertEqual(form, {"Status": "completed"})
+
+    def test_the_start_event_keeps_the_call_sid_apart_from_the_stream_sid(self):
+        fields = exotel.start_fields({
+            "event": "start",
+            "stream_sid": "MZ_stream",
+            "start": {"stream_sid": "MZ_stream", "call_sid": "CA_call",
+                      "account_sid": "AC_acct"}})
+        self.assertEqual(fields["sid"], "MZ_stream")
+        self.assertEqual(fields["call_sid"], "CA_call")
+        self.assertEqual(fields["account_sid"], "AC_acct")
 
 
 class BridgeHttpTest(unittest.IsolatedAsyncioTestCase):
@@ -179,6 +197,18 @@ class BridgeHttpTest(unittest.IsolatedAsyncioTestCase):
             resp = await self.client.get(f"/exotel/ws?token={TOKEN}")
         self.assertEqual(resp.status, 409)
 
+    async def test_the_token_may_arrive_in_the_path(self):
+        # Some consoles drop an applet URL's query string on save, and the call
+        # then arrives as a bare path. The gate must still see the secret.
+        with patch.dict(os.environ, {"EXOTEL_WS_TOKEN": TOKEN}):
+            resp = await self.client.get(f"/exotel/ws/{TOKEN}")
+        self.assertEqual(resp.status, 409)      # past the gate: no page yet
+
+    async def test_a_wrong_path_token_is_still_refused(self):
+        with patch.dict(os.environ, {"EXOTEL_WS_TOKEN": TOKEN}):
+            resp = await self.client.get("/exotel/ws/nope")
+        self.assertEqual(resp.status, 403)
+
 
 class BridgeCallTest(unittest.IsolatedAsyncioTestCase):
     """One page, one simulated carrier call, end to end through the app."""
@@ -216,8 +246,8 @@ class BridgeCallTest(unittest.IsolatedAsyncioTestCase):
         exotel._live = False
         exotel._page = None
 
-    async def _carrier(self):
-        ws = await self.client.ws_connect(f"/exotel/ws?token={TOKEN}")
+    async def _carrier(self, url: str | None = None):
+        ws = await self.client.ws_connect(url or f"/exotel/ws?token={TOKEN}")
         await ws.send_json({"event": "connected"})
         await ws.send_json({
             "event": "start", "stream_sid": "s1",
@@ -239,6 +269,21 @@ class BridgeCallTest(unittest.IsolatedAsyncioTestCase):
             "type": "carrier", "state": "live", "from": "••••5678"})
         mic = FakeCarrierMic.instances[-1]
         self.assertTrue(mic.started)
+        self.assertTrue(room.stopped,
+                        "the room's microphone must give way to the call")
+        await ws.close()
+
+    async def test_a_path_token_also_binds_the_call(self):
+        # The console-safe form: the same call, secret in the path instead.
+        for _ in range(100):
+            if len(FakeMic.instances) >= 2:
+                break
+            await asyncio.sleep(0.01)
+        room = FakeMic.instances[-1]
+
+        ws = await self._carrier(f"/exotel/ws/{TOKEN}")
+        self.assertEqual(await self.page.receive_json(), {
+            "type": "carrier", "state": "live", "from": "••••5678"})
         self.assertTrue(room.stopped,
                         "the room's microphone must give way to the call")
         await ws.close()
@@ -308,6 +353,34 @@ class BridgeCallTest(unittest.IsolatedAsyncioTestCase):
         spoken = await self.page.receive_json()
         self.assertEqual(spoken["type"], "speak")
         self.assertEqual(FakeCarrierMic.instances[-1].muted, False)
+        await ws.close()
+
+    async def test_a_streamed_reply_has_no_silence_between_its_chunks(self):
+        # Every model chunk used to be padded to 3200 bytes with zeros, so a
+        # reply reached the handset as audio-gap-audio-gap. The remainder must
+        # carry over, and only the true tail may be padded.
+        piece = b"\x11\x22" * 500                    # 1000 bytes, not one zero
+
+        async def ragged(text, emit, **kwargs):
+            for _ in range(4):
+                await emit(piece)
+            return 40, False
+
+        with patch.object(tts, "stream_pcm", ragged):
+            ws = await self._carrier()
+            await self.page.receive_json()           # carrier live
+            await self.page.send_json({"type": "reply", "text": "ok"})
+            self.assertEqual((await self.page.receive_json())["state"],
+                             "speaking")
+            first = base64.b64decode(
+                (await ws.receive_json())["media"]["payload"])
+            second = base64.b64decode(
+                (await ws.receive_json())["media"]["payload"])
+
+        audio = piece * 4                            # 4000 bytes spoken
+        self.assertEqual(first, audio[:3200], "no gap inside a chunk")
+        self.assertEqual(second[:800], audio[3200:])
+        self.assertEqual(set(second[800:]), {0}, "only the true tail is padded")
         await ws.close()
 
     async def test_the_whole_reply_is_on_the_wire_before_speak(self):

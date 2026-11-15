@@ -384,7 +384,11 @@ crosses the wire. `Call.end_call` now hangs up the carrier first, best-effort.
 What this does **not** change: Gnani's API still has no PSTN, no SIP and no
 number provisioning; the trial line is still not judge-dialable; the 60-second
 video still shows the simulated line and must not claim a real number. The
-hangup POST is the one piece not exercised against Exotel's live API. The
+hangup route was probed against the live API on 15 Nov: `POST .../Calls/{sid}`
+answers `403 Method not allowed` and only `.../Calls/{sid}/Hangup` answers
+`200`, so `end_call` posts that with the call SID from the stream's `start`
+event. Whether a handset actually drops on that `200` is still unconfirmed — a
+bogus SID answers `200` too, so the `stop` event is the proof. The
 "go only with a US number" Twilio decision stands; this pilot uses an Indian
 trial number under the same limits as the 14 Nov trial call.
 
